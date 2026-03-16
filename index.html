@@ -10,36 +10,19 @@
   h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
   .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
-  button.opt {
-    padding: 9px 14px; border: 2px solid #ccc; border-radius: 8px;
-    cursor: pointer; background: #fff; font-size: 0.85rem; transition: all .15s;
-  }
-  button.opt:hover { border-color: #888; }
+  button.opt { padding: 9px 14px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; }
   button.opt.sel { background: #222; color: #fff; border-color: #222; }
-  input, select {
-    padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px;
-    font-size: 0.9rem; width: 100%;
-  }
+  input, select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 100%; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .row input { flex: 1; min-width: 120px; }
   .row button { white-space: nowrap; padding: 9px 16px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; }
   #total-box { font-size: 1.6rem; font-weight: bold; color: #222; padding: 10px 0; }
-  #registerBtn {
-    width: 100%; padding: 14px; background: #222; color: #fff;
-    font-size: 1.05rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px;
-  }
+  #registerBtn { width: 100%; padding: 14px; background: #222; color: #fff; font-size: 1.05rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
   #registerBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   #msg { margin-top: 10px; font-weight: bold; font-size: 0.95rem; min-height: 24px; }
-  .loading { color: #aaa; font-size: 0.85rem; }
 </style>
 </head>
 <body>
-
-<!-- GASのURLをここに設定 -->
-<script>
-var GAS_URL = "https://script.google.com/macros/s/AKfycbtszXHVHXgeXG8hV_9I9Gx-FG8tsltDUn5gXkswsm1yp2UlkTFCshbMVxJ4vpZnlha/exec";
-</script>
-
 <h2>店舗</h2>
 <div class="card">
   <select id="store">
@@ -48,7 +31,6 @@ var GAS_URL = "https://script.google.com/macros/s/AKfycbtszXHVHXgeXG8hV_9I9Gx-FG
     <option value="sasebo">佐世保店</option>
   </select>
 </div>
-
 <h2>① 会員番号</h2>
 <div class="card">
   <div class="row">
@@ -61,24 +43,17 @@ var GAS_URL = "https://script.google.com/macros/s/AKfycbtszXHVHXgeXG8hV_9I9Gx-FG
     <input type="text" id="guestName" placeholder="氏名を入力" style="margin-top:4px;">
   </div>
 </div>
-
 <h2>② 利用プラン</h2>
 <div class="card">
-  <div id="planGrid" class="btn-group">
-    <span class="loading">読み込み中...</span>
-  </div>
+  <div id="planGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
 </div>
-
 <h2>③ レンタル（複数選択可）</h2>
 <div class="card">
-  <div id="rentalGrid" class="btn-group">
-    <span class="loading">読み込み中...</span>
-  </div>
+  <div id="rentalGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
 </div>
-
 <h2>④ 支払い方法</h2>
 <div class="card">
-  <div class="btn-group" id="paymentGrid">
+  <div class="btn-group">
     <button class="opt pay-btn" data-method="現金">現金</button>
     <button class="opt pay-btn" data-method="クレジット">クレジット</button>
     <button class="opt pay-btn" data-method="電子マネー">電子マネー</button>
@@ -86,182 +61,99 @@ var GAS_URL = "https://script.google.com/macros/s/AKfycbtszXHVHXgeXG8hV_9I9Gx-FG
     <button class="opt pay-btn" data-method="交通系IC">交通系IC</button>
   </div>
 </div>
-
 <h2>合計</h2>
 <div class="card">
   <div id="total-box">¥0</div>
   <button id="registerBtn" disabled>入店登録</button>
   <div id="msg"></div>
 </div>
-
 <script>
-var planSel = null;
-var rentalSel = [];
-var paymentSel = null;
-
-// GAS doPost を直接呼ぶ（Content-Type: text/plain でCORSプリフライトを回避）
-function callGAS(action, params, callback) {
-  var body = JSON.stringify(Object.assign({ action: action }, params));
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', GAS_URL, true);
-  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-  xhr.onload = function() {
-    try {
-      var data = JSON.parse(xhr.responseText);
-      callback(null, data);
-    } catch(e) {
-      callback(new Error('レスポンス解析エラー: ' + xhr.responseText.slice(0, 100)));
-    }
-  };
-  xhr.onerror = function() {
-    callback(new Error('ネットワークエラー'));
-  };
-  xhr.send(body);
+var planSel=null,rentalSel=[],paymentSel=null;
+async function callAPI(action,params){
+  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
+  return res.json();
 }
-
-// 起動時にプラン・レンタル一覧を取得
-function init() {
-  callGAS('getPriceList', {}, function(err, res) {
-    var grid = document.getElementById('planGrid');
-    if (err) { grid.innerHTML = '<span style="color:red">' + err.message + '</span>'; return; }
-    grid.innerHTML = '';
-    var plans = res.data || [];
-    plans.forEach(function(p) {
-      var btn = document.createElement('button');
-      btn.className = 'opt plan-btn';
-      btn.textContent = p.label + ' ¥' + Number(p.amount).toLocaleString();
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.plan-btn').forEach(function(b){ b.classList.remove('sel'); });
+async function init(){
+  try{
+    var pr=await callAPI('getPriceList',{});
+    var pg=document.getElementById('planGrid');
+    pg.innerHTML='';
+    (pr.data||[]).forEach(function(p){
+      var btn=document.createElement('button');
+      btn.className='opt plan-btn';
+      btn.textContent=p.label+' ¥'+Number(p.amount).toLocaleString();
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.plan-btn').forEach(function(b){b.classList.remove('sel');});
         btn.classList.add('sel');
-        planSel = { plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount) };
+        planSel={plan1:p.plan1,plan2:p.plan2,label:p.label,amount:Number(p.amount)};
         updateTotal();
       });
-      grid.appendChild(btn);
+      pg.appendChild(btn);
     });
-  });
-
-  callGAS('getRentalList', {}, function(err, res) {
-    var grid = document.getElementById('rentalGrid');
-    if (err) { grid.innerHTML = '<span style="color:red">' + err.message + '</span>'; return; }
-    grid.innerHTML = '';
-    var rentals = res.data || [];
-    if (!rentals.length) {
-      grid.innerHTML = '<span style="color:#aaa;font-size:0.85rem;">なし</span>';
-      return;
-    }
-    rentals.forEach(function(r) {
-      var btn = document.createElement('button');
-      btn.className = 'opt rental-btn';
-      btn.textContent = r.name + ' ¥' + Number(r.amount).toLocaleString();
-      btn.addEventListener('click', function() {
-        var idx = rentalSel.findIndex(function(x){ return x.name === r.name; });
-        if (idx >= 0) { rentalSel.splice(idx,1); btn.classList.remove('sel'); }
-        else { rentalSel.push({ name: r.name, amount: Number(r.amount) }); btn.classList.add('sel'); }
+    var rr=await callAPI('getRentalList',{});
+    var rg=document.getElementById('rentalGrid');
+    rg.innerHTML='';
+    var rentals=rr.data||[];
+    if(!rentals.length){rg.innerHTML='<span style="color:#aaa;font-size:.85rem">なし</span>';return;}
+    rentals.forEach(function(r){
+      var btn=document.createElement('button');
+      btn.className='opt rental-btn';
+      btn.textContent=r.name+' ¥'+Number(r.amount).toLocaleString();
+      btn.addEventListener('click',function(){
+        var idx=rentalSel.findIndex(function(x){return x.name===r.name;});
+        if(idx>=0){rentalSel.splice(idx,1);btn.classList.remove('sel');}
+        else{rentalSel.push({name:r.name,amount:Number(r.amount)});btn.classList.add('sel');}
         updateTotal();
       });
-      grid.appendChild(btn);
+      rg.appendChild(btn);
     });
-  });
+  }catch(e){document.getElementById('planGrid').innerHTML='<span style="color:red">エラー: '+e.message+'</span>';}
 }
-
-// 支払いボタン
-document.querySelectorAll('.pay-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.pay-btn').forEach(function(b){ b.classList.remove('sel'); });
-    btn.classList.add('sel');
-    paymentSel = btn.dataset.method;
-    updateRegisterBtn();
+document.querySelectorAll('.pay-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.pay-btn').forEach(function(b){b.classList.remove('sel');});
+    btn.classList.add('sel');paymentSel=btn.dataset.method;updateRegisterBtn();
   });
 });
-
-function updateTotal() {
-  var total = planSel ? planSel.amount : 0;
-  rentalSel.forEach(function(r){ total += r.amount; });
-  document.getElementById('total-box').textContent = '¥' + total.toLocaleString();
+function updateTotal(){
+  var t=planSel?planSel.amount:0;
+  rentalSel.forEach(function(r){t+=r.amount;});
+  document.getElementById('total-box').textContent='¥'+t.toLocaleString();
   updateRegisterBtn();
 }
-
-function updateRegisterBtn() {
-  document.getElementById('registerBtn').disabled = !(planSel && paymentSel);
-}
-
-// 会員検索
-document.getElementById('searchBtn').addEventListener('click', function() {
-  var code = document.getElementById('memberCode').value.trim();
-  if (!code) { alert('会員番号を入力してください'); return; }
-  var el = document.getElementById('memberName');
-  el.textContent = '検索中...'; el.style.color = '#888';
-  callGAS('getMember', { code: code }, function(err, res) {
-    if (err) { el.textContent = 'エラー'; el.style.color = 'red'; return; }
-    var m = res.data;
-    if (m && m.name) {
-      el.textContent = '✓ ' + m.name; el.style.color = '#080';
-      document.getElementById('guestName').value = '';
-    } else {
-      el.textContent = '（未登録）'; el.style.color = '#888';
-    }
-  });
+function updateRegisterBtn(){document.getElementById('registerBtn').disabled=!(planSel&&paymentSel);}
+document.getElementById('searchBtn').addEventListener('click',async function(){
+  var code=document.getElementById('memberCode').value.trim();
+  if(!code){alert('会員番号を入力してください');return;}
+  var el=document.getElementById('memberName');
+  el.textContent='検索中...';el.style.color='#888';
+  try{
+    var res=await callAPI('getMember',{code:code});
+    var m=res.data;
+    if(m&&m.name){el.textContent='✓ '+m.name;el.style.color='#080';document.getElementById('guestName').value='';}
+    else{el.textContent='（未登録）';el.style.color='#888';}
+  }catch(e){el.textContent='エラー';el.style.color='red';}
 });
-
-document.getElementById('memberCode').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+document.getElementById('memberCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('searchBtn').click();});
+document.getElementById('registerBtn').addEventListener('click',async function(){
+  if(!planSel){alert('プランを選択してください');return;}
+  if(!paymentSel){alert('支払方法を選択してください');return;}
+  var nameEl=document.getElementById('memberName');
+  var memberName=nameEl.textContent.replace('✓ ','').trim();
+  if(!memberName||memberName==='（未登録）'||memberName==='検索中...'){memberName=document.getElementById('guestName').value.trim()||'ゲスト';}
+  var rentalFee=0,rentalNames=[];
+  rentalSel.forEach(function(r){rentalFee+=r.amount;rentalNames.push(r.name);});
+  var total=planSel.amount+rentalFee;
+  var params={store:document.getElementById('store').value,memberCode:document.getElementById('memberCode').value.trim(),memberName:memberName,regFee:0,plan1:planSel.plan1,plan2:planSel.plan2,planLabel:planSel.label,usageFee:planSel.amount,merchAmt:0,merchNote:'',rentalNote:rentalNames.join(','),rentalFee:rentalFee,adjustment:0,total:total,payment:paymentSel,cash:paymentSel==='現金'?total:0,credit:paymentSel==='クレジット'?total:0,emoney:paymentSel==='電子マネー'?total:0,qr:paymentSel==='QRコード'?total:0,transit:paymentSel==='交通系IC'?total:0,notes:''};
+  var btn=document.getElementById('registerBtn');
+  var msg=document.getElementById('msg');
+  btn.disabled=true;msg.style.color='#555';msg.textContent='登録中...';
+  try{
+    var res=await callAPI('registerEntry',{params:params});
+    if(res.ok&&res.data&&res.data.success){msg.style.color='green';msg.textContent='✓ 入店登録しました！ ('+res.data.entryTime+')';setTimeout(function(){location.reload();},2000);}
+    else{msg.style.color='red';msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');btn.disabled=false;}
+  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;btn.disabled=false;}
 });
-
-// 入店登録
-document.getElementById('registerBtn').addEventListener('click', function() {
-  if (!planSel) { alert('プランを選択してください'); return; }
-  if (!paymentSel) { alert('支払方法を選択してください'); return; }
-
-  var nameEl = document.getElementById('memberName');
-  var memberName = nameEl.textContent.replace('✓ ','').trim();
-  if (!memberName || memberName === '（未登録）' || memberName === '検索中...') {
-    memberName = document.getElementById('guestName').value.trim() || 'ゲスト';
-  }
-
-  var rentalFee = 0, rentalNames = [];
-  rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
-  var total = planSel.amount + rentalFee;
-
-  var params = {
-    store:      document.getElementById('store').value,
-    memberCode: document.getElementById('memberCode').value.trim(),
-    memberName: memberName,
-    regFee: 0,
-    plan1: planSel.plan1, plan2: planSel.plan2,
-    planLabel: planSel.label, usageFee: planSel.amount,
-    merchAmt: 0, merchNote: '',
-    rentalNote: rentalNames.join(','), rentalFee: rentalFee,
-    adjustment: 0, total: total, payment: paymentSel,
-    cash:    paymentSel === '現金'       ? total : 0,
-    credit:  paymentSel === 'クレジット' ? total : 0,
-    emoney:  paymentSel === '電子マネー' ? total : 0,
-    qr:      paymentSel === 'QRコード'   ? total : 0,
-    transit: paymentSel === '交通系IC'   ? total : 0,
-    notes: ''
-  };
-
-  var btn = document.getElementById('registerBtn');
-  var msg = document.getElementById('msg');
-  btn.disabled = true;
-  msg.style.color = '#555'; msg.textContent = '登録中...';
-
-  callGAS('registerEntry', { params: params }, function(err, res) {
-    if (err) {
-      msg.style.color = 'red'; msg.textContent = 'エラー: ' + err.message;
-      btn.disabled = false; return;
-    }
-    if (res.ok && res.data && res.data.success) {
-      msg.style.color = 'green';
-      msg.textContent = '✓ 入店登録しました！ (' + res.data.entryTime + ')';
-      setTimeout(function(){ location.reload(); }, 2000);
-    } else {
-      msg.style.color = 'red';
-      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
-      btn.disabled = false;
-    }
-  });
-});
-
 init();
 </script>
 </body>
