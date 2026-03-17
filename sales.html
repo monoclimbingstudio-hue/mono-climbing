@@ -3,229 +3,315 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mono Climbing Studio - 売上管理</title>
+<title>売上管理 - Mono Climbing Studio</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: sans-serif; padding: 0; max-width: 900px; margin: 0 auto; background: #f5f5f5; }
-  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
-  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
-  nav a.active { background: #444; color: #fff; }
-  nav a:hover { background: #333; color: #fff; }
-  .content { padding: 16px; }
-  h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
-  .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  input, select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .action-btn { padding: 10px 20px; background: #222; color: #fff; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; }
-  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .action-btn.secondary { background: #666; }
-  /* Summary cards */
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 6px; }
-  .summary-card { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); text-align: center; }
-  .summary-card .label { font-size: 0.78rem; color: #888; margin-bottom: 4px; }
-  .summary-card .value { font-size: 1.4rem; font-weight: bold; color: #222; }
-  .summary-card .value.yen::before { content: '¥'; font-size: 0.9rem; }
-  /* Table */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 600px; }
-  th { background: #f0f0f0; text-align: left; padding: 8px 10px; border-bottom: 2px solid #ddd; white-space: nowrap; }
-  td { padding: 7px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
-  tr:hover td { background: #fafafa; }
-  .tag { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 0.76rem; }
-  .tag-cash { background: #e8f5e9; color: #2e7d32; }
-  .tag-credit { background: #e3f2fd; color: #1565c0; }
-  .tag-emoney { background: #fff3e0; color: #e65100; }
-  .tag-qr { background: #f3e5f5; color: #6a1b9a; }
-  .tag-transit { background: #e0f7fa; color: #006064; }
-  .empty-note { color: #aaa; font-size: 0.88rem; text-align: center; padding: 30px 0; }
-  #transferMsg { margin-top: 10px; font-weight: bold; font-size: 0.9rem; min-height: 20px; }
-  .divider { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
+:root {
+  --accent: #e84c2c;
+  --dark: #1a1a1a;
+  --mid: #444;
+  --light-bg: #f7f7f7;
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --text: #222;
+  --sub: #777;
+  --success: #2e7d32;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
+nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+nav a.active { color: #fff; border-bottom-color: var(--accent); }
+nav a:hover { color: #fff; }
+.page { max-width: 900px; margin: 0 auto; padding: 16px 14px 60px; }
+.section { margin-bottom: 14px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.section-badge { padding: 3px 10px; border-radius: 100px; background: var(--dark); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+/* Filter bar */
+.filter-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.filter-field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 0.78rem; color: var(--sub); font-weight: 500; }
+.filter-input { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.filter-input:focus { border-color: var(--dark); }
+.load-btn { padding: 11px 24px; background: var(--dark); color: #fff; font-size: 0.92rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+.load-btn:hover { opacity: .8; }
+
+/* Summary grid */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0; }
+@media(max-width:600px){ .summary-grid { grid-template-columns: repeat(2,1fr); } }
+.summary-card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.summary-card .s-label { font-size: 0.75rem; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.summary-card .s-value { font-size: 1.5rem; font-weight: 800; color: var(--dark); }
+.summary-card .s-unit { font-size: 0.85rem; font-weight: 600; }
+.summary-card.highlight { background: var(--dark); }
+.summary-card.highlight .s-label { color: #888; }
+.summary-card.highlight .s-value { color: #fff; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
+thead th { background: #f5f5f5; padding: 9px 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700; color: var(--mid); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+tbody tr:hover td { background: #fafafa; }
+tbody tr:last-child td { border-bottom: none; }
+.pay-tag { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 0.76rem; font-weight: 600; }
+.pay-cash { background: #e8f5e9; color: #2e7d32; }
+.pay-credit { background: #e3f2fd; color: #1565c0; }
+.pay-emoney { background: #fff3e0; color: #e65100; }
+.pay-qr { background: #f3e5f5; color: #6a1b9a; }
+.pay-transit { background: #e0f7fa; color: #006064; }
+.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.empty-state { text-align: center; padding: 40px 0; color: var(--sub); font-size: 0.88rem; }
+
+/* Transfer */
+.transfer-btn { padding: 13px 28px; background: var(--success); color: #fff; font-size: 0.95rem; font-weight: 700; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity .15s; }
+.transfer-btn:hover { opacity: .85; }
+.transfer-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.transfer-msg { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: none; }
+.transfer-msg.ok { background: #e8f5e9; color: var(--success); display: block; }
+.transfer-msg.err { background: #fdecea; color: #c62828; display: block; }
+.warn-note { font-size: 0.82rem; color: #c62828; margin-top: 6px; }
+
+.dot-loader { display: flex; gap: 4px; }
+.dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
+.dot-loader span:nth-child(2) { animation-delay: .15s; }
+.dot-loader span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
 </style>
 </head>
 <body>
 <nav>
+  <div class="logo">🧗 MONO</div>
   <a href="index.html">入店登録</a>
   <a href="members.html">会員管理</a>
   <a href="sales.html" class="active">売上管理</a>
 </nav>
-<div class="content">
 
-<!-- フィルター -->
-<h2>表示条件</h2>
-<div class="card">
-  <div class="row">
-    <div>
-      <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:3px;">日付</label>
-      <input type="date" id="dateInput">
+<div class="page">
+
+  <!-- 絞り込み -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">FILTER</span>
+      <div class="section-title">表示条件</div>
     </div>
-    <div>
-      <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:3px;">店舗</label>
-      <select id="storeFilter">
-        <option value="">全店舗</option>
-        <option value="hakata">博多店</option>
-        <option value="omura">大村店</option>
-        <option value="sasebo">佐世保店</option>
-      </select>
+    <div class="card">
+      <div class="filter-bar">
+        <div class="filter-field">
+          <div class="field-label">日付</div>
+          <input type="date" id="dateInput" class="filter-input">
+        </div>
+        <div class="filter-field">
+          <div class="field-label">店舗</div>
+          <select id="storeFilter" class="filter-input">
+            <option value="">全店舗</option>
+            <option value="hakata">博多店</option>
+            <option value="omura">大村店</option>
+            <option value="sasebo">佐世保店</option>
+          </select>
+        </div>
+        <button class="load-btn" id="loadBtn">表示する</button>
+      </div>
     </div>
-    <button class="action-btn" id="loadBtn" style="margin-top:18px;">表示</button>
   </div>
+
+  <!-- サマリー -->
+  <div class="section" id="summarySection" style="display:none;">
+    <div class="section-head">
+      <span class="section-badge">SUMMARY</span>
+      <div class="section-title">売上サマリー</div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="s-label">来客数</div>
+        <div class="s-value"><span id="sCount">0</span><span class="s-unit"> 名</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">利用料</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sUsage">0</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">レンタル</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sRental">0</span></div>
+      </div>
+      <div class="summary-card highlight">
+        <div class="s-label">売上合計</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sTotal">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 入店一覧 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">LIST</span>
+      <div class="section-title">入店一覧</div>
+    </div>
+    <div class="card">
+      <div id="salesTableWrap">
+        <div class="empty-state">日付を選択して「表示する」を押してください</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- スプレッドシート転記 -->
+  <div class="section" id="transferSection" style="display:none;">
+    <div class="section-head">
+      <span class="section-badge">EXPORT</span>
+      <div class="section-title">スプレッドシートへ転記</div>
+    </div>
+    <div class="card">
+      <p style="font-size:.88rem;color:var(--sub);margin-bottom:12px;">表示中のデータを「売上集計」シートに書き出します。</p>
+      <p class="warn-note">⚠ 同じ日付のデータを再転記すると重複します。</p>
+      <div style="margin-top:14px;">
+        <button class="transfer-btn" id="transferBtn">売上を転記する</button>
+      </div>
+      <div id="transferMsg" class="transfer-msg"></div>
+    </div>
+  </div>
+
 </div>
 
-<!-- サマリー -->
-<div class="summary-grid" id="summaryGrid" style="display:none;">
-  <div class="summary-card">
-    <div class="label">来客数</div>
-    <div class="value" id="countVal">0</div>
-  </div>
-  <div class="summary-card">
-    <div class="label">利用料合計</div>
-    <div class="value yen" id="usageVal">0</div>
-  </div>
-  <div class="summary-card">
-    <div class="label">レンタル合計</div>
-    <div class="value yen" id="rentalVal">0</div>
-  </div>
-  <div class="summary-card" style="background:#222; color:#fff;">
-    <div class="label" style="color:#aaa;">売上合計</div>
-    <div class="value yen" id="totalVal" style="color:#fff;">0</div>
-  </div>
-</div>
-
-<!-- 売上一覧 -->
-<h2>入店一覧</h2>
-<div class="card">
-  <div id="salesTableWrap">
-    <div class="empty-note">上のフィルターで日付を選択して「表示」を押してください</div>
-  </div>
-</div>
-
-<!-- 売上転記 -->
-<h2>スプレッドシートへ転記</h2>
-<div class="card">
-  <p style="font-size:0.88rem;color:#555;margin:0 0 10px;">
-    表示中のデータを売上集計シートに転記します。<br>
-    <span style="color:#c00;font-size:0.82rem;">※ 同じ日付のデータを再転記すると重複します。</span>
-  </p>
-  <button class="action-btn" id="transferBtn" disabled>売上を転記する</button>
-  <div id="transferMsg"></div>
-</div>
-
-</div><!-- /content -->
 <script>
-var currentEntries=[];
+var currentEntries = [];
 
-// 今日の日付をセット
+// Init date
 (function(){
-  var d=new Date();
-  var y=d.getFullYear();
-  var m=String(d.getMonth()+1).padStart(2,'0');
-  var day=String(d.getDate()).padStart(2,'0');
-  document.getElementById('dateInput').value=y+'-'+m+'-'+day;
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value = y+'-'+m+'-'+day;
 })();
 
-async function callAPI(action,params){
-  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
-  return res.json();
+function callAPI(action, params) {
+  return fetch('/api/gas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({action:action}, params))
+  }).then(function(r){ return r.json(); });
 }
 
-document.getElementById('loadBtn').addEventListener('click',loadSales);
-document.getElementById('dateInput').addEventListener('keydown',function(e){if(e.key==='Enter')loadSales();});
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-async function loadSales(){
-  var dateVal=document.getElementById('dateInput').value;
-  var store=document.getElementById('storeFilter').value;
-  if(!dateVal){alert('日付を選択してください');return;}
+document.getElementById('loadBtn').addEventListener('click', loadSales);
+document.getElementById('dateInput').addEventListener('keydown', function(e){ if(e.key==='Enter') loadSales(); });
 
-  var wrap=document.getElementById('salesTableWrap');
-  wrap.innerHTML='<div class="empty-note">読み込み中...</div>';
-  document.getElementById('summaryGrid').style.display='none';
-  document.getElementById('transferBtn').disabled=true;
+function loadSales() {
+  var dateVal = document.getElementById('dateInput').value;
+  var store = document.getElementById('storeFilter').value;
+  if(!dateVal){ alert('日付を選択してください'); return; }
 
-  try{
-    var res=await callAPI('getTodaySales',{date:dateVal,store:store});
-    currentEntries=res.data||[];
+  var wrap = document.getElementById('salesTableWrap');
+  wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>データを読み込み中...</div>';
+  document.getElementById('summarySection').style.display = 'none';
+  document.getElementById('transferSection').style.display = 'none';
+
+  callAPI('getTodaySales', {date:dateVal, store:store}).then(function(res){
+    // Robust check: ensure we have an array
+    var data = res.data;
+    if(!Array.isArray(data)) {
+      var errMsg = (data && data.error) ? data.error : (res.error || 'データ形式エラー');
+      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
+      return;
+    }
+    currentEntries = data;
     renderSalesTable(currentEntries);
-    renderSummary(currentEntries);
-    document.getElementById('summaryGrid').style.display='grid';
-    document.getElementById('transferBtn').disabled=currentEntries.length===0;
-  }catch(e){
-    wrap.innerHTML='<div class="empty-note" style="color:red">エラー: '+e.message+'</div>';
+    if(currentEntries.length > 0) {
+      renderSummary(currentEntries);
+      document.getElementById('summarySection').style.display = 'block';
+      document.getElementById('transferSection').style.display = 'block';
+    }
+  }).catch(function(e){
+    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderSalesTable(entries) {
+  var wrap = document.getElementById('salesTableWrap');
+  if(!entries.length){
+    wrap.innerHTML = '<div class="empty-state">この日付のデータがありません</div>';
+    return;
   }
-}
-
-function renderSalesTable(entries){
-  var wrap=document.getElementById('salesTableWrap');
-  if(!entries.length){wrap.innerHTML='<div class="empty-note">この日のデータがありません</div>';return;}
-  var html='<div class="table-wrap"><table><thead><tr>'
-    +'<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
-    +'<th>プラン</th><th>利用料</th><th>レンタル</th><th>合計</th><th>支払方法</th>'
-    +'</tr></thead><tbody>';
+  var html = '<div class="table-wrap"><table><thead><tr>'
+    + '<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
+    + '<th>プラン</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
+    + '<th class="num-cell">合計</th><th>支払</th>'
+    + '</tr></thead><tbody>';
   entries.forEach(function(e){
-    var payTag=paymentTag(e.payment);
-    html+='<tr>'
-      +'<td>'+esc(e.time)+'</td>'
-      +'<td>'+esc(storeLabel(e.store))+'</td>'
-      +'<td>'+esc(e.memberCode||'-')+'</td>'
-      +'<td>'+esc(e.memberName||'ゲスト')+'</td>'
-      +'<td>'+esc(e.planLabel||'-')+'</td>'
-      +'<td style="text-align:right;">¥'+Number(e.usageFee||0).toLocaleString()+'</td>'
-      +'<td style="text-align:right;">'+( Number(e.rentalFee)>0 ? '¥'+Number(e.rentalFee).toLocaleString() : '-' )+'</td>'
-      +'<td style="text-align:right;font-weight:bold;">¥'+Number(e.total||0).toLocaleString()+'</td>'
-      +'<td>'+payTag+'</td>'
-      +'</tr>';
+    html += '<tr>'
+      + '<td>' + esc(e.time||'-') + '</td>'
+      + '<td>' + esc(storeLabel(e.store)) + '</td>'
+      + '<td style="font-family:monospace;font-weight:700;">' + esc(e.memberCode||'-') + '</td>'
+      + '<td>' + esc(e.memberName||'ゲスト') + '</td>'
+      + '<td>' + esc(e.planLabel||'-') + '</td>'
+      + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
+      + '<td class="num-cell">' + (Number(e.rentalFee)>0 ? '¥'+Number(e.rentalFee).toLocaleString() : '-') + '</td>'
+      + '<td class="num-cell" style="font-weight:700;">¥' + Number(e.total||0).toLocaleString() + '</td>'
+      + '<td>' + payTag(e.payment) + '</td>'
+      + '</tr>';
   });
-  html+='</tbody></table></div>';
-  wrap.innerHTML=html;
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
 }
 
-function renderSummary(entries){
-  var count=entries.length;
-  var usage=0,rental=0,total=0;
+function renderSummary(entries) {
+  var usage=0, rental=0, total=0;
   entries.forEach(function(e){
-    usage+=Number(e.usageFee||0);
-    rental+=Number(e.rentalFee||0);
-    total+=Number(e.total||0);
+    usage  += Number(e.usageFee||0);
+    rental += Number(e.rentalFee||0);
+    total  += Number(e.total||0);
   });
-  document.getElementById('countVal').textContent=count+'名';
-  document.getElementById('usageVal').textContent=usage.toLocaleString();
-  document.getElementById('rentalVal').textContent=rental.toLocaleString();
-  document.getElementById('totalVal').textContent=total.toLocaleString();
+  document.getElementById('sCount').textContent  = entries.length;
+  document.getElementById('sUsage').textContent  = usage.toLocaleString();
+  document.getElementById('sRental').textContent = rental.toLocaleString();
+  document.getElementById('sTotal').textContent  = total.toLocaleString();
 }
 
-function paymentTag(method){
-  var cls={
-    '現金':'tag-cash','クレジット':'tag-credit',
-    '電子マネー':'tag-emoney','QRコード':'tag-qr','交通系IC':'tag-transit'
-  }[method]||'';
-  return '<span class="tag '+cls+'">'+esc(method||'-')+'</span>';
+function payTag(method) {
+  var cls = {
+    '現金':'pay-cash','クレジット':'pay-credit',
+    '電子マネー':'pay-emoney','QRコード':'pay-qr','交通系IC':'pay-transit'
+  }[method] || '';
+  return '<span class="pay-tag ' + cls + '">' + esc(method||'-') + '</span>';
 }
 
 function storeLabel(s){
-  return {hakata:'博多店',omura:'大村店',sasebo:'佐世保店'}[s]||s||'-';
+  return {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'}[s] || s || '-';
 }
 
-// 転記ボタン
-document.getElementById('transferBtn').addEventListener('click',async function(){
-  if(!currentEntries.length){alert('転記するデータがありません');return;}
-  var dateVal=document.getElementById('dateInput').value;
-  var store=document.getElementById('storeFilter').value;
-  var msg=document.getElementById('transferMsg');
-  msg.style.color='#555'; msg.textContent='転記中...';
-  this.disabled=true;
-  try{
-    var res=await callAPI('transferSales',{date:dateVal,store:store});
-    if(res.ok&&res.data&&res.data.success){
-      msg.style.color='green';
-      msg.textContent='✓ 転記完了しました（'+res.data.rows+'件）';
-    }else{
-      msg.style.color='red';
-      msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');
-      this.disabled=false;
+// Transfer
+document.getElementById('transferBtn').addEventListener('click', function(){
+  if(!currentEntries.length){ alert('転記するデータがありません'); return; }
+  var dateVal = document.getElementById('dateInput').value;
+  var store = document.getElementById('storeFilter').value;
+  var msg = document.getElementById('transferMsg');
+  var btn = this;
+  msg.className = 'transfer-msg';
+  msg.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '転記中...';
+  callAPI('transferSales', {date:dateVal, store:store}).then(function(res){
+    btn.textContent = '売上を転記する';
+    if(res.ok && res.data && res.data.success){
+      msg.className = 'transfer-msg ok';
+      msg.textContent = '✓ 転記しました（' + res.data.rows + '件 → 売上集計シート）';
+      btn.disabled = true; // prevent double submit
+    } else {
+      msg.className = 'transfer-msg err';
+      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error||'不明');
+      btn.disabled = false;
     }
-  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;this.disabled=false;}
+  }).catch(function(e){
+    btn.textContent = '売上を転記する';
+    btn.disabled = false;
+    msg.className = 'transfer-msg err';
+    msg.textContent = 'エラー: ' + e.message;
+  });
 });
-
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 </body>
 </html>
