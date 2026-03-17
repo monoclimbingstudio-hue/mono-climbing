@@ -6,12 +6,23 @@
 <title>Mono Climbing Studio - 入店登録</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: sans-serif; padding: 16px; max-width: 720px; margin: 0 auto; background: #f5f5f5; }
+  body { font-family: sans-serif; padding: 0; max-width: 720px; margin: 0 auto; background: #f5f5f5; }
+  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
+  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
+  nav a.active { background: #444; color: #fff; }
+  nav a:hover { background: #333; color: #fff; }
+  .content { padding: 16px; }
   h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
   .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
-  button.opt { padding: 9px 14px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; }
+  button.opt { padding: 9px 14px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; transition: all 0.15s; }
+  button.opt:hover { border-color: #888; }
   button.opt.sel { background: #222; color: #fff; border-color: #222; }
+  /* Plan category buttons */
+  button.cat-btn { padding: 10px 18px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.88rem; font-weight: bold; }
+  button.cat-btn.sel { background: #444; color: #fff; border-color: #444; }
+  /* Plan sub-buttons */
+  #planSubGrid { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
   input, select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 100%; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .row input { flex: 1; min-width: 120px; }
@@ -20,9 +31,16 @@
   #registerBtn { width: 100%; padding: 14px; background: #222; color: #fff; font-size: 1.05rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
   #registerBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   #msg { margin-top: 10px; font-weight: bold; font-size: 0.95rem; min-height: 24px; }
+  .sub-label { font-size: 0.78rem; color: #666; margin-top: 8px; margin-bottom: 4px; }
 </style>
 </head>
 <body>
+<nav>
+  <a href="index.html" class="active">入店登録</a>
+  <a href="members.html">会員管理</a>
+  <a href="sales.html">売上管理</a>
+</nav>
+<div class="content">
 <h2>店舗</h2>
 <div class="card">
   <select id="store">
@@ -45,7 +63,12 @@
 </div>
 <h2>② 利用プラン</h2>
 <div class="card">
-  <div id="planGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
+  <div class="sub-label">利用種類を選択</div>
+  <div id="planCatGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
+  <div id="planSubWrap" style="display:none;">
+    <div class="sub-label">料金を選択</div>
+    <div id="planSubGrid"></div>
+  </div>
 </div>
 <h2>③ レンタル（複数選択可）</h2>
 <div class="card">
@@ -67,29 +90,23 @@
   <button id="registerBtn" disabled>入店登録</button>
   <div id="msg"></div>
 </div>
+</div><!-- /content -->
 <script>
-var planSel=null,rentalSel=[],paymentSel=null;
+var allPlans=[],planSel=null,rentalSel=[],paymentSel=null,catSel=null;
+
 async function callAPI(action,params){
   var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
   return res.json();
 }
+
 async function init(){
   try{
+    // Load plans
     var pr=await callAPI('getPriceList',{});
-    var pg=document.getElementById('planGrid');
-    pg.innerHTML='';
-    (pr.data||[]).forEach(function(p){
-      var btn=document.createElement('button');
-      btn.className='opt plan-btn';
-      btn.textContent=p.label+' ¥'+Number(p.amount).toLocaleString();
-      btn.addEventListener('click',function(){
-        document.querySelectorAll('.plan-btn').forEach(function(b){b.classList.remove('sel');});
-        btn.classList.add('sel');
-        planSel={plan1:p.plan1,plan2:p.plan2,label:p.label,amount:Number(p.amount)};
-        updateTotal();
-      });
-      pg.appendChild(btn);
-    });
+    allPlans=pr.data||[];
+    buildCategoryButtons();
+
+    // Load rentals
     var rr=await callAPI('getRentalList',{});
     var rg=document.getElementById('rentalGrid');
     rg.innerHTML='';
@@ -107,21 +124,86 @@ async function init(){
       });
       rg.appendChild(btn);
     });
-  }catch(e){document.getElementById('planGrid').innerHTML='<span style="color:red">エラー: '+e.message+'</span>';}
+  }catch(e){
+    document.getElementById('planCatGrid').innerHTML='<span style="color:red">エラー: '+e.message+'</span>';
+  }
 }
+
+function buildCategoryButtons(){
+  var pg=document.getElementById('planCatGrid');
+  pg.innerHTML='';
+  // Extract unique plan1 values (category)
+  var cats=[];
+  allPlans.forEach(function(p){
+    if(p.plan1 && cats.indexOf(p.plan1)<0) cats.push(p.plan1);
+  });
+  if(!cats.length){
+    // Fallback: no plan1, show all plans directly
+    allPlans.forEach(function(p){
+      pg.appendChild(makePlanBtn(p));
+    });
+    return;
+  }
+  cats.forEach(function(cat){
+    var btn=document.createElement('button');
+    btn.className='cat-btn opt';
+    btn.textContent=cat;
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.cat-btn').forEach(function(b){b.classList.remove('sel');});
+      btn.classList.add('sel');
+      catSel=cat;
+      // Reset plan selection
+      planSel=null;
+      updateTotal();
+      showSubPlans(cat);
+    });
+    pg.appendChild(btn);
+  });
+}
+
+function showSubPlans(cat){
+  var wrap=document.getElementById('planSubWrap');
+  var sg=document.getElementById('planSubGrid');
+  sg.innerHTML='';
+  var filtered=allPlans.filter(function(p){return p.plan1===cat;});
+  if(!filtered.length){wrap.style.display='none';return;}
+  filtered.forEach(function(p){
+    sg.appendChild(makePlanBtn(p));
+  });
+  wrap.style.display='';
+}
+
+function makePlanBtn(p){
+  var btn=document.createElement('button');
+  btn.className='opt plan-btn';
+  // Show plan2 if available, otherwise label
+  var label=(p.plan2&&p.plan2!==p.plan1)?p.plan2:p.label;
+  btn.textContent=label+' ¥'+Number(p.amount).toLocaleString();
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.plan-btn').forEach(function(b){b.classList.remove('sel');});
+    btn.classList.add('sel');
+    planSel={plan1:p.plan1,plan2:p.plan2,label:p.label,amount:Number(p.amount)};
+    updateTotal();
+  });
+  return btn;
+}
+
 document.querySelectorAll('.pay-btn').forEach(function(btn){
   btn.addEventListener('click',function(){
     document.querySelectorAll('.pay-btn').forEach(function(b){b.classList.remove('sel');});
     btn.classList.add('sel');paymentSel=btn.dataset.method;updateRegisterBtn();
   });
 });
+
 function updateTotal(){
   var t=planSel?planSel.amount:0;
   rentalSel.forEach(function(r){t+=r.amount;});
   document.getElementById('total-box').textContent='¥'+t.toLocaleString();
   updateRegisterBtn();
 }
+
 function updateRegisterBtn(){document.getElementById('registerBtn').disabled=!(planSel&&paymentSel);}
+
 document.getElementById('searchBtn').addEventListener('click',async function(){
   var code=document.getElementById('memberCode').value.trim();
   if(!code){alert('会員番号を入力してください');return;}
@@ -134,7 +216,9 @@ document.getElementById('searchBtn').addEventListener('click',async function(){
     else{el.textContent='（未登録）';el.style.color='#888';}
   }catch(e){el.textContent='エラー';el.style.color='red';}
 });
+
 document.getElementById('memberCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('searchBtn').click();});
+
 document.getElementById('registerBtn').addEventListener('click',async function(){
   if(!planSel){alert('プランを選択してください');return;}
   if(!paymentSel){alert('支払方法を選択してください');return;}
@@ -154,6 +238,7 @@ document.getElementById('registerBtn').addEventListener('click',async function()
     else{msg.style.color='red';msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');btn.disabled=false;}
   }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;btn.disabled=false;}
 });
+
 init();
 </script>
 </body>
