@@ -57,66 +57,78 @@ nav a:hover { color: #fff; }
 .full-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
 .full-input:focus { border-color: var(--dark); }
 
-/* ── Plan: Step A – 属性 ── */
+/* ── Plan step labels ── */
 .plan-step-label {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.78rem; font-weight: 700; color: var(--sub);
   text-transform: uppercase; letter-spacing: .05em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .plan-step-label .step-badge {
   width: 20px; height: 20px; border-radius: 50%;
-  background: var(--border); color: var(--mid);
+  background: var(--dark); color: #fff;
   font-size: 0.7rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.plan-step-label.active .step-badge { background: var(--dark); color: #fff; }
 
-.attr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.attr-btn {
-  padding: 13px 10px; border: 2px solid var(--border); border-radius: 8px;
-  background: #fff; cursor: pointer;
-  font-size: 0.9rem; font-weight: 700; text-align: center;
-  transition: all .15s; color: var(--mid); line-height: 1.3;
+/* ── Plan/Attr Select ── */
+.plan-select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border .15s;
 }
-.attr-btn:hover:not(.sel) { border-color: #aaa; background: #fafafa; }
-.attr-btn.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
-.attr-btn .attr-note { font-size: 0.72rem; font-weight: 400; opacity: 0.75; display: block; margin-top: 2px; }
+.plan-select:focus { border-color: var(--dark); }
+.plan-select.has-val { border-color: var(--dark); background: #f8f8f8; }
+.plan-select option { font-weight: 500; }
 
-/* ── Plan: Step B – 時間プラン ── */
+/* ── Plan: Step B ── */
 .sub-plan-area {
   margin-top: 14px; padding-top: 14px;
   border-top: 1px dashed var(--border); display: none;
 }
-.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-.plan-chip {
-  padding: 12px 10px; border: 2px solid var(--border); border-radius: 8px;
-  cursor: pointer; background: #fff;
-  font-size: 0.85rem; font-weight: 600;
-  text-align: center; transition: all .15s; line-height: 1.4;
+
+/* ── Plan summary chip ── */
+.plan-summary {
+  margin-top: 8px; padding: 8px 12px;
+  background: #f0f4ff; border: 1.5px solid #b3c3f3;
+  border-radius: 8px; font-size: 0.88rem; font-weight: 600;
+  color: #1a237e; display: none;
 }
-.plan-chip .price { font-size: 1.05rem; font-weight: 800; display: block; margin-top: 3px; }
-.plan-chip:hover:not(.sel) { border-color: #999; }
-.plan-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ── Rental ── */
 .rental-section { display: flex; flex-direction: column; gap: 12px; }
 
 /* Mat dropdown row */
 .rental-mat-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 12px; background: #f9f9f9;
+  background: #f9f9f9;
   border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 12px 14px;
 }
-.rental-mat-info { display: flex; flex-direction: column; gap: 2px; }
+.rental-mat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .rental-mat-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
-.rental-mat-price { font-size: 0.78rem; color: var(--sub); }
+.rental-mat-hint { font-size: 0.76rem; color: var(--sub); }
 .mat-select {
-  padding: 8px 12px; border: 1.5px solid var(--border);
-  border-radius: 8px; font-size: 0.9rem; font-weight: 600;
-  background: #fff; cursor: pointer; outline: none;
-  min-width: 90px; transition: border .15s;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border .15s;
 }
 .mat-select:focus { border-color: var(--dark); }
 .mat-select.has-val { border-color: #1a5276; color: #1a5276; background: #eaf0f6; }
@@ -211,21 +223,22 @@ nav a:hover { color: #fff; }
     <div class="card">
 
       <!-- STEP A: 属性 -->
-      <div class="plan-step-label active" id="stepALabel">
+      <div class="plan-step-label">
         <div class="step-badge">A</div>
         お客様の属性を選択
       </div>
-      <div id="planCatGrid" class="attr-grid">
-        <div class="loading-row" style="grid-column:1/-1"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+      <div id="attrWrap">
+        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
       </div>
 
-      <!-- STEP B: 時間プラン -->
+      <!-- STEP B: プラン -->
       <div id="planSubWrap" class="sub-plan-area">
-        <div class="plan-step-label active" id="stepBLabel">
+        <div class="plan-step-label">
           <div class="step-badge">B</div>
-          時間・プランを選択
+          利用プランを選択
         </div>
-        <div id="planSubGrid" class="plan-grid"></div>
+        <div id="planWrap"></div>
+        <div id="planSummary" class="plan-summary"></div>
       </div>
 
     </div>
@@ -281,8 +294,8 @@ nav a:hover { color: #fff; }
 </div><!-- /page -->
 
 <script>
-var allPlans = [], planSel = null, rentalSel = [], paymentSel = null, catSel = null;
-var matItem = null, matQty = 0;
+var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
+var matOptions = [], matSel = null;
 var CACHE_TTL = 30 * 60 * 1000; // 30min
 
 function callAPI(action, params) {
@@ -313,7 +326,6 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     btn.classList.add('sel');
   });
 });
-
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
   return sel ? sel.dataset.store : 'hakata';
@@ -322,22 +334,21 @@ function getStore() {
 // ── Init ──────────────────────────────────────────
 function init() {
   var cachedPlans = getCached('plans');
-  var cachedRentals = getCached('rentals');
-
   if (cachedPlans) {
     allPlans = cachedPlans;
-    buildAttributeButtons();
+    buildAttrDropdown();
   } else {
     callAPI('getPriceList', {}).then(function(pr){
       allPlans = pr.data || [];
       setCache('plans', allPlans);
-      buildAttributeButtons();
+      buildAttrDropdown();
     }).catch(function(){
-      document.getElementById('planCatGrid').innerHTML = '<span style="color:red;font-size:.85rem;grid-column:1/-1">読み込みエラー</span>';
+      document.getElementById('attrWrap').innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
     });
   }
 
   var rs = document.getElementById('rentalSection');
+  var cachedRentals = getCached('rentals');
   if (cachedRentals) {
     buildRentalSection(cachedRentals, rs);
   } else {
@@ -351,123 +362,137 @@ function init() {
   }
 }
 
-// ── STEP A: 属性ボタン ─────────────────────────────
-function buildAttributeButtons() {
-  var pg = document.getElementById('planCatGrid');
-  pg.innerHTML = '';
+// ── STEP A: 属性ドロップダウン ─────────────────────
+function buildAttrDropdown() {
+  var wrap = document.getElementById('attrWrap');
+  wrap.innerHTML = '';
+
+  // 属性の一覧を収集（plan1 が属性）
   var cats = [];
-  allPlans.forEach(function(p){ if (p.plan1 && cats.indexOf(p.plan1) < 0) cats.push(p.plan1); });
+  allPlans.forEach(function(p){
+    if (p.plan1 && cats.indexOf(p.plan1) < 0) cats.push(p.plan1);
+  });
 
   if (!cats.length) {
-    // plan1 がない場合は直接プランを表示
-    allPlans.forEach(function(p){ pg.appendChild(makeAttrBtn(p.label, null, p)); });
+    wrap.innerHTML = '<span style="color:var(--sub);font-size:.85rem">プランがありません</span>';
     return;
   }
 
+  var sel = document.createElement('select');
+  sel.id = 'attrSelect';
+  sel.className = 'plan-select';
+  var opts = '<option value="">-- 属性を選択してください --</option>';
   cats.forEach(function(cat){
-    var btn = document.createElement('button');
-    btn.className = 'attr-btn';
-    btn.textContent = cat;
-    btn.dataset.cat = cat;
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.attr-btn').forEach(function(b){ b.classList.remove('sel'); });
-      btn.classList.add('sel');
-      catSel = cat;
-      planSel = null;
-      updateTotal();
-      showPlanDuration(cat);
-    });
-    pg.appendChild(btn);
+    opts += '<option value="' + escAttr(cat) + '">' + esc(cat) + '</option>';
+  });
+  sel.innerHTML = opts;
+  wrap.appendChild(sel);
+
+  sel.addEventListener('change', function(){
+    var cat = this.value;
+    planSel = null;
+    this.className = 'plan-select' + (cat ? ' has-val' : '');
+    updateTotal();
+    var subWrap = document.getElementById('planSubWrap');
+    if (cat) {
+      buildPlanDropdown(cat);
+      subWrap.style.display = 'block';
+    } else {
+      subWrap.style.display = 'none';
+      document.getElementById('planSummary').style.display = 'none';
+    }
   });
 }
 
-// ── STEP B: 時間プラン ────────────────────────────
-function showPlanDuration(cat) {
-  var wrap = document.getElementById('planSubWrap');
-  var sg = document.getElementById('planSubGrid');
-  sg.innerHTML = '';
+// ── STEP B: プランドロップダウン ──────────────────
+function buildPlanDropdown(cat) {
+  var wrap = document.getElementById('planWrap');
+  wrap.innerHTML = '';
+  var summaryEl = document.getElementById('planSummary');
+  summaryEl.style.display = 'none';
+
   var filtered = allPlans.filter(function(p){ return p.plan1 === cat; });
-  if (!filtered.length) { wrap.style.display = 'none'; return; }
-  filtered.forEach(function(p){
-    var btn = document.createElement('button');
-    btn.className = 'plan-chip';
-    var durationLabel = (p.plan2 && p.plan2 !== p.plan1) ? p.plan2 : p.label;
-    btn.innerHTML = durationLabel + '<span class="price">¥' + Number(p.amount).toLocaleString() + '</span>';
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.plan-chip').forEach(function(b){ b.classList.remove('sel'); });
-      btn.classList.add('sel');
-      planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
-      updateTotal();
-    });
-    sg.appendChild(btn);
-  });
-  wrap.style.display = 'block';
-}
+  if (!filtered.length) return;
 
-function makeAttrBtn(label, note, plan) {
-  var btn = document.createElement('button');
-  btn.className = 'attr-btn';
-  btn.innerHTML = label + (note ? '<span class="attr-note">' + note + '</span>' : '');
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('.attr-btn').forEach(function(b){ b.classList.remove('sel'); });
-    btn.classList.add('sel');
-    planSel = {plan1: plan.plan1, plan2: plan.plan2, label: plan.label, amount: Number(plan.amount)};
-    catSel = plan.plan1;
-    document.getElementById('planSubWrap').style.display = 'none';
+  var sel = document.createElement('select');
+  sel.id = 'planSelect';
+  sel.className = 'plan-select';
+  var opts = '<option value="">-- プランを選択してください --</option>';
+  filtered.forEach(function(p, i){
+    var lbl = (p.plan2 && p.plan2 !== p.plan1) ? p.plan2 : p.label;
+    opts += '<option value="' + i + '">' + esc(lbl) + '　¥' + Number(p.amount).toLocaleString() + '</option>';
+  });
+  sel.innerHTML = opts;
+  wrap.appendChild(sel);
+
+  sel.addEventListener('change', function(){
+    var idx = parseInt(this.value);
+    if (this.value === '' || isNaN(idx)) {
+      planSel = null;
+      this.className = 'plan-select';
+      summaryEl.style.display = 'none';
+    } else {
+      var p = filtered[idx];
+      planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+      this.className = 'plan-select has-val';
+      summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+      summaryEl.style.display = 'block';
+    }
     updateTotal();
   });
-  return btn;
 }
 
 // ── レンタルセクション ──────────────────────────────
 function buildRentalSection(rentals, rs) {
   rs.innerHTML = '';
-  matItem = null;
-  matQty = 0;
+  matOptions = [];
+  matSel = null;
 
   if (!rentals.length) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
     return;
   }
 
-  var otherRentals = [];
-  rentals.forEach(function(r){
-    if (r.name && r.name.indexOf('マット') >= 0) {
-      matItem = r;
-    } else {
-      otherRentals.push(r);
-    }
-  });
+  // マット系とその他に分類
+  var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('マット') >= 0; });
+  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
+  matOptions = matItems;
 
-  // マット: ドロップダウン
-  if (matItem) {
+  // ── マット: ドロップダウン（全オプションを個別表示）──
+  if (matItems.length) {
     var matRow = document.createElement('div');
     matRow.className = 'rental-mat-row';
-    var unitPrice = Number(matItem.amount);
-    matRow.innerHTML =
-      '<div class="rental-mat-info">' +
-        '<div class="rental-mat-name">🧘 ' + matItem.name + '</div>' +
-        '<div class="rental-mat-price">¥' + unitPrice.toLocaleString() + ' / 枚</div>' +
-      '</div>' +
-      '<select id="matSelect" class="mat-select">' +
-        '<option value="0">なし</option>' +
-        '<option value="1">1 枚</option>' +
-        '<option value="2">2 枚</option>' +
-        '<option value="3">3 枚</option>' +
-        '<option value="4">4 枚</option>' +
-      '</select>';
+
+    var headerDiv = document.createElement('div');
+    headerDiv.className = 'rental-mat-header';
+    headerDiv.innerHTML =
+      '<div class="rental-mat-name">🧘 クライミングマット</div>' +
+      '<div class="rental-mat-hint">種類・泊数を選択</div>';
+    matRow.appendChild(headerDiv);
+
+    var opts = '<option value="-1">なし</option>';
+    matItems.forEach(function(r, i){
+      opts += '<option value="' + i + '">' + esc(r.name) + '　¥' + Number(r.amount).toLocaleString() + '</option>';
+    });
+
+    var matSel_el = document.createElement('select');
+    matSel_el.id = 'matSelect';
+    matSel_el.className = 'mat-select';
+    matSel_el.innerHTML = opts;
+    matRow.appendChild(matSel_el);
     rs.appendChild(matRow);
 
-    document.getElementById('matSelect').addEventListener('change', function(){
-      matQty = parseInt(this.value) || 0;
-      this.className = 'mat-select' + (matQty > 0 ? ' has-val' : '');
+    matSel_el.addEventListener('change', function(){
+      var idx = parseInt(this.value);
+      matSel = (idx >= 0) ? matOptions[idx] : null;
+      this.className = 'mat-select' + (idx >= 0 ? ' has-val' : '');
       updateTotal();
     });
   }
 
-  // その他レンタル: チップボタン
+  // ── その他レンタル: チップボタン ──
   if (otherRentals.length) {
-    if (matItem) {
+    if (matItems.length) {
       var otherLabel = document.createElement('div');
       otherLabel.className = 'rental-other-label';
       otherLabel.textContent = 'その他のレンタル';
@@ -490,8 +515,7 @@ function buildRentalSection(rentals, rs) {
     rs.appendChild(chipWrap);
   }
 
-  // レンタルが マットのみの場合
-  if (!matItem && !otherRentals.length) {
+  if (!matItems.length && !otherRentals.length) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
   }
 }
@@ -509,7 +533,7 @@ document.querySelectorAll('.pay-chip').forEach(function(btn){
 function updateTotal() {
   var t = planSel ? planSel.amount : 0;
   var rentalTotal = 0;
-  if (matItem && matQty > 0) rentalTotal += matQty * Number(matItem.amount);
+  if (matSel) rentalTotal += Number(matSel.amount);
   rentalSel.forEach(function(r){ rentalTotal += r.amount; });
   t += rentalTotal;
   document.getElementById('totalNum').textContent = t.toLocaleString();
@@ -542,7 +566,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       badge.className = 'member-badge notfound';
       badge.textContent = '会員番号 ' + code + ' は未登録です';
     }
-  }).catch(function(){ badge.textContent = 'エラーが 登生しました'; });
+  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
 });
 document.getElementById('memberCode').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
@@ -552,12 +576,12 @@ document.getElementById('memberCode').addEventListener('keydown', function(e){
 document.getElementById('registerBtn').addEventListener('click', function(){
   if (!planSel || !paymentSel) return;
   var badge = document.getElementById('memberBadge');
-  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓ �','').split('　（')[0].trim() : '';
+  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
   var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
   var rentalFee = 0, rentalNames = [];
-  if (matItem && matQty > 0) {
-    rentalFee += matQty * Number(matItem.amount);
-    rentalNames.push(matItem.name + '×' + matQty);
+  if (matSel) {
+    rentalFee += Number(matSel.amount);
+    rentalNames.push(matSel.name);
   }
   rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
   var total = planSel.amount + rentalFee;
@@ -573,7 +597,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     cash: paymentSel === '現金' ? total : 0,
     credit: paymentSel === 'クレジット' ? total : 0,
     emoney: paymentSel === '電子マネー' ? total : 0,
-    qr: paymentSel === 'QRィンピ' ? total : 0,
+    qr: paymentSel === 'QRコード' ? total : 0,
     transit: paymentSel === '交通系IC' ? total : 0,
     notes: ''
   };
@@ -586,7 +610,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     btn.classList.remove('loading');
     if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
-      msg.textContent = '✓ �入店登録 しました！ ' + (res.data.entryTime || '');
+      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
@@ -598,6 +622,14 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     msg.textContent = 'エラー: ' + e.message;
   });
 });
+
+// XSS helpers
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 init();
 </script>
