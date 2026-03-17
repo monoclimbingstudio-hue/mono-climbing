@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mono Climbing Studio</title>
+<title>入店登録 - Mono Climbing Studio</title>
 <style>
 :root {
   --accent: #e84c2c;
@@ -57,21 +57,74 @@ nav a:hover { color: #fff; }
 .full-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
 .full-input:focus { border-color: var(--dark); }
 
-/* ── Plan ── */
-.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { padding: 9px 16px; border: 2px solid var(--border); border-radius: 100px; cursor: pointer; background: #fff; font-size: 0.85rem; font-weight: 600; transition: all .15s; white-space: nowrap; }
-.chip:hover:not(.sel) { border-color: #999; }
-.chip.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
-.chip.accent.sel { background: var(--accent); border-color: var(--accent); }
-.sub-plan-area { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: none; }
-.sub-label { font-size: 0.78rem; color: var(--sub); margin-bottom: 8px; font-weight: 500; }
-.plan-chip { padding: 10px 16px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; font-weight: 600; transition: all .15s; }
-.plan-chip .price { font-size: 1rem; font-weight: 700; }
+/* ── Plan: Step A – 属性 ── */
+.plan-step-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; font-weight: 700; color: var(--sub);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 10px;
+}
+.plan-step-label .step-badge {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--border); color: var(--mid);
+  font-size: 0.7rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.plan-step-label.active .step-badge { background: var(--dark); color: #fff; }
+
+.attr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.attr-btn {
+  padding: 13px 10px; border: 2px solid var(--border); border-radius: 8px;
+  background: #fff; cursor: pointer;
+  font-size: 0.9rem; font-weight: 700; text-align: center;
+  transition: all .15s; color: var(--mid); line-height: 1.3;
+}
+.attr-btn:hover:not(.sel) { border-color: #aaa; background: #fafafa; }
+.attr-btn.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+.attr-btn .attr-note { font-size: 0.72rem; font-weight: 400; opacity: 0.75; display: block; margin-top: 2px; }
+
+/* ── Plan: Step B – 時間プラン ── */
+.sub-plan-area {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px dashed var(--border); display: none;
+}
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.plan-chip {
+  padding: 12px 10px; border: 2px solid var(--border); border-radius: 8px;
+  cursor: pointer; background: #fff;
+  font-size: 0.85rem; font-weight: 600;
+  text-align: center; transition: all .15s; line-height: 1.4;
+}
+.plan-chip .price { font-size: 1.05rem; font-weight: 800; display: block; margin-top: 3px; }
 .plan-chip:hover:not(.sel) { border-color: #999; }
 .plan-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ── Rental ── */
-.rental-chip { padding: 9px 14px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; transition: all .15s; }
+.rental-section { display: flex; flex-direction: column; gap: 12px; }
+
+/* Mat dropdown row */
+.rental-mat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; background: #f9f9f9;
+  border: 1.5px solid var(--border); border-radius: 8px;
+}
+.rental-mat-info { display: flex; flex-direction: column; gap: 2px; }
+.rental-mat-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.rental-mat-price { font-size: 0.78rem; color: var(--sub); }
+.mat-select {
+  padding: 8px 12px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+  background: #fff; cursor: pointer; outline: none;
+  min-width: 90px; transition: border .15s;
+}
+.mat-select:focus { border-color: var(--dark); }
+.mat-select.has-val { border-color: #1a5276; color: #1a5276; background: #eaf0f6; }
+
+/* Other rental chips */
+.rental-other-label { font-size: 0.78rem; color: var(--sub); font-weight: 600; letter-spacing:.04em; margin-bottom: 4px; }
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.rental-chip { padding: 9px 14px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; transition: all .15s; font-weight: 600; }
 .rental-chip:hover:not(.sel) { border-color: #999; }
 .rental-chip.sel { background: #1a5276; color: #fff; border-color: #1a5276; }
 
@@ -156,14 +209,25 @@ nav a:hover { color: #fff; }
       <div class="section-title">利用プラン</div>
     </div>
     <div class="card">
-      <div class="sub-label">利用種類を選択</div>
-      <div id="planCatGrid" class="chip-group">
-        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+
+      <!-- STEP A: 属性 -->
+      <div class="plan-step-label active" id="stepALabel">
+        <div class="step-badge">A</div>
+        お客様の属性を選択
       </div>
+      <div id="planCatGrid" class="attr-grid">
+        <div class="loading-row" style="grid-column:1/-1"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+      </div>
+
+      <!-- STEP B: 時間プラン -->
       <div id="planSubWrap" class="sub-plan-area">
-        <div class="sub-label">料金プランを選択</div>
-        <div id="planSubGrid" class="chip-group"></div>
+        <div class="plan-step-label active" id="stepBLabel">
+          <div class="step-badge">B</div>
+          時間・プランを選択
+        </div>
+        <div id="planSubGrid" class="plan-grid"></div>
       </div>
+
     </div>
   </div>
 
@@ -174,7 +238,7 @@ nav a:hover { color: #fff; }
       <div class="section-title">レンタル <span style="font-size:.78rem;font-weight:400;color:var(--sub);">複数選択可</span></div>
     </div>
     <div class="card">
-      <div id="rentalGrid" class="chip-group">
+      <div id="rentalSection" class="rental-section">
         <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
       </div>
     </div>
@@ -217,34 +281,35 @@ nav a:hover { color: #fff; }
 </div><!-- /page -->
 
 <script>
-var allPlans=[], planSel=null, rentalSel=[], paymentSel=null, catSel=null;
-var CACHE_TTL = 30*60*1000; // 30min cache
+var allPlans = [], planSel = null, rentalSel = [], paymentSel = null, catSel = null;
+var matItem = null, matQty = 0;
+var CACHE_TTL = 30 * 60 * 1000; // 30min
 
 function callAPI(action, params) {
   return fetch('/api/gas', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(Object.assign({action:action}, params))
+    body: JSON.stringify(Object.assign({action: action}, params))
   }).then(function(r){ return r.json(); });
 }
 
 function getCached(key) {
   try {
     var s = sessionStorage.getItem(key);
-    if(!s) return null;
+    if (!s) return null;
     var d = JSON.parse(s);
-    if(Date.now() - d.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    if (Date.now() - d.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
     return d.data;
   } catch(e) { return null; }
 }
 function setCache(key, data) {
-  try { sessionStorage.setItem(key, JSON.stringify({ts:Date.now(), data:data})); } catch(e){}
+  try { sessionStorage.setItem(key, JSON.stringify({ts: Date.now(), data: data})); } catch(e){}
 }
 
 // Store selection
 document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
-    document.querySelectorAll('.store-tab').forEach(function(b){b.classList.remove('sel');});
+    document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
   });
 });
@@ -254,108 +319,187 @@ function getStore() {
   return sel ? sel.dataset.store : 'hakata';
 }
 
-// Init - load plans and rentals
+// ── Init ──────────────────────────────────────────
 function init() {
   var cachedPlans = getCached('plans');
   var cachedRentals = getCached('rentals');
 
-  if(cachedPlans) {
+  if (cachedPlans) {
     allPlans = cachedPlans;
-    buildCategoryButtons();
+    buildAttributeButtons();
   } else {
     callAPI('getPriceList', {}).then(function(pr){
       allPlans = pr.data || [];
       setCache('plans', allPlans);
-      buildCategoryButtons();
-    }).catch(function(e){
-      document.getElementById('planCatGrid').innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+      buildAttributeButtons();
+    }).catch(function(){
+      document.getElementById('planCatGrid').innerHTML = '<span style="color:red;font-size:.85rem;grid-column:1/-1">読み込みエラー</span>';
     });
   }
 
-  var rg = document.getElementById('rentalGrid');
-  if(cachedRentals) {
-    buildRentalButtons(cachedRentals, rg);
+  var rs = document.getElementById('rentalSection');
+  if (cachedRentals) {
+    buildRentalSection(cachedRentals, rs);
   } else {
     callAPI('getRentalList', {}).then(function(rr){
       var rentals = rr.data || [];
       setCache('rentals', rentals);
-      buildRentalButtons(rentals, rg);
-    }).catch(function(e){
-      rg.innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+      buildRentalSection(rentals, rs);
+    }).catch(function(){
+      rs.innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
     });
   }
 }
 
-function buildRentalButtons(rentals, rg) {
-  rg.innerHTML = '';
-  if(!rentals.length) { rg.innerHTML='<span style="color:var(--sub);font-size:.85rem">なし</span>'; return; }
-  rentals.forEach(function(r){
-    var btn = document.createElement('button');
-    btn.className = 'rental-chip chip';
-    btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
-    btn.addEventListener('click', function(){
-      var idx = rentalSel.findIndex(function(x){return x.name===r.name;});
-      if(idx>=0){ rentalSel.splice(idx,1); btn.classList.remove('sel'); }
-      else { rentalSel.push({name:r.name,amount:Number(r.amount)}); btn.classList.add('sel'); }
-      updateTotal();
-    });
-    rg.appendChild(btn);
-  });
-}
-
-function buildCategoryButtons() {
+// ── STEP A: 属性ボタン ─────────────────────────────
+function buildAttributeButtons() {
   var pg = document.getElementById('planCatGrid');
   pg.innerHTML = '';
   var cats = [];
-  allPlans.forEach(function(p){ if(p.plan1 && cats.indexOf(p.plan1)<0) cats.push(p.plan1); });
-  if(!cats.length) {
-    allPlans.forEach(function(p){ pg.appendChild(makePlanChip(p, true)); });
+  allPlans.forEach(function(p){ if (p.plan1 && cats.indexOf(p.plan1) < 0) cats.push(p.plan1); });
+
+  if (!cats.length) {
+    // plan1 がない場合は直接プランを表示
+    allPlans.forEach(function(p){ pg.appendChild(makeAttrBtn(p.label, null, p)); });
     return;
   }
+
   cats.forEach(function(cat){
     var btn = document.createElement('button');
-    btn.className = 'chip';
+    btn.className = 'attr-btn';
     btn.textContent = cat;
+    btn.dataset.cat = cat;
     btn.addEventListener('click', function(){
-      document.querySelectorAll('#planCatGrid .chip').forEach(function(b){b.classList.remove('sel');});
+      document.querySelectorAll('.attr-btn').forEach(function(b){ b.classList.remove('sel'); });
       btn.classList.add('sel');
       catSel = cat;
       planSel = null;
       updateTotal();
-      showSubPlans(cat);
+      showPlanDuration(cat);
     });
     pg.appendChild(btn);
   });
 }
 
-function showSubPlans(cat) {
+// ── STEP B: 時間プラン ────────────────────────────
+function showPlanDuration(cat) {
   var wrap = document.getElementById('planSubWrap');
   var sg = document.getElementById('planSubGrid');
   sg.innerHTML = '';
-  var filtered = allPlans.filter(function(p){return p.plan1===cat;});
-  if(!filtered.length) { wrap.style.display='none'; return; }
-  filtered.forEach(function(p){ sg.appendChild(makePlanChip(p, false)); });
+  var filtered = allPlans.filter(function(p){ return p.plan1 === cat; });
+  if (!filtered.length) { wrap.style.display = 'none'; return; }
+  filtered.forEach(function(p){
+    var btn = document.createElement('button');
+    btn.className = 'plan-chip';
+    var durationLabel = (p.plan2 && p.plan2 !== p.plan1) ? p.plan2 : p.label;
+    btn.innerHTML = durationLabel + '<span class="price">¥' + Number(p.amount).toLocaleString() + '</span>';
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.plan-chip').forEach(function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+      planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+      updateTotal();
+    });
+    sg.appendChild(btn);
+  });
   wrap.style.display = 'block';
 }
 
-function makePlanChip(p, isMain) {
+function makeAttrBtn(label, note, plan) {
   var btn = document.createElement('button');
-  btn.className = 'plan-chip';
-  var label = (p.plan2 && p.plan2!==p.plan1) ? p.plan2 : p.label;
-  btn.innerHTML = label + '<br><span class="price">¥' + Number(p.amount).toLocaleString() + '</span>';
+  btn.className = 'attr-btn';
+  btn.innerHTML = label + (note ? '<span class="attr-note">' + note + '</span>' : '');
   btn.addEventListener('click', function(){
-    document.querySelectorAll('.plan-chip').forEach(function(b){b.classList.remove('sel');});
+    document.querySelectorAll('.attr-btn').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
-    planSel = {plan1:p.plan1, plan2:p.plan2, label:p.label, amount:Number(p.amount)};
+    planSel = {plan1: plan.plan1, plan2: plan.plan2, label: plan.label, amount: Number(plan.amount)};
+    catSel = plan.plan1;
+    document.getElementById('planSubWrap').style.display = 'none';
     updateTotal();
   });
   return btn;
 }
 
+// ── レンタルセクション ──────────────────────────────
+function buildRentalSection(rentals, rs) {
+  rs.innerHTML = '';
+  matItem = null;
+  matQty = 0;
+
+  if (!rentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+    return;
+  }
+
+  var otherRentals = [];
+  rentals.forEach(function(r){
+    if (r.name && r.name.indexOf('マット') >= 0) {
+      matItem = r;
+    } else {
+      otherRentals.push(r);
+    }
+  });
+
+  // マット: ドロップダウン
+  if (matItem) {
+    var matRow = document.createElement('div');
+    matRow.className = 'rental-mat-row';
+    var unitPrice = Number(matItem.amount);
+    matRow.innerHTML =
+      '<div class="rental-mat-info">' +
+        '<div class="rental-mat-name">🧘 ' + matItem.name + '</div>' +
+        '<div class="rental-mat-price">¥' + unitPrice.toLocaleString() + ' / 枚</div>' +
+      '</div>' +
+      '<select id="matSelect" class="mat-select">' +
+        '<option value="0">なし</option>' +
+        '<option value="1">1 枚</option>' +
+        '<option value="2">2 枚</option>' +
+        '<option value="3">3 枚</option>' +
+        '<option value="4">4 枚</option>' +
+      '</select>';
+    rs.appendChild(matRow);
+
+    document.getElementById('matSelect').addEventListener('change', function(){
+      matQty = parseInt(this.value) || 0;
+      this.className = 'mat-select' + (matQty > 0 ? ' has-val' : '');
+      updateTotal();
+    });
+  }
+
+  // その他レンタル: チップボタン
+  if (otherRentals.length) {
+    if (matItem) {
+      var otherLabel = document.createElement('div');
+      otherLabel.className = 'rental-other-label';
+      otherLabel.textContent = 'その他のレンタル';
+      rs.appendChild(otherLabel);
+    }
+    var chipWrap = document.createElement('div');
+    chipWrap.className = 'chip-group';
+    otherRentals.forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className = 'rental-chip';
+      btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
+      btn.addEventListener('click', function(){
+        var idx = rentalSel.findIndex(function(x){ return x.name === r.name; });
+        if (idx >= 0) { rentalSel.splice(idx, 1); btn.classList.remove('sel'); }
+        else { rentalSel.push({name: r.name, amount: Number(r.amount)}); btn.classList.add('sel'); }
+        updateTotal();
+      });
+      chipWrap.appendChild(btn);
+    });
+    rs.appendChild(chipWrap);
+  }
+
+  // レンタルが マットのみの場合
+  if (!matItem && !otherRentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+  }
+}
+
 // Payment
 document.querySelectorAll('.pay-chip').forEach(function(btn){
   btn.addEventListener('click', function(){
-    document.querySelectorAll('.pay-chip').forEach(function(b){b.classList.remove('sel');});
+    document.querySelectorAll('.pay-chip').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
     paymentSel = btn.dataset.method;
     updateRegisterBtn();
@@ -365,12 +509,13 @@ document.querySelectorAll('.pay-chip').forEach(function(btn){
 function updateTotal() {
   var t = planSel ? planSel.amount : 0;
   var rentalTotal = 0;
+  if (matItem && matQty > 0) rentalTotal += matQty * Number(matItem.amount);
   rentalSel.forEach(function(r){ rentalTotal += r.amount; });
   t += rentalTotal;
   document.getElementById('totalNum').textContent = t.toLocaleString();
   var bd = '';
-  if(planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
-  if(rentalTotal>0) bd += (bd?' ＋ ':'') + 'レンタル: ¥' + rentalTotal.toLocaleString();
+  if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
+  if (rentalTotal > 0) bd += (bd ? '　＋　' : '') + 'レンタル: ¥' + rentalTotal.toLocaleString();
   document.getElementById('totalBreakdown').textContent = bd;
   updateRegisterBtn();
 }
@@ -382,14 +527,14 @@ function updateRegisterBtn() {
 // Member search
 document.getElementById('searchBtn').addEventListener('click', function(){
   var code = document.getElementById('memberCode').value.trim();
-  if(!code){ alert('会員番号を入力してください'); return; }
+  if (!code) { alert('会員番号を入力してください'); return; }
   var badge = document.getElementById('memberBadge');
   badge.className = 'member-badge notfound';
   badge.textContent = '検索中...';
   badge.style.display = 'block';
-  callAPI('getMember', {code:code}).then(function(res){
+  callAPI('getMember', {code: code}).then(function(res){
     var m = res.data;
-    if(m && m.name){
+    if (m && m.name) {
       badge.className = 'member-badge found';
       badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
       document.getElementById('guestName').value = '';
@@ -397,18 +542,24 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       badge.className = 'member-badge notfound';
       badge.textContent = '会員番号 ' + code + ' は未登録です';
     }
-  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+  }).catch(function(){ badge.textContent = 'エラーが 登生しました'; });
 });
-document.getElementById('memberCode').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
+document.getElementById('memberCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+});
 
 // Register
 document.getElementById('registerBtn').addEventListener('click', function(){
-  if(!planSel || !paymentSel) return;
+  if (!planSel || !paymentSel) return;
   var badge = document.getElementById('memberBadge');
-  var badgeName = (badge.className.indexOf('found')>=0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
+  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓ �','').split('　（')[0].trim() : '';
   var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
   var rentalFee = 0, rentalNames = [];
-  rentalSel.forEach(function(r){ rentalFee+=r.amount; rentalNames.push(r.name); });
+  if (matItem && matQty > 0) {
+    rentalFee += matQty * Number(matItem.amount);
+    rentalNames.push(matItem.name + '×' + matQty);
+  }
+  rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
   var total = planSel.amount + rentalFee;
   var params = {
     store: getStore(),
@@ -419,11 +570,11 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     merchAmt: 0, merchNote: '',
     rentalNote: rentalNames.join(','), rentalFee: rentalFee,
     adjustment: 0, total: total, payment: paymentSel,
-    cash: paymentSel==='現金'?total:0,
-    credit: paymentSel==='クレジット'?total:0,
-    emoney: paymentSel==='電子マネー'?total:0,
-    qr: paymentSel==='QRコード'?total:0,
-    transit: paymentSel==='交通系IC'?total:0,
+    cash: paymentSel === '現金' ? total : 0,
+    credit: paymentSel === 'クレジット' ? total : 0,
+    emoney: paymentSel === '電子マネー' ? total : 0,
+    qr: paymentSel === 'QRィンピ' ? total : 0,
+    transit: paymentSel === '交通系IC' ? total : 0,
     notes: ''
   };
   var btn = document.getElementById('registerBtn');
@@ -431,16 +582,15 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   btn.classList.add('loading');
   msg.className = '';
   msg.style.display = 'none';
-  callAPI('registerEntry', {params:params}).then(function(res){
+  callAPI('registerEntry', {params: params}).then(function(res){
     btn.classList.remove('loading');
-    if(res.ok && res.data && res.data.success){
+    if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
-      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime||'');
+      msg.textContent = '✓ �入店登録 しました！ ' + (res.data.entryTime || '');
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
       msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
-      btn.classList.remove('loading');
     }
   }).catch(function(e){
     btn.classList.remove('loading');
