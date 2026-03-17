@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mono Climbing Studio - 売上管理</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: sans-serif; padding: 0; max-width: 900px; margin: 0 auto; background: #f5f5f5; }
+  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
+  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
+  nav a.active { background: #444; color: #fff; }
+  nav a:hover { background: #333; color: #fff; }
+  .content { padding: 16px; }
+  h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
+  .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  input, select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .action-btn { padding: 10px 20px; background: #222; color: #fff; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn.secondary { background: #666; }
+  /* Summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 6px; }
+  .summary-card { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); text-align: center; }
+  .summary-card .label { font-size: 0.78rem; color: #888; margin-bottom: 4px; }
+  .summary-card .value { font-size: 1.4rem; font-weight: bold; color: #222; }
+  .summary-card .value.yen::before { content: '¥'; font-size: 0.9rem; }
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 600px; }
+  th { background: #f0f0f0; text-align: left; padding: 8px 10px; border-bottom: 2px solid #ddd; white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  tr:hover td { background: #fafafa; }
+  .tag { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 0.76rem; }
+  .tag-cash { background: #e8f5e9; color: #2e7d32; }
+  .tag-credit { background: #e3f2fd; color: #1565c0; }
+  .tag-emoney { background: #fff3e0; color: #e65100; }
+  .tag-qr { background: #f3e5f5; color: #6a1b9a; }
+  .tag-transit { background: #e0f7fa; color: #006064; }
+  .empty-note { color: #aaa; font-size: 0.88rem; text-align: center; padding: 30px 0; }
+  #transferMsg { margin-top: 10px; font-weight: bold; font-size: 0.9rem; min-height: 20px; }
+  .divider { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">入店登録</a>
+  <a href="members.html">会員管理</a>
+  <a href="sales.html" class="active">売上管理</a>
+</nav>
+<div class="content">
+
+<!-- フィルター -->
+<h2>表示条件</h2>
+<div class="card">
+  <div class="row">
+    <div>
+      <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:3px;">日付</label>
+      <input type="date" id="dateInput">
+    </div>
+    <div>
+      <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:3px;">店舗</label>
+      <select id="storeFilter">
+        <option value="">全店舗</option>
+        <option value="hakata">博多店</option>
+        <option value="omura">大村店</option>
+        <option value="sasebo">佐世保店</option>
+      </select>
+    </div>
+    <button class="action-btn" id="loadBtn" style="margin-top:18px;">表示</button>
+  </div>
+</div>
+
+<!-- サマリー -->
+<div class="summary-grid" id="summaryGrid" style="display:none;">
+  <div class="summary-card">
+    <div class="label">来客数</div>
+    <div class="value" id="countVal">0</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">利用料合計</div>
+    <div class="value yen" id="usageVal">0</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">レンタル合計</div>
+    <div class="value yen" id="rentalVal">0</div>
+  </div>
+  <div class="summary-card" style="background:#222; color:#fff;">
+    <div class="label" style="color:#aaa;">売上合計</div>
+    <div class="value yen" id="totalVal" style="color:#fff;">0</div>
+  </div>
+</div>
+
+<!-- 売上一覧 -->
+<h2>入店一覧</h2>
+<div class="card">
+  <div id="salesTableWrap">
+    <div class="empty-note">上のフィルターで日付を選択して「表示」を押してください</div>
+  </div>
+</div>
+
+<!-- 売上転記 -->
+<h2>スプレッドシートへ転記</h2>
+<div class="card">
+  <p style="font-size:0.88rem;color:#555;margin:0 0 10px;">
+    表示中のデータを売上集計シートに転記します。<br>
+    <span style="color:#c00;font-size:0.82rem;">※ 同じ日付のデータを再転記すると重複します。</span>
+  </p>
+  <button class="action-btn" id="transferBtn" disabled>売上を転記する</button>
+  <div id="transferMsg"></div>
+</div>
+
+</div><!-- /content -->
+<script>
+var currentEntries=[];
+
+// 今日の日付をセット
+(function(){
+  var d=new Date();
+  var y=d.getFullYear();
+  var m=String(d.getMonth()+1).padStart(2,'0');
+  var day=String(d.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value=y+'-'+m+'-'+day;
+})();
+
+async function callAPI(action,params){
+  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
+  return res.json();
+}
+
+document.getElementById('loadBtn').addEventListener('click',loadSales);
+document.getElementById('dateInput').addEventListener('keydown',function(e){if(e.key==='Enter')loadSales();});
+
+async function loadSales(){
+  var dateVal=document.getElementById('dateInput').value;
+  var store=document.getElementById('storeFilter').value;
+  if(!dateVal){alert('日付を選択してください');return;}
+
+  var wrap=document.getElementById('salesTableWrap');
+  wrap.innerHTML='<div class="empty-note">読み込み中...</div>';
+  document.getElementById('summaryGrid').style.display='none';
+  document.getElementById('transferBtn').disabled=true;
+
+  try{
+    var res=await callAPI('getTodaySales',{date:dateVal,store:store});
+    currentEntries=res.data||[];
+    renderSalesTable(currentEntries);
+    renderSummary(currentEntries);
+    document.getElementById('summaryGrid').style.display='grid';
+    document.getElementById('transferBtn').disabled=currentEntries.length===0;
+  }catch(e){
+    wrap.innerHTML='<div class="empty-note" style="color:red">エラー: '+e.message+'</div>';
+  }
+}
+
+function renderSalesTable(entries){
+  var wrap=document.getElementById('salesTableWrap');
+  if(!entries.length){wrap.innerHTML='<div class="empty-note">この日のデータがありません</div>';return;}
+  var html='<div class="table-wrap"><table><thead><tr>'
+    +'<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
+    +'<th>プラン</th><th>利用料</th><th>レンタル</th><th>合計</th><th>支払方法</th>'
+    +'</tr></thead><tbody>';
+  entries.forEach(function(e){
+    var payTag=paymentTag(e.payment);
+    html+='<tr>'
+      +'<td>'+esc(e.time)+'</td>'
+      +'<td>'+esc(storeLabel(e.store))+'</td>'
+      +'<td>'+esc(e.memberCode||'-')+'</td>'
+      +'<td>'+esc(e.memberName||'ゲスト')+'</td>'
+      +'<td>'+esc(e.planLabel||'-')+'</td>'
+      +'<td style="text-align:right;">¥'+Number(e.usageFee||0).toLocaleString()+'</td>'
+      +'<td style="text-align:right;">'+( Number(e.rentalFee)>0 ? '¥'+Number(e.rentalFee).toLocaleString() : '-' )+'</td>'
+      +'<td style="text-align:right;font-weight:bold;">¥'+Number(e.total||0).toLocaleString()+'</td>'
+      +'<td>'+payTag+'</td>'
+      +'</tr>';
+  });
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+function renderSummary(entries){
+  var count=entries.length;
+  var usage=0,rental=0,total=0;
+  entries.forEach(function(e){
+    usage+=Number(e.usageFee||0);
+    rental+=Number(e.rentalFee||0);
+    total+=Number(e.total||0);
+  });
+  document.getElementById('countVal').textContent=count+'名';
+  document.getElementById('usageVal').textContent=usage.toLocaleString();
+  document.getElementById('rentalVal').textContent=rental.toLocaleString();
+  document.getElementById('totalVal').textContent=total.toLocaleString();
+}
+
+function paymentTag(method){
+  var cls={
+    '現金':'tag-cash','クレジット':'tag-credit',
+    '電子マネー':'tag-emoney','QRコード':'tag-qr','交通系IC':'tag-transit'
+  }[method]||'';
+  return '<span class="tag '+cls+'">'+esc(method||'-')+'</span>';
+}
+
+function storeLabel(s){
+  return {hakata:'博多店',omura:'大村店',sasebo:'佐世保店'}[s]||s||'-';
+}
+
+// 転記ボタン
+document.getElementById('transferBtn').addEventListener('click',async function(){
+  if(!currentEntries.length){alert('転記するデータがありません');return;}
+  var dateVal=document.getElementById('dateInput').value;
+  var store=document.getElementById('storeFilter').value;
+  var msg=document.getElementById('transferMsg');
+  msg.style.color='#555'; msg.textContent='転記中...';
+  this.disabled=true;
+  try{
+    var res=await callAPI('transferSales',{date:dateVal,store:store});
+    if(res.ok&&res.data&&res.data.success){
+      msg.style.color='green';
+      msg.textContent='✓ 転記完了しました（'+res.data.rows+'件）';
+    }else{
+      msg.style.color='red';
+      msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');
+      this.disabled=false;
+    }
+  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;this.disabled=false;}
+});
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
