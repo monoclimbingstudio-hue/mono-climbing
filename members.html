@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mono Climbing Studio - 会員管理</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: sans-serif; padding: 0; max-width: 720px; margin: 0 auto; background: #f5f5f5; }
+  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
+  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
+  nav a.active { background: #444; color: #fff; }
+  nav a:hover { background: #333; color: #fff; }
+  .content { padding: 16px; }
+  h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
+  .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  input { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 100%; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row input { flex: 1; min-width: 120px; }
+  .row button { white-space: nowrap; padding: 9px 16px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; font-size: 0.9rem; }
+  .action-btn { width: 100%; padding: 12px; background: #222; color: #fff; font-size: 1rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .action-btn.secondary { background: #555; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { background: #f0f0f0; text-align: left; padding: 8px 10px; border-bottom: 2px solid #ddd; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  tr:hover td { background: #fafafa; }
+  #msg-add, #msg-search { margin-top: 8px; font-weight: bold; font-size: 0.9rem; min-height: 20px; }
+  .badge-new { display: inline-block; background: #e0f0e0; color: #080; border-radius: 4px; padding: 1px 6px; font-size: 0.78rem; margin-left: 6px; }
+  .search-result { padding: 10px 12px; border-radius: 6px; background: #f0f8f0; border: 1px solid #c8e6c8; margin-top: 8px; display: none; }
+  .search-result.not-found { background: #f8f8f8; border-color: #ddd; }
+  #listFilter { margin-bottom: 10px; }
+  .empty-note { color: #aaa; font-size: 0.88rem; text-align: center; padding: 20px 0; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html">入店登録</a>
+  <a href="members.html" class="active">会員管理</a>
+  <a href="sales.html">売上管理</a>
+</nav>
+<div class="content">
+
+<!-- 会員検索 -->
+<h2>① 会員番号で検索</h2>
+<div class="card">
+  <div class="row">
+    <input type="text" id="searchCode" placeholder="会員番号を入力（例: 1234）" style="max-width:200px;">
+    <button id="searchBtn">検索</button>
+  </div>
+  <div id="searchResult" class="search-result"></div>
+  <div id="msg-search"></div>
+</div>
+
+<!-- 会員追加 -->
+<h2>② 新規会員を追加</h2>
+<div class="card">
+  <div class="row" style="margin-bottom:10px;">
+    <div style="flex:1; min-width:120px;">
+      <label style="font-size:0.82rem; color:#555; display:block; margin-bottom:3px;">会員番号</label>
+      <input type="text" id="addCode" placeholder="例: 1234">
+    </div>
+    <div style="flex:2; min-width:160px;">
+      <label style="font-size:0.82rem; color:#555; display:block; margin-bottom:3px;">氏名</label>
+      <input type="text" id="addName" placeholder="例: 山田 太郎">
+    </div>
+  </div>
+  <button class="action-btn" id="addBtn">会員を追加する</button>
+  <div id="msg-add"></div>
+</div>
+
+<!-- 会員一覧 -->
+<h2>③ 会員一覧</h2>
+<div class="card">
+  <input type="text" id="listFilter" placeholder="番号または氏名で絞り込み...">
+  <div id="memberTableWrap">
+    <div class="empty-note">読み込み中...</div>
+  </div>
+</div>
+
+</div><!-- /content -->
+<script>
+var allMembers=[];
+
+async function callAPI(action,params){
+  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
+  return res.json();
+}
+
+// ---- 検索 ----
+document.getElementById('searchBtn').addEventListener('click',async function(){
+  var code=document.getElementById('searchCode').value.trim();
+  if(!code){alert('会員番号を入力してください');return;}
+  var result=document.getElementById('searchResult');
+  var msg=document.getElementById('msg-search');
+  result.style.display='none'; msg.textContent='';
+  msg.style.color='#555'; msg.textContent='検索中...';
+  try{
+    var res=await callAPI('getMember',{code:code});
+    msg.textContent='';
+    var m=res.data;
+    if(m&&m.name){
+      result.className='search-result';
+      result.innerHTML='<strong>✓ 会員番号 '+escHtml(code)+'</strong> &nbsp; '+escHtml(m.name)+'<span class="badge-new">登録済み</span>';
+      result.style.display='block';
+    }else{
+      result.className='search-result not-found';
+      result.innerHTML='会員番号 <strong>'+escHtml(code)+'</strong> は未登録です';
+      result.style.display='block';
+    }
+  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;}
+});
+document.getElementById('searchCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('searchBtn').click();});
+
+// ---- 追加 ----
+document.getElementById('addBtn').addEventListener('click',async function(){
+  var code=document.getElementById('addCode').value.trim();
+  var name=document.getElementById('addName').value.trim();
+  if(!code||!name){alert('会員番号と氏名を入力してください');return;}
+  var msg=document.getElementById('msg-add');
+  msg.style.color='#555'; msg.textContent='登録中...';
+  this.disabled=true;
+  try{
+    var res=await callAPI('addMember',{code:code,name:name});
+    if(res.ok&&res.data&&res.data.success){
+      msg.style.color='green'; msg.textContent='✓ 会員を追加しました（番号: '+code+' / '+name+'）';
+      document.getElementById('addCode').value='';
+      document.getElementById('addName').value='';
+      loadMembers(); // reload list
+    }else{
+      msg.style.color='red'; msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');
+    }
+  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;}
+  this.disabled=false;
+});
+
+// ---- 一覧 ----
+async function loadMembers(){
+  var wrap=document.getElementById('memberTableWrap');
+  wrap.innerHTML='<div class="empty-note">読み込み中...</div>';
+  try{
+    var res=await callAPI('getMemberList',{});
+    allMembers=res.data||[];
+    renderMemberTable(allMembers);
+  }catch(e){
+    wrap.innerHTML='<div class="empty-note" style="color:red">エラー: '+e.message+'</div>';
+  }
+}
+
+function renderMemberTable(members){
+  var wrap=document.getElementById('memberTableWrap');
+  if(!members.length){wrap.innerHTML='<div class="empty-note">会員データがありません</div>';return;}
+  var html='<table><thead><tr><th>会員番号</th><th>氏名</th><th>登録日</th></tr></thead><tbody>';
+  members.forEach(function(m){
+    html+='<tr><td>'+escHtml(String(m.code))+'</td><td>'+escHtml(m.name||'')+'</td><td>'+escHtml(m.joinDate||'')+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+
+document.getElementById('listFilter').addEventListener('input',function(){
+  var q=this.value.trim().toLowerCase();
+  if(!q){renderMemberTable(allMembers);return;}
+  var filtered=allMembers.filter(function(m){
+    return String(m.code).toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q);
+  });
+  renderMemberTable(filtered);
+});
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+loadMembers();
+</script>
+</body>
+</html>
