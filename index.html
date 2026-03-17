@@ -194,7 +194,7 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- 会員番号 -->
+  <!-- 番号 -->
   <div class="section">
     <div class="section-head">
       <div class="step-num">①</div>
@@ -222,20 +222,20 @@ nav a:hover { color: #fff; }
     </div>
     <div class="card">
 
-      <!-- STEP A: 属性 -->
+      <!-- STEP A: 利用の種類（区分①） -->
       <div class="plan-step-label">
         <div class="step-badge">A</div>
-        お客様の属性を選択
+        利用の種類を選択（区分①）
       </div>
       <div id="attrWrap">
         <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
       </div>
 
-      <!-- STEP B: プラン -->
+      <!-- STEP B: 属性（区分②） -->
       <div id="planSubWrap" class="sub-plan-area">
         <div class="plan-step-label">
           <div class="step-badge">B</div>
-          利用プランを選択
+          お客様の属性を選択（区分②）
         </div>
         <div id="planWrap"></div>
         <div id="planSummary" class="plan-summary"></div>
@@ -362,15 +362,15 @@ function init() {
   }
 }
 
-// ── STEP A: 属性ドロップダウン ─────────────────────
+// ── STEP A: 利用の種類ドロップダウン（区分①= plan2）──────
 function buildAttrDropdown() {
   var wrap = document.getElementById('attrWrap');
   wrap.innerHTML = '';
 
-  // 属性の一覧を収集（plan1 が属性）
+  // 利用の種類の一覧を収集（plan2 が利用の種類 = 区分①）
   var cats = [];
   allPlans.forEach(function(p){
-    if (p.plan1 && cats.indexOf(p.plan1) < 0) cats.push(p.plan1);
+    if (p.plan2 && cats.indexOf(p.plan2) < 0) cats.push(p.plan2);
   });
 
   if (!cats.length) {
@@ -381,7 +381,7 @@ function buildAttrDropdown() {
   var sel = document.createElement('select');
   sel.id = 'attrSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- 属性を選択してください --</option>';
+  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
   cats.forEach(function(cat){
     opts += '<option value="' + escAttr(cat) + '">' + esc(cat) + '</option>';
   });
@@ -404,22 +404,35 @@ function buildAttrDropdown() {
   });
 }
 
-// ── STEP B: プランドロップダウン ──────────────────
-function buildPlanDropdown(cat) {
+// ── STEP B: 属性ドロップダウン（区分②= plan1）──────────
+function buildPlanDropdown(kubun1) {
   var wrap = document.getElementById('planWrap');
   wrap.innerHTML = '';
   var summaryEl = document.getElementById('planSummary');
   summaryEl.style.display = 'none';
+  planSel = null;
 
-  var filtered = allPlans.filter(function(p){ return p.plan1 === cat; });
+  // 選択した区分①(kubun1=plan2)に対応するプランを絞り込む
+  var filtered = allPlans.filter(function(p){ return p.plan2 === kubun1; });
   if (!filtered.length) return;
+
+  // 属性(plan1)が1つだけなら自動選択（属性なしのプランタイョプ）
+  if (filtered.length === 1) {
+    var p = filtered[0];
+    planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+    summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+    summaryEl.style.display = 'block';
+    updateTotal();
+    return;
+  }
 
   var sel = document.createElement('select');
   sel.id = 'planSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- プランを選択してください --</option>';
+  var opts = '<option value="">-- 属性を選択してください（区分②） --</option>';
   filtered.forEach(function(p, i){
-    var lbl = (p.plan2 && p.plan2 !== p.plan1) ? p.plan2 : p.label;
+    // 表示: 属性（plan1）と金額
+    var lbl = p.plan1 || p.label;
     opts += '<option value="' + i + '">' + esc(lbl) + '　¥' + Number(p.amount).toLocaleString() + '</option>';
   });
   sel.innerHTML = opts;
@@ -566,7 +579,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       badge.className = 'member-badge notfound';
       badge.textContent = '会員番号 ' + code + ' は未登録です';
     }
-  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+  }).catch(function(){ badge.textContent = 'エラーぎ眹生しました'; });
 });
 document.getElementById('memberCode').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
@@ -635,3 +648,4 @@ init();
 </script>
 </body>
 </html>
+l>
