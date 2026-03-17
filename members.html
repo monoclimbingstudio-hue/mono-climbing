@@ -3,171 +3,238 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mono Climbing Studio - 会員管理</title>
+<title>会員管理 - Mono Climbing Studio</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: sans-serif; padding: 0; max-width: 720px; margin: 0 auto; background: #f5f5f5; }
-  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
-  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
-  nav a.active { background: #444; color: #fff; }
-  nav a:hover { background: #333; color: #fff; }
-  .content { padding: 16px; }
-  h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
-  .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  input { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 100%; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .row input { flex: 1; min-width: 120px; }
-  .row button { white-space: nowrap; padding: 9px 16px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; font-size: 0.9rem; }
-  .action-btn { width: 100%; padding: 12px; background: #222; color: #fff; font-size: 1rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 8px; }
-  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .action-btn.secondary { background: #555; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-  th { background: #f0f0f0; text-align: left; padding: 8px 10px; border-bottom: 2px solid #ddd; }
-  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
-  tr:hover td { background: #fafafa; }
-  #msg-add, #msg-search { margin-top: 8px; font-weight: bold; font-size: 0.9rem; min-height: 20px; }
-  .badge-new { display: inline-block; background: #e0f0e0; color: #080; border-radius: 4px; padding: 1px 6px; font-size: 0.78rem; margin-left: 6px; }
-  .search-result { padding: 10px 12px; border-radius: 6px; background: #f0f8f0; border: 1px solid #c8e6c8; margin-top: 8px; display: none; }
-  .search-result.not-found { background: #f8f8f8; border-color: #ddd; }
-  #listFilter { margin-bottom: 10px; }
-  .empty-note { color: #aaa; font-size: 0.88rem; text-align: center; padding: 20px 0; }
+:root {
+  --accent: #e84c2c;
+  --dark: #1a1a1a;
+  --mid: #444;
+  --light-bg: #f7f7f7;
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --text: #222;
+  --sub: #777;
+  --success: #2e7d32;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
+nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+nav a.active { color: #fff; border-bottom-color: var(--accent); }
+nav a:hover { color: #fff; }
+.page { max-width: 680px; margin: 0 auto; padding: 16px 14px 60px; }
+.section { margin-bottom: 14px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.step-badge { padding: 3px 10px; border-radius: 100px; background: var(--dark); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.input-row { display: flex; gap: 8px; align-items: stretch; }
+.input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.input-row input:focus { border-color: var(--dark); }
+.search-btn { padding: 0 18px; border: 1.5px solid var(--dark); border-radius: 8px; background: var(--dark); color: #fff; cursor: pointer; font-size: 0.88rem; white-space: nowrap; transition: opacity .15s; }
+.search-btn:hover { opacity: .8; }
+.result-box { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: none; }
+.result-box.found { background: #e8f5e9; color: var(--success); display: block; }
+.result-box.notfound { background: #f5f5f5; color: var(--sub); display: block; }
+.field-label { font-size: 0.79rem; color: var(--sub); margin-bottom: 5px; font-weight: 500; }
+.form-grid { display: grid; grid-template-columns: 140px 1fr; gap: 10px; margin-bottom: 12px; }
+.full-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.full-input:focus { border-color: var(--dark); }
+.action-btn { width: 100%; padding: 13px; background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 700; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity .15s; }
+.action-btn:hover { opacity: .88; }
+.action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.msg-box { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; display: none; }
+.msg-box.ok { background: #e8f5e9; color: var(--success); display: block; }
+.msg-box.err { background: #fdecea; color: #c62828; display: block; }
+.filter-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; margin-bottom: 12px; transition: border .15s; }
+.filter-input:focus { border-color: var(--dark); }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+thead th { background: #f5f5f5; padding: 9px 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700; color: var(--mid); font-size: 0.82rem; text-transform: uppercase; letter-spacing: .04em; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+tbody tr:hover td { background: #fafafa; }
+tbody tr:last-child td { border-bottom: none; }
+.code-cell { font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--dark); }
+.empty-state { text-align: center; padding: 40px 0; color: var(--sub); font-size: 0.88rem; }
+.member-count { font-size: 0.8rem; color: var(--sub); margin-bottom: 10px; font-weight: 500; }
+.dot-loader { display: flex; gap: 4px; }
+.dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
+.dot-loader span:nth-child(2) { animation-delay: .15s; }
+.dot-loader span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
 </style>
 </head>
 <body>
 <nav>
+  <div class="logo">🧗 MONO</div>
   <a href="index.html">入店登録</a>
   <a href="members.html" class="active">会員管理</a>
   <a href="sales.html">売上管理</a>
 </nav>
-<div class="content">
 
-<!-- 会員検索 -->
-<h2>① 会員番号で検索</h2>
-<div class="card">
-  <div class="row">
-    <input type="text" id="searchCode" placeholder="会員番号を入力（例: 1234）" style="max-width:200px;">
-    <button id="searchBtn">検索</button>
-  </div>
-  <div id="searchResult" class="search-result"></div>
-  <div id="msg-search"></div>
-</div>
+<div class="page">
 
-<!-- 会員追加 -->
-<h2>② 新規会員を追加</h2>
-<div class="card">
-  <div class="row" style="margin-bottom:10px;">
-    <div style="flex:1; min-width:120px;">
-      <label style="font-size:0.82rem; color:#555; display:block; margin-bottom:3px;">会員番号</label>
-      <input type="text" id="addCode" placeholder="例: 1234">
+  <!-- 会員検索 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="step-badge">SEARCH</span>
+      <div class="section-title">会員番号で検索</div>
     </div>
-    <div style="flex:2; min-width:160px;">
-      <label style="font-size:0.82rem; color:#555; display:block; margin-bottom:3px;">氏名</label>
-      <input type="text" id="addName" placeholder="例: 山田 太郎">
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="searchCode" placeholder="会員番号を入力（例: 1234）" inputmode="numeric">
+        <button class="search-btn" id="searchBtn">検索</button>
+      </div>
+      <div id="searchResult" class="result-box"></div>
     </div>
   </div>
-  <button class="action-btn" id="addBtn">会員を追加する</button>
-  <div id="msg-add"></div>
-</div>
 
-<!-- 会員一覧 -->
-<h2>③ 会員一覧</h2>
-<div class="card">
-  <input type="text" id="listFilter" placeholder="番号または氏名で絞り込み...">
-  <div id="memberTableWrap">
-    <div class="empty-note">読み込み中...</div>
+  <!-- 新規会員追加 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="step-badge">ADD</span>
+      <div class="section-title">新規会員を追加</div>
+    </div>
+    <div class="card">
+      <div class="form-grid">
+        <div>
+          <div class="field-label">会員番号</div>
+          <input type="text" id="addCode" class="full-input" placeholder="例: 1234" inputmode="numeric">
+        </div>
+        <div>
+          <div class="field-label">氏名</div>
+          <input type="text" id="addName" class="full-input" placeholder="例: 山田 太郎">
+        </div>
+      </div>
+      <button class="action-btn" id="addBtn">会員を追加する</button>
+      <div id="msgAdd" class="msg-box"></div>
+    </div>
   </div>
+
+  <!-- 会員一覧 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="step-badge">LIST</span>
+      <div class="section-title">会員一覧</div>
+    </div>
+    <div class="card">
+      <input type="text" id="listFilter" class="filter-input" placeholder="🔍  番号または氏名で絞り込み...">
+      <div id="memberCount" class="member-count"></div>
+      <div id="memberTableWrap">
+        <div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;">
+          <div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-</div><!-- /content -->
 <script>
-var allMembers=[];
+var allMembers = [];
 
-async function callAPI(action,params){
-  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
-  return res.json();
+function callAPI(action, params) {
+  return fetch('/api/gas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({action:action}, params))
+  }).then(function(r){ return r.json(); });
 }
 
-// ---- 検索 ----
-document.getElementById('searchBtn').addEventListener('click',async function(){
-  var code=document.getElementById('searchCode').value.trim();
-  if(!code){alert('会員番号を入力してください');return;}
-  var result=document.getElementById('searchResult');
-  var msg=document.getElementById('msg-search');
-  result.style.display='none'; msg.textContent='';
-  msg.style.color='#555'; msg.textContent='検索中...';
-  try{
-    var res=await callAPI('getMember',{code:code});
-    msg.textContent='';
-    var m=res.data;
-    if(m&&m.name){
-      result.className='search-result';
-      result.innerHTML='<strong>✓ 会員番号 '+escHtml(code)+'</strong> &nbsp; '+escHtml(m.name)+'<span class="badge-new">登録済み</span>';
-      result.style.display='block';
-    }else{
-      result.className='search-result not-found';
-      result.innerHTML='会員番号 <strong>'+escHtml(code)+'</strong> は未登録です';
-      result.style.display='block';
-    }
-  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;}
-});
-document.getElementById('searchCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('searchBtn').click();});
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ---- 追加 ----
-document.getElementById('addBtn').addEventListener('click',async function(){
-  var code=document.getElementById('addCode').value.trim();
-  var name=document.getElementById('addName').value.trim();
-  if(!code||!name){alert('会員番号と氏名を入力してください');return;}
-  var msg=document.getElementById('msg-add');
-  msg.style.color='#555'; msg.textContent='登録中...';
-  this.disabled=true;
-  try{
-    var res=await callAPI('addMember',{code:code,name:name});
-    if(res.ok&&res.data&&res.data.success){
-      msg.style.color='green'; msg.textContent='✓ 会員を追加しました（番号: '+code+' / '+name+'）';
+// Search
+document.getElementById('searchBtn').addEventListener('click', function(){
+  var code = document.getElementById('searchCode').value.trim();
+  if(!code){ alert('会員番号を入力してください'); return; }
+  var result = document.getElementById('searchResult');
+  result.className = 'result-box notfound';
+  result.textContent = '検索中...';
+  result.style.display = 'block';
+  callAPI('getMember', {code:code}).then(function(res){
+    var m = res.data;
+    if(m && m.name){
+      result.className = 'result-box found';
+      result.innerHTML = '✓&nbsp; <strong>' + escHtml(m.name) + '</strong>　（会員番号: ' + escHtml(code) + '）';
+    } else {
+      result.className = 'result-box notfound';
+      result.textContent = '会員番号 ' + code + ' は未登録です';
+    }
+  }).catch(function(e){
+    result.className = 'result-box notfound';
+    result.textContent = 'エラー: ' + e.message;
+  });
+});
+document.getElementById('searchCode').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
+
+// Add member
+document.getElementById('addBtn').addEventListener('click', function(){
+  var code = document.getElementById('addCode').value.trim();
+  var name = document.getElementById('addName').value.trim();
+  if(!code||!name){ alert('会員番号と氏名を両方入力してください'); return; }
+  var msg = document.getElementById('msgAdd');
+  msg.className = 'msg-box';
+  msg.style.display = 'none';
+  this.disabled = true;
+  this.textContent = '登録中...';
+  callAPI('addMember', {code:code, name:name}).then(function(res){
+    document.getElementById('addBtn').disabled = false;
+    document.getElementById('addBtn').textContent = '会員を追加する';
+    if(res.ok && res.data && res.data.success){
+      msg.className = 'msg-box ok';
+      msg.textContent = '✓ 会員を登録しました（' + code + ' / ' + name + '）';
       document.getElementById('addCode').value='';
       document.getElementById('addName').value='';
-      loadMembers(); // reload list
-    }else{
-      msg.style.color='red'; msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');
+      loadMembers();
+    } else {
+      msg.className = 'msg-box err';
+      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
     }
-  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;}
-  this.disabled=false;
+  }).catch(function(e){
+    document.getElementById('addBtn').disabled = false;
+    document.getElementById('addBtn').textContent = '会員を追加する';
+    var msg = document.getElementById('msgAdd');
+    msg.className = 'msg-box err';
+    msg.textContent = 'エラー: ' + e.message;
+  });
 });
 
-// ---- 一覧 ----
-async function loadMembers(){
-  var wrap=document.getElementById('memberTableWrap');
-  wrap.innerHTML='<div class="empty-note">読み込み中...</div>';
-  try{
-    var res=await callAPI('getMemberList',{});
-    allMembers=res.data||[];
+// Load members
+function loadMembers(){
+  var wrap = document.getElementById('memberTableWrap');
+  wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>';
+  callAPI('getMemberList', {}).then(function(res){
+    allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
     renderMemberTable(allMembers);
-  }catch(e){
-    wrap.innerHTML='<div class="empty-note" style="color:red">エラー: '+e.message+'</div>';
-  }
+  }).catch(function(e){
+    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + e.message + '</div>';
+  });
 }
 
 function renderMemberTable(members){
-  var wrap=document.getElementById('memberTableWrap');
-  if(!members.length){wrap.innerHTML='<div class="empty-note">会員データがありません</div>';return;}
-  var html='<table><thead><tr><th>会員番号</th><th>氏名</th><th>登録日</th></tr></thead><tbody>';
+  var wrap = document.getElementById('memberTableWrap');
+  var count = document.getElementById('memberCount');
+  count.textContent = members.length + '名';
+  if(!members.length){
+    wrap.innerHTML = '<div class="empty-state">会員データがありません</div>';
+    return;
+  }
+  var html = '<table><thead><tr><th>会員番号</th><th>氏名</th><th>登録日</th></tr></thead><tbody>';
   members.forEach(function(m){
-    html+='<tr><td>'+escHtml(String(m.code))+'</td><td>'+escHtml(m.name||'')+'</td><td>'+escHtml(m.joinDate||'')+'</td></tr>';
+    html += '<tr><td class="code-cell">' + escHtml(String(m.code)) + '</td><td>' + escHtml(m.name||'') + '</td><td style="color:var(--sub);font-size:.82rem;">' + escHtml(m.joinDate||'') + '</td></tr>';
   });
-  html+='</tbody></table>';
-  wrap.innerHTML=html;
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 
-document.getElementById('listFilter').addEventListener('input',function(){
-  var q=this.value.trim().toLowerCase();
-  if(!q){renderMemberTable(allMembers);return;}
-  var filtered=allMembers.filter(function(m){
-    return String(m.code).toLowerCase().includes(q)||(m.name||'').toLowerCase().includes(q);
+document.getElementById('listFilter').addEventListener('input', function(){
+  var q = this.value.trim().toLowerCase();
+  if(!q){ renderMemberTable(allMembers); return; }
+  var filtered = allMembers.filter(function(m){
+    return String(m.code).toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q);
   });
   renderMemberTable(filtered);
 });
-
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 loadMembers();
 </script>
