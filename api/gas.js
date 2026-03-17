@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbytszXHVHXgeXG8hV_9I9Gx-FG8tsltDUn5gXkswsm1yp2UlkTFCshbMVxJ4vpZnlha/exec';
@@ -16,4 +16,4 @@ export default async function handler(req, res) {
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
-}
+};
