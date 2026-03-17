@@ -3,157 +3,324 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mono Climbing Studio - 入店登録</title>
+<title>Mono Climbing Studio</title>
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: sans-serif; padding: 0; max-width: 720px; margin: 0 auto; background: #f5f5f5; }
-  nav { background: #111; display: flex; gap: 2px; padding: 8px 12px; position: sticky; top: 0; z-index: 100; }
-  nav a { color: #ccc; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; }
-  nav a.active { background: #444; color: #fff; }
-  nav a:hover { background: #333; color: #fff; }
-  .content { padding: 16px; }
-  h2 { background: #222; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 0.95rem; margin: 18px 0 10px; }
-  .card { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
-  button.opt { padding: 9px 14px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; transition: all 0.15s; }
-  button.opt:hover { border-color: #888; }
-  button.opt.sel { background: #222; color: #fff; border-color: #222; }
-  /* Plan category buttons */
-  button.cat-btn { padding: 10px 18px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.88rem; font-weight: bold; }
-  button.cat-btn.sel { background: #444; color: #fff; border-color: #444; }
-  /* Plan sub-buttons */
-  #planSubGrid { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-  input, select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 100%; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .row input { flex: 1; min-width: 120px; }
-  .row button { white-space: nowrap; padding: 9px 16px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; }
-  #total-box { font-size: 1.6rem; font-weight: bold; color: #222; padding: 10px 0; }
-  #registerBtn { width: 100%; padding: 14px; background: #222; color: #fff; font-size: 1.05rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
-  #registerBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-  #msg { margin-top: 10px; font-weight: bold; font-size: 0.95rem; min-height: 24px; }
-  .sub-label { font-size: 0.78rem; color: #666; margin-top: 8px; margin-bottom: 4px; }
+:root {
+  --accent: #e84c2c;
+  --dark: #1a1a1a;
+  --mid: #444;
+  --light-bg: #f7f7f7;
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --text: #222;
+  --sub: #777;
+  --success: #2e7d32;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+
+/* ── Nav ── */
+nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
+nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+nav a.active { color: #fff; border-bottom-color: var(--accent); }
+nav a:hover { color: #fff; }
+
+/* ── Layout ── */
+.page { max-width: 680px; margin: 0 auto; padding: 16px 14px 60px; }
+
+/* ── Section ── */
+.section { margin-bottom: 14px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--dark); color: #fff; font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+/* ── Store selector ── */
+.store-tabs { display: flex; gap: 8px; }
+.store-tab { flex: 1; padding: 11px 8px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 600; text-align: center; transition: all .15s; color: var(--mid); }
+.store-tab.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+.store-tab:hover:not(.sel) { border-color: #aaa; }
+
+/* ── Member ── */
+.input-row { display: flex; gap: 8px; align-items: stretch; }
+.input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.input-row input:focus { border-color: var(--dark); }
+.icon-btn { padding: 0 16px; border: 1.5px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.88rem; white-space: nowrap; transition: all .15s; }
+.icon-btn:hover { border-color: var(--dark); background: var(--dark); color: #fff; }
+.member-badge { margin-top: 8px; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; display: none; }
+.member-badge.found { background: #e8f5e9; color: var(--success); display: block; }
+.member-badge.notfound { background: #f5f5f5; color: var(--sub); display: block; }
+.guest-row { margin-top: 10px; }
+.field-label { font-size: 0.79rem; color: var(--sub); margin-bottom: 5px; font-weight: 500; }
+.full-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.full-input:focus { border-color: var(--dark); }
+
+/* ── Plan ── */
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 9px 16px; border: 2px solid var(--border); border-radius: 100px; cursor: pointer; background: #fff; font-size: 0.85rem; font-weight: 600; transition: all .15s; white-space: nowrap; }
+.chip:hover:not(.sel) { border-color: #999; }
+.chip.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+.chip.accent.sel { background: var(--accent); border-color: var(--accent); }
+.sub-plan-area { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: none; }
+.sub-label { font-size: 0.78rem; color: var(--sub); margin-bottom: 8px; font-weight: 500; }
+.plan-chip { padding: 10px 16px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; font-weight: 600; transition: all .15s; }
+.plan-chip .price { font-size: 1rem; font-weight: 700; }
+.plan-chip:hover:not(.sel) { border-color: #999; }
+.plan-chip.sel { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Rental ── */
+.rental-chip { padding: 9px 14px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.85rem; transition: all .15s; }
+.rental-chip:hover:not(.sel) { border-color: #999; }
+.rental-chip.sel { background: #1a5276; color: #fff; border-color: #1a5276; }
+
+/* ── Payment ── */
+.pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pay-chip { padding: 11px 8px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.83rem; font-weight: 600; text-align: center; transition: all .15s; }
+.pay-chip:hover:not(.sel) { border-color: #999; }
+.pay-chip.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+/* ── Summary ── */
+.total-display { font-size: 2rem; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
+.total-display span { font-size: 1.1rem; font-weight: 600; }
+.total-breakdown { margin-top: 6px; font-size: 0.82rem; color: var(--sub); min-height: 18px; }
+.register-btn { margin-top: 14px; width: 100%; padding: 15px; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity .15s; position: relative; }
+.register-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.register-btn:not(:disabled):hover { opacity: 0.88; }
+.register-btn .spinner { display: none; width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
+.register-btn.loading .spinner { display: block; }
+.register-btn.loading { pointer-events: none; }
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+#msg { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; display: none; }
+#msg.ok { background: #e8f5e9; color: var(--success); display: block; }
+#msg.err { background: #fdecea; color: #c62828; display: block; }
+.loading-row { color: var(--sub); font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+.dot-loader { display: flex; gap: 4px; }
+.dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
+.dot-loader span:nth-child(2) { animation-delay: .15s; }
+.dot-loader span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
 </style>
 </head>
 <body>
 <nav>
+  <div class="logo">🧗 MONO</div>
   <a href="index.html" class="active">入店登録</a>
   <a href="members.html">会員管理</a>
   <a href="sales.html">売上管理</a>
 </nav>
-<div class="content">
-<h2>店舗</h2>
-<div class="card">
-  <select id="store">
-    <option value="hakata">博多店</option>
-    <option value="omura">大村店</option>
-    <option value="sasebo">佐世保店</option>
-  </select>
-</div>
-<h2>① 会員番号</h2>
-<div class="card">
-  <div class="row">
-    <input type="text" id="memberCode" placeholder="例: 1234" style="max-width:160px;">
-    <button id="searchBtn">検索</button>
-    <span id="memberName" style="font-weight:bold;"></span>
-  </div>
-  <div style="margin-top:10px;">
-    <label style="font-size:0.85rem; color:#555;">ゲスト氏名（会員でない場合）</label>
-    <input type="text" id="guestName" placeholder="氏名を入力" style="margin-top:4px;">
-  </div>
-</div>
-<h2>② 利用プラン</h2>
-<div class="card">
-  <div class="sub-label">利用種類を選択</div>
-  <div id="planCatGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
-  <div id="planSubWrap" style="display:none;">
-    <div class="sub-label">料金を選択</div>
-    <div id="planSubGrid"></div>
-  </div>
-</div>
-<h2>③ レンタル（複数選択可）</h2>
-<div class="card">
-  <div id="rentalGrid" class="btn-group"><span style="color:#aaa">読み込み中...</span></div>
-</div>
-<h2>④ 支払い方法</h2>
-<div class="card">
-  <div class="btn-group">
-    <button class="opt pay-btn" data-method="現金">現金</button>
-    <button class="opt pay-btn" data-method="クレジット">クレジット</button>
-    <button class="opt pay-btn" data-method="電子マネー">電子マネー</button>
-    <button class="opt pay-btn" data-method="QRコード">QRコード</button>
-    <button class="opt pay-btn" data-method="交通系IC">交通系IC</button>
-  </div>
-</div>
-<h2>合計</h2>
-<div class="card">
-  <div id="total-box">¥0</div>
-  <button id="registerBtn" disabled>入店登録</button>
-  <div id="msg"></div>
-</div>
-</div><!-- /content -->
-<script>
-var allPlans=[],planSel=null,rentalSel=[],paymentSel=null,catSel=null;
 
-async function callAPI(action,params){
-  var res=await fetch('/api/gas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},params))});
-  return res.json();
+<div class="page">
+
+  <!-- 店舗 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num">店</div>
+      <div class="section-title">店舗を選択</div>
+    </div>
+    <div class="card">
+      <div class="store-tabs">
+        <button class="store-tab sel" data-store="hakata">博多店</button>
+        <button class="store-tab" data-store="omura">大村店</button>
+        <button class="store-tab" data-store="sasebo">佐世保店</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 会員番号 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num">①</div>
+      <div class="section-title">会員番号</div>
+    </div>
+    <div class="card">
+      <div class="input-row">
+        <input type="text" id="memberCode" placeholder="例: 1234" inputmode="numeric" style="max-width:160px;">
+        <button class="icon-btn" id="searchBtn">検索</button>
+        <span id="memberNameInline" style="font-size:.9rem;font-weight:600;align-self:center;"></span>
+      </div>
+      <div id="memberBadge" class="member-badge"></div>
+      <div class="guest-row">
+        <div class="field-label">ゲスト氏名（会員でない場合）</div>
+        <input type="text" id="guestName" class="full-input" placeholder="氏名を入力">
+      </div>
+    </div>
+  </div>
+
+  <!-- 利用プラン -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num">②</div>
+      <div class="section-title">利用プラン</div>
+    </div>
+    <div class="card">
+      <div class="sub-label">利用種類を選択</div>
+      <div id="planCatGrid" class="chip-group">
+        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+      </div>
+      <div id="planSubWrap" class="sub-plan-area">
+        <div class="sub-label">料金プランを選択</div>
+        <div id="planSubGrid" class="chip-group"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- レンタル -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num">③</div>
+      <div class="section-title">レンタル <span style="font-size:.78rem;font-weight:400;color:var(--sub);">複数選択可</span></div>
+    </div>
+    <div class="card">
+      <div id="rentalGrid" class="chip-group">
+        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支払い -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num">④</div>
+      <div class="section-title">支払い方法</div>
+    </div>
+    <div class="card">
+      <div class="pay-grid">
+        <button class="pay-chip" data-method="現金">💴 現金</button>
+        <button class="pay-chip" data-method="クレジット">💳 クレジット</button>
+        <button class="pay-chip" data-method="電子マネー">📱 電子マネー</button>
+        <button class="pay-chip" data-method="QRコード">📲 QRコード</button>
+        <button class="pay-chip" data-method="交通系IC">🚃 交通系IC</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 合計・登録 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="step-num" style="background:var(--accent);">✓</div>
+      <div class="section-title">確認・登録</div>
+    </div>
+    <div class="card">
+      <div class="total-display"><span>¥</span><span id="totalNum">0</span></div>
+      <div class="total-breakdown" id="totalBreakdown"></div>
+      <button class="register-btn" id="registerBtn" disabled>
+        入店登録する
+        <div class="spinner"></div>
+      </button>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+var allPlans=[], planSel=null, rentalSel=[], paymentSel=null, catSel=null;
+var CACHE_TTL = 30*60*1000; // 30min cache
+
+function callAPI(action, params) {
+  return fetch('/api/gas', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({action:action}, params))
+  }).then(function(r){ return r.json(); });
 }
 
-async function init(){
-  try{
-    // Load plans
-    var pr=await callAPI('getPriceList',{});
-    allPlans=pr.data||[];
-    buildCategoryButtons();
+function getCached(key) {
+  try {
+    var s = sessionStorage.getItem(key);
+    if(!s) return null;
+    var d = JSON.parse(s);
+    if(Date.now() - d.ts > CACHE_TTL) { sessionStorage.removeItem(key); return null; }
+    return d.data;
+  } catch(e) { return null; }
+}
+function setCache(key, data) {
+  try { sessionStorage.setItem(key, JSON.stringify({ts:Date.now(), data:data})); } catch(e){}
+}
 
-    // Load rentals
-    var rr=await callAPI('getRentalList',{});
-    var rg=document.getElementById('rentalGrid');
-    rg.innerHTML='';
-    var rentals=rr.data||[];
-    if(!rentals.length){rg.innerHTML='<span style="color:#aaa;font-size:.85rem">なし</span>';return;}
-    rentals.forEach(function(r){
-      var btn=document.createElement('button');
-      btn.className='opt rental-btn';
-      btn.textContent=r.name+' ¥'+Number(r.amount).toLocaleString();
-      btn.addEventListener('click',function(){
-        var idx=rentalSel.findIndex(function(x){return x.name===r.name;});
-        if(idx>=0){rentalSel.splice(idx,1);btn.classList.remove('sel');}
-        else{rentalSel.push({name:r.name,amount:Number(r.amount)});btn.classList.add('sel');}
-        updateTotal();
-      });
-      rg.appendChild(btn);
+// Store selection
+document.querySelectorAll('.store-tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.store-tab').forEach(function(b){b.classList.remove('sel');});
+    btn.classList.add('sel');
+  });
+});
+
+function getStore() {
+  var sel = document.querySelector('.store-tab.sel');
+  return sel ? sel.dataset.store : 'hakata';
+}
+
+// Init - load plans and rentals
+function init() {
+  var cachedPlans = getCached('plans');
+  var cachedRentals = getCached('rentals');
+
+  if(cachedPlans) {
+    allPlans = cachedPlans;
+    buildCategoryButtons();
+  } else {
+    callAPI('getPriceList', {}).then(function(pr){
+      allPlans = pr.data || [];
+      setCache('plans', allPlans);
+      buildCategoryButtons();
+    }).catch(function(e){
+      document.getElementById('planCatGrid').innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
     });
-  }catch(e){
-    document.getElementById('planCatGrid').innerHTML='<span style="color:red">エラー: '+e.message+'</span>';
+  }
+
+  var rg = document.getElementById('rentalGrid');
+  if(cachedRentals) {
+    buildRentalButtons(cachedRentals, rg);
+  } else {
+    callAPI('getRentalList', {}).then(function(rr){
+      var rentals = rr.data || [];
+      setCache('rentals', rentals);
+      buildRentalButtons(rentals, rg);
+    }).catch(function(e){
+      rg.innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+    });
   }
 }
 
-function buildCategoryButtons(){
-  var pg=document.getElementById('planCatGrid');
-  pg.innerHTML='';
-  // Extract unique plan1 values (category)
-  var cats=[];
-  allPlans.forEach(function(p){
-    if(p.plan1 && cats.indexOf(p.plan1)<0) cats.push(p.plan1);
-  });
-  if(!cats.length){
-    // Fallback: no plan1, show all plans directly
-    allPlans.forEach(function(p){
-      pg.appendChild(makePlanBtn(p));
+function buildRentalButtons(rentals, rg) {
+  rg.innerHTML = '';
+  if(!rentals.length) { rg.innerHTML='<span style="color:var(--sub);font-size:.85rem">なし</span>'; return; }
+  rentals.forEach(function(r){
+    var btn = document.createElement('button');
+    btn.className = 'rental-chip chip';
+    btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
+    btn.addEventListener('click', function(){
+      var idx = rentalSel.findIndex(function(x){return x.name===r.name;});
+      if(idx>=0){ rentalSel.splice(idx,1); btn.classList.remove('sel'); }
+      else { rentalSel.push({name:r.name,amount:Number(r.amount)}); btn.classList.add('sel'); }
+      updateTotal();
     });
+    rg.appendChild(btn);
+  });
+}
+
+function buildCategoryButtons() {
+  var pg = document.getElementById('planCatGrid');
+  pg.innerHTML = '';
+  var cats = [];
+  allPlans.forEach(function(p){ if(p.plan1 && cats.indexOf(p.plan1)<0) cats.push(p.plan1); });
+  if(!cats.length) {
+    allPlans.forEach(function(p){ pg.appendChild(makePlanChip(p, true)); });
     return;
   }
   cats.forEach(function(cat){
-    var btn=document.createElement('button');
-    btn.className='cat-btn opt';
-    btn.textContent=cat;
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('.cat-btn').forEach(function(b){b.classList.remove('sel');});
+    var btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = cat;
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#planCatGrid .chip').forEach(function(b){b.classList.remove('sel');});
       btn.classList.add('sel');
-      catSel=cat;
-      // Reset plan selection
-      planSel=null;
+      catSel = cat;
+      planSel = null;
       updateTotal();
       showSubPlans(cat);
     });
@@ -161,82 +328,125 @@ function buildCategoryButtons(){
   });
 }
 
-function showSubPlans(cat){
-  var wrap=document.getElementById('planSubWrap');
-  var sg=document.getElementById('planSubGrid');
-  sg.innerHTML='';
-  var filtered=allPlans.filter(function(p){return p.plan1===cat;});
-  if(!filtered.length){wrap.style.display='none';return;}
-  filtered.forEach(function(p){
-    sg.appendChild(makePlanBtn(p));
-  });
-  wrap.style.display='';
+function showSubPlans(cat) {
+  var wrap = document.getElementById('planSubWrap');
+  var sg = document.getElementById('planSubGrid');
+  sg.innerHTML = '';
+  var filtered = allPlans.filter(function(p){return p.plan1===cat;});
+  if(!filtered.length) { wrap.style.display='none'; return; }
+  filtered.forEach(function(p){ sg.appendChild(makePlanChip(p, false)); });
+  wrap.style.display = 'block';
 }
 
-function makePlanBtn(p){
-  var btn=document.createElement('button');
-  btn.className='opt plan-btn';
-  // Show plan2 if available, otherwise label
-  var label=(p.plan2&&p.plan2!==p.plan1)?p.plan2:p.label;
-  btn.textContent=label+' ¥'+Number(p.amount).toLocaleString();
-  btn.addEventListener('click',function(){
-    document.querySelectorAll('.plan-btn').forEach(function(b){b.classList.remove('sel');});
+function makePlanChip(p, isMain) {
+  var btn = document.createElement('button');
+  btn.className = 'plan-chip';
+  var label = (p.plan2 && p.plan2!==p.plan1) ? p.plan2 : p.label;
+  btn.innerHTML = label + '<br><span class="price">¥' + Number(p.amount).toLocaleString() + '</span>';
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.plan-chip').forEach(function(b){b.classList.remove('sel');});
     btn.classList.add('sel');
-    planSel={plan1:p.plan1,plan2:p.plan2,label:p.label,amount:Number(p.amount)};
+    planSel = {plan1:p.plan1, plan2:p.plan2, label:p.label, amount:Number(p.amount)};
     updateTotal();
   });
   return btn;
 }
 
-document.querySelectorAll('.pay-btn').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    document.querySelectorAll('.pay-btn').forEach(function(b){b.classList.remove('sel');});
-    btn.classList.add('sel');paymentSel=btn.dataset.method;updateRegisterBtn();
+// Payment
+document.querySelectorAll('.pay-chip').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.pay-chip').forEach(function(b){b.classList.remove('sel');});
+    btn.classList.add('sel');
+    paymentSel = btn.dataset.method;
+    updateRegisterBtn();
   });
 });
 
-function updateTotal(){
-  var t=planSel?planSel.amount:0;
-  rentalSel.forEach(function(r){t+=r.amount;});
-  document.getElementById('total-box').textContent='¥'+t.toLocaleString();
+function updateTotal() {
+  var t = planSel ? planSel.amount : 0;
+  var rentalTotal = 0;
+  rentalSel.forEach(function(r){ rentalTotal += r.amount; });
+  t += rentalTotal;
+  document.getElementById('totalNum').textContent = t.toLocaleString();
+  var bd = '';
+  if(planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
+  if(rentalTotal>0) bd += (bd?' ＋ ':'') + 'レンタル: ¥' + rentalTotal.toLocaleString();
+  document.getElementById('totalBreakdown').textContent = bd;
   updateRegisterBtn();
 }
 
-function updateRegisterBtn(){document.getElementById('registerBtn').disabled=!(planSel&&paymentSel);}
+function updateRegisterBtn() {
+  document.getElementById('registerBtn').disabled = !(planSel && paymentSel);
+}
 
-document.getElementById('searchBtn').addEventListener('click',async function(){
-  var code=document.getElementById('memberCode').value.trim();
-  if(!code){alert('会員番号を入力してください');return;}
-  var el=document.getElementById('memberName');
-  el.textContent='検索中...';el.style.color='#888';
-  try{
-    var res=await callAPI('getMember',{code:code});
-    var m=res.data;
-    if(m&&m.name){el.textContent='✓ '+m.name;el.style.color='#080';document.getElementById('guestName').value='';}
-    else{el.textContent='（未登録）';el.style.color='#888';}
-  }catch(e){el.textContent='エラー';el.style.color='red';}
+// Member search
+document.getElementById('searchBtn').addEventListener('click', function(){
+  var code = document.getElementById('memberCode').value.trim();
+  if(!code){ alert('会員番号を入力してください'); return; }
+  var badge = document.getElementById('memberBadge');
+  badge.className = 'member-badge notfound';
+  badge.textContent = '検索中...';
+  badge.style.display = 'block';
+  callAPI('getMember', {code:code}).then(function(res){
+    var m = res.data;
+    if(m && m.name){
+      badge.className = 'member-badge found';
+      badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
+      document.getElementById('guestName').value = '';
+    } else {
+      badge.className = 'member-badge notfound';
+      badge.textContent = '会員番号 ' + code + ' は未登録です';
+    }
+  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
 });
+document.getElementById('memberCode').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
 
-document.getElementById('memberCode').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('searchBtn').click();});
-
-document.getElementById('registerBtn').addEventListener('click',async function(){
-  if(!planSel){alert('プランを選択してください');return;}
-  if(!paymentSel){alert('支払方法を選択してください');return;}
-  var nameEl=document.getElementById('memberName');
-  var memberName=nameEl.textContent.replace('✓ ','').trim();
-  if(!memberName||memberName==='（未登録）'||memberName==='検索中...'){memberName=document.getElementById('guestName').value.trim()||'ゲスト';}
-  var rentalFee=0,rentalNames=[];
-  rentalSel.forEach(function(r){rentalFee+=r.amount;rentalNames.push(r.name);});
-  var total=planSel.amount+rentalFee;
-  var params={store:document.getElementById('store').value,memberCode:document.getElementById('memberCode').value.trim(),memberName:memberName,regFee:0,plan1:planSel.plan1,plan2:planSel.plan2,planLabel:planSel.label,usageFee:planSel.amount,merchAmt:0,merchNote:'',rentalNote:rentalNames.join(','),rentalFee:rentalFee,adjustment:0,total:total,payment:paymentSel,cash:paymentSel==='現金'?total:0,credit:paymentSel==='クレジット'?total:0,emoney:paymentSel==='電子マネー'?total:0,qr:paymentSel==='QRコード'?total:0,transit:paymentSel==='交通系IC'?total:0,notes:''};
-  var btn=document.getElementById('registerBtn');
-  var msg=document.getElementById('msg');
-  btn.disabled=true;msg.style.color='#555';msg.textContent='登録中...';
-  try{
-    var res=await callAPI('registerEntry',{params:params});
-    if(res.ok&&res.data&&res.data.success){msg.style.color='green';msg.textContent='✓ 入店登録しました！ ('+res.data.entryTime+')';setTimeout(function(){location.reload();},2000);}
-    else{msg.style.color='red';msg.textContent='エラー: '+(res.data?res.data.error:res.error||'不明');btn.disabled=false;}
-  }catch(e){msg.style.color='red';msg.textContent='エラー: '+e.message;btn.disabled=false;}
+// Register
+document.getElementById('registerBtn').addEventListener('click', function(){
+  if(!planSel || !paymentSel) return;
+  var badge = document.getElementById('memberBadge');
+  var badgeName = (badge.className.indexOf('found')>=0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
+  var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
+  var rentalFee = 0, rentalNames = [];
+  rentalSel.forEach(function(r){ rentalFee+=r.amount; rentalNames.push(r.name); });
+  var total = planSel.amount + rentalFee;
+  var params = {
+    store: getStore(),
+    memberCode: document.getElementById('memberCode').value.trim(),
+    memberName: memberName,
+    regFee: 0, plan1: planSel.plan1, plan2: planSel.plan2,
+    planLabel: planSel.label, usageFee: planSel.amount,
+    merchAmt: 0, merchNote: '',
+    rentalNote: rentalNames.join(','), rentalFee: rentalFee,
+    adjustment: 0, total: total, payment: paymentSel,
+    cash: paymentSel==='現金'?total:0,
+    credit: paymentSel==='クレジット'?total:0,
+    emoney: paymentSel==='電子マネー'?total:0,
+    qr: paymentSel==='QRコード'?total:0,
+    transit: paymentSel==='交通系IC'?total:0,
+    notes: ''
+  };
+  var btn = document.getElementById('registerBtn');
+  var msg = document.getElementById('msg');
+  btn.classList.add('loading');
+  msg.className = '';
+  msg.style.display = 'none';
+  callAPI('registerEntry', {params:params}).then(function(res){
+    btn.classList.remove('loading');
+    if(res.ok && res.data && res.data.success){
+      msg.className = 'ok';
+      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime||'');
+      setTimeout(function(){ location.reload(); }, 2200);
+    } else {
+      msg.className = 'err';
+      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
+      btn.classList.remove('loading');
+    }
+  }).catch(function(e){
+    btn.classList.remove('loading');
+    msg.className = 'err';
+    msg.textContent = 'エラー: ' + e.message;
+  });
 });
 
 init();
