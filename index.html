@@ -194,7 +194,7 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- 番号 -->
+  <!-- 会員番号 -->
   <div class="section">
     <div class="section-head">
       <div class="step-num">①</div>
@@ -222,20 +222,20 @@ nav a:hover { color: #fff; }
     </div>
     <div class="card">
 
-      <!-- STEP A: 利用の種類（区分①） -->
+      <!-- STEP A: お客様の属性（区分②） -->
       <div class="plan-step-label">
         <div class="step-badge">A</div>
-        利用の種類を選択（区分①）
+        お客様の属性を選択
       </div>
       <div id="attrWrap">
         <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
       </div>
 
-      <!-- STEP B: 属性（区分②） -->
+      <!-- STEP B: 利用の種類（区分①） -->
       <div id="planSubWrap" class="sub-plan-area">
         <div class="plan-step-label">
           <div class="step-badge">B</div>
-          お客様の属性を選択（区分②）
+          利用の種類を選択
         </div>
         <div id="planWrap"></div>
         <div id="planSummary" class="plan-summary"></div>
@@ -362,15 +362,35 @@ function init() {
   }
 }
 
-// ── STEP A: 利用の種類ドロップダウン（区分①= plan2）──────
+// 属性略称を正式名に変換
+function normalizeAttr(name) {
+  var map = {'小': '小学生', '未': '未就学児', '学': '学生', '大': '大人', 'シ': 'シニア', 'シニ': 'シニア'};
+  return map[name] || name;
+}
+
+// ── STEP A: 属性ドロップダ〦ン（plan1 = お客様の属性）──────
 function buildAttrDropdown() {
   var wrap = document.getElementById('attrWrap');
   wrap.innerHTML = '';
 
-  // 利用の種類の一覧を収集（plan2 が利用の種類 = 区分①）
-  var cats = [];
+  // 属性の一覧を収集（plan1 が属性）。略称を正式名に変換して重複排除
+  var cats = [], rawCats = [];
   allPlans.forEach(function(p){
-    if (p.plan2 && cats.indexOf(p.plan2) < 0) cats.push(p.plan2);
+    var raw = p.plan1;
+    if (!raw) return;
+    var normalized = normalizeAttr(raw);
+    if (cats.indexOf(normalized) < 0) {
+      cats.push(normalized);
+      rawCats.push(raw);
+    }
+  });
+
+  // 表示順: 未就学児→小学生→学生→大人→シニア
+  var ORDER = ['未就学児','小学生','学生','大人','シニア'];
+  cats.sort(function(a, b) {
+    var ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
+    if (ai < 0) ai = 999; if (bi < 0) bi = 999;
+    return ai - bi;
   });
 
   if (!cats.length) {
@@ -381,7 +401,7 @@ function buildAttrDropdown() {
   var sel = document.createElement('select');
   sel.id = 'attrSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
+  var opts = '<option value="">-- 属性を選択してください --</option>';
   cats.forEach(function(cat){
     opts += '<option value="' + escAttr(cat) + '">' + esc(cat) + '</option>';
   });
@@ -404,19 +424,21 @@ function buildAttrDropdown() {
   });
 }
 
-// ── STEP B: 属性ドロップダウン（区分②= plan1）──────────
-function buildPlanDropdown(kubun1) {
+// ── STEP B: 利用の種類ドロップダウン（plan2 = 利用の種類）──────
+function buildPlanDropdown(attrName) {
   var wrap = document.getElementById('planWrap');
   wrap.innerHTML = '';
   var summaryEl = document.getElementById('planSummary');
   summaryEl.style.display = 'none';
   planSel = null;
 
-  // 選択した区分①(kubun1=plan2)に対応するプランを絞り込む
-  var filtered = allPlans.filter(function(p){ return p.plan2 === kubun1; });
+  // 選択した属性に対応するプランを絞り込む（略称も正式名でマッチ）
+  var filtered = allPlans.filter(function(p){
+    return normalizeAttr(p.plan1) === attrName;
+  });
   if (!filtered.length) return;
 
-  // 属性(plan1)が1つだけなら自動選択（属性なしのプランタイョプ）
+  // プランが1つだけなら自動確定
   if (filtered.length === 1) {
     var p = filtered[0];
     planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
@@ -429,11 +451,11 @@ function buildPlanDropdown(kubun1) {
   var sel = document.createElement('select');
   sel.id = 'planSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- 属性を選択してください（区分②） --</option>';
+  // B: 利用の種類（plan2）のみ表示、金額は非表示
+  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
   filtered.forEach(function(p, i){
-    // 表示: 属性（plan1）と金額
-    var lbl = p.plan1 || p.label;
-    opts += '<option value="' + i + '">' + esc(lbl) + '　¥' + Number(p.amount).toLocaleString() + '</option>';
+    var lbl = p.plan2 || p.label;
+    opts += '<option value="' + i + '">' + esc(lbl) + '</option>';
   });
   sel.innerHTML = opts;
   wrap.appendChild(sel);
@@ -471,7 +493,7 @@ function buildRentalSection(rentals, rs) {
   var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
   matOptions = matItems;
 
-  // ── マット: ドロップダウン（全オプションを個別表示）──
+  // ── マット: ドロップダウン（全イプションを個別表示）──
   if (matItems.length) {
     var matRow = document.createElement('div');
     matRow.className = 'rental-mat-row';
@@ -579,7 +601,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       badge.className = 'member-badge notfound';
       badge.textContent = '会員番号 ' + code + ' は未登録です';
     }
-  }).catch(function(){ badge.textContent = 'エラーぎ眹生しました'; });
+  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
 });
 document.getElementById('memberCode').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
@@ -648,4 +670,3 @@ init();
 </script>
 </body>
 </html>
-l>
