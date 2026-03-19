@@ -174,9 +174,55 @@ nav a:hover { color: #fff; }
 .discount-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .discount-row > div { flex: 1; min-width: 130px; }
 #discountPreview { margin-top: 8px; font-size: 0.85rem; color: #1a5276; font-weight: 600; min-height: 18px; }
+
+/* ── Login Overlay ── */
+#loginOverlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--dark);
+  display: flex; align-items: center; justify-content: center;
+}
+#loginOverlay.hidden { display: none; }
+.login-box {
+  background: #fff; border-radius: 14px;
+  padding: 36px 32px; width: 100%; max-width: 360px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.4);
+  text-align: center;
+}
+.login-logo { font-size: 1.5rem; font-weight: 800; color: var(--dark); margin-bottom: 4px; letter-spacing: .03em; }
+.login-sub { font-size: 0.82rem; color: var(--sub); margin-bottom: 28px; }
+.login-label { font-size: 0.8rem; color: var(--sub); font-weight: 600; text-align: left; margin-bottom: 6px; }
+.login-input {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 1rem; outline: none; transition: border .15s;
+  margin-bottom: 14px;
+}
+.login-input:focus { border-color: var(--dark); }
+.login-btn {
+  width: 100%; padding: 13px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: opacity .15s;
+}
+.login-btn:hover { opacity: 0.88; }
+.login-err { margin-top: 10px; font-size: 0.85rem; color: #c62828; font-weight: 600; min-height: 20px; }
 </style>
 </head>
 <body>
+
+<!-- ── ログイン画面 ── -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">🧗 MONO</div>
+    <div class="login-sub">Mono Climbing Studio — スタッフログイン</div>
+    <div class="login-label">パスワード</div>
+    <input type="password" id="loginPass" class="login-input" placeholder="スタッフパスワードを入力" autocomplete="current-password">
+    <button class="login-btn" id="loginBtn">ログイン</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
 <nav>
   <div class="logo">🧗 MONO</div>
   <a href="index.html" class="active">入店登録</a>
@@ -464,8 +510,8 @@ function buildAttrDropdown() {
     if (attr && attrs.indexOf(attr) < 0) attrs.push(attr);
   });
 
-  // 表示順固定: 未就学児→小学生→学生→大人→シニア
-  var ORDER = ['未就学児','小学生','学生','大人','シニア'];
+  // 表示順固定: 未就学児→小学生→学生→大人→シニア→パス・回数券
+  var ORDER = ['未就学児','小学生','学生','大人','シニア','月パス利用','昼月パス利用','回数券利用'];
   attrs.sort(function(a, b) {
     var ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
     if (ai < 0) ai = 999; if (bi < 0) bi = 999;
@@ -674,7 +720,8 @@ function updateTotal() {
 }
 
 function updateRegisterBtn() {
-  document.getElementById('registerBtn').disabled = !(planSel && paymentSel);
+  var isZeroYen = planSel && Number(planSel.amount) === 0;
+  document.getElementById('registerBtn').disabled = !(planSel && (paymentSel || isZeroYen));
 }
 
 // Member search
@@ -703,7 +750,10 @@ document.getElementById('memberCode').addEventListener('keydown', function(e){
 
 // Register
 document.getElementById('registerBtn').addEventListener('click', function(){
-  if (!planSel || !paymentSel) return;
+  if (!planSel) return;
+  // 0円プランは支払い方法不要（プラン名を支払いラベルに使用）
+  var effectivePayment = paymentSel || (Number(planSel.amount) === 0 ? planSel.plan1 : null);
+  if (!effectivePayment) return;
   var badge = document.getElementById('memberBadge');
   var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
   var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
@@ -728,12 +778,12 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     merchAmt: netMerch, merchNote: document.getElementById('merchNote').value.trim(),
     rentalNote: rentalNames.join(','), rentalFee: rentalFee,
     adjustment: adjust, adjustNote: document.getElementById('adjustNote').value.trim(),
-    total: total, payment: paymentSel,
-    cash: paymentSel === '現金' ? total : 0,
-    credit: paymentSel === 'クレジット' ? total : 0,
-    emoney: paymentSel === '電子マネー' ? total : 0,
-    qr: paymentSel === 'QRコード' ? total : 0,
-    transit: paymentSel === '交通系IC' ? total : 0,
+    total: total, payment: effectivePayment,
+    cash: effectivePayment === '現金' ? total : 0,
+    credit: effectivePayment === 'クレジット' ? total : 0,
+    emoney: effectivePayment === '電子マネー' ? total : 0,
+    qr: effectivePayment === 'QRコード' ? total : 0,
+    transit: effectivePayment === '交通系IC' ? total : 0,
     notes: ''
   };
   var btn = document.getElementById('registerBtn');
@@ -824,6 +874,38 @@ function esc(s) {
 function escAttr(s) {
   return String(s || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+// ── ログイン ─────────────────────────────────────
+(function(){
+  var STAFF_PASS = 'mono2024'; // ← パスワードを変更する場合はここを編集
+  var SESSION_KEY = 'mono_auth';
+  var overlay = document.getElementById('loginOverlay');
+  var passInput = document.getElementById('loginPass');
+  var loginBtn = document.getElementById('loginBtn');
+  var errEl = document.getElementById('loginErr');
+
+  function doLogin() {
+    if (passInput.value === STAFF_PASS) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      overlay.classList.add('hidden');
+      errEl.textContent = '';
+      passInput.value = '';
+    } else {
+      errEl.textContent = 'パスワードが正しくありません';
+      passInput.select();
+    }
+  }
+
+  // すでにログイン済み（同セッション内）なら即座に非表示
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    overlay.classList.add('hidden');
+  }
+
+  loginBtn.addEventListener('click', doLogin);
+  passInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doLogin();
+  });
+})();
 
 init();
 </script>
