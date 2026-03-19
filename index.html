@@ -685,7 +685,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
   badge.className = 'member-badge notfound';
   badge.textContent = '検索中...';
   badge.style.display = 'block';
-  callAPI('getMember', {code: code}).then(function(res){
+  callAPI('getMember', {code: code, store: getStore()}).then(function(res){
     var m = res.data;
     if (m && m.name) {
       badge.className = 'member-badge found';
