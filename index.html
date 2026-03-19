@@ -279,35 +279,47 @@ nav a:hover { color: #fff; }
       </div>
       <div class="field-label" style="margin-top:10px;">商品メモ（任意）</div>
       <input type="text" id="merchNote" class="full-input" placeholder="商品名など">
+      <!-- 割引（商品購入内） -->
+      <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);">
+        <div class="field-label" style="margin-bottom:8px; font-weight:700;">割引 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+        <div class="discount-row">
+          <div>
+            <div class="field-label">割引率</div>
+            <select id="discountRate" class="plan-select">
+              <option value="">なし</option>
+              <option value="10">10% OFF</option>
+              <option value="20">20% OFF</option>
+              <option value="30">30% OFF</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">割引額（手入力可）</div>
+            <div class="merch-input-row">
+              <span class="yen-prefix">−¥</span>
+              <input type="number" id="discountAmt" class="full-input" placeholder="0" min="0" style="max-width:120px;">
+            </div>
+          </div>
+        </div>
+        <div id="discountPreview"></div>
+      </div>
     </div>
   </div>
 
-  <!-- 割引 -->
+  <!-- 調整金額 -->
   <div class="section">
     <div class="section-head">
       <div class="step-num">⑤</div>
-      <div class="section-title">割引 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+      <div class="section-title">調整金額 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
     </div>
     <div class="card">
-      <div class="discount-row">
-        <div>
-          <div class="field-label">割引率</div>
-          <select id="discountRate" class="plan-select">
-            <option value="">なし</option>
-            <option value="10">10% OFF</option>
-            <option value="20">20% OFF</option>
-            <option value="30">30% OFF</option>
-          </select>
-        </div>
-        <div>
-          <div class="field-label">割引額（手入力）</div>
-          <div class="merch-input-row">
-            <span class="yen-prefix">−¥</span>
-            <input type="number" id="discountAmt" class="full-input" placeholder="0" min="0" style="max-width:120px;">
-          </div>
-        </div>
+      <div class="field-label">調整額（＋追加請求 / −値引き）</div>
+      <div class="merch-input-row">
+        <input type="number" id="adjustAmt" class="full-input" placeholder="例: -500 または 300" style="max-width:220px;">
+        <span style="font-size:0.85rem;color:var(--sub);align-self:center;">円</span>
       </div>
-      <div id="discountPreview"></div>
+      <div class="field-label" style="margin-top:10px;">調整メモ（任意）</div>
+      <input type="text" id="adjustNote" class="full-input" placeholder="値引き理由・追加費用など">
+      <div id="adjustPreview" style="margin-top:8px; font-size:0.85rem; font-weight:600; min-height:18px;"></div>
     </div>
   </div>
 
@@ -638,16 +650,25 @@ function updateTotal() {
   rentalSel.forEach(function(r){ rentalTotal += r.amount; });
   t += rentalTotal;
   var merch = parseInt(document.getElementById('merchAmt').value) || 0;
-  t += merch;
   var discount = parseInt(document.getElementById('discountAmt').value) || 0;
-  t -= discount;
+  var netMerch = Math.max(0, merch - discount);
+  t += netMerch;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  t += adjust;
   if (t < 0) t = 0;
   document.getElementById('totalNum').textContent = t.toLocaleString();
   var bd = '';
   if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
   if (rentalTotal > 0) bd += (bd ? '　＋　' : '') + 'レンタル: ¥' + rentalTotal.toLocaleString();
-  if (merch > 0) bd += (bd ? '　＋　' : '') + '商品: ¥' + merch.toLocaleString();
-  if (discount > 0) bd += (bd ? '　−　' : '') + '割引: ¥' + discount.toLocaleString();
+  if (merch > 0) {
+    if (discount > 0) {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + netMerch.toLocaleString() + '（割引−¥' + discount.toLocaleString() + '）';
+    } else {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + merch.toLocaleString();
+    }
+  }
+  if (adjust > 0) bd += (bd ? '　＋　' : '') + '調整: ¥' + adjust.toLocaleString();
+  if (adjust < 0) bd += (bd ? '　−　' : '') + '調整: −¥' + Math.abs(adjust).toLocaleString();
   document.getElementById('totalBreakdown').textContent = bd;
   updateRegisterBtn();
 }
@@ -694,7 +715,9 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
   var merch = parseInt(document.getElementById('merchAmt').value) || 0;
   var discount = parseInt(document.getElementById('discountAmt').value) || 0;
-  var total = planSel.amount + rentalFee + merch - discount;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  var netMerch = Math.max(0, merch - discount);
+  var total = planSel.amount + rentalFee + netMerch + adjust;
   if (total < 0) total = 0;
   var params = {
     store: getStore(),
@@ -702,9 +725,10 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     memberName: memberName,
     regFee: 0, plan1: planSel.plan1, plan2: planSel.plan2,
     planLabel: planSel.label, usageFee: planSel.amount,
-    merchAmt: merch, merchNote: document.getElementById('merchNote').value.trim(),
+    merchAmt: netMerch, merchNote: document.getElementById('merchNote').value.trim(),
     rentalNote: rentalNames.join(','), rentalFee: rentalFee,
-    adjustment: discount > 0 ? -discount : 0, total: total, payment: paymentSel,
+    adjustment: adjust, adjustNote: document.getElementById('adjustNote').value.trim(),
+    total: total, payment: paymentSel,
     cash: paymentSel === '現金' ? total : 0,
     credit: paymentSel === 'クレジット' ? total : 0,
     emoney: paymentSel === '電子マネー' ? total : 0,
@@ -735,27 +759,61 @@ document.getElementById('registerBtn').addEventListener('click', function(){
 });
 
 // Merch & Discount listeners
-document.getElementById('merchAmt').addEventListener('input', updateTotal);
+function updateDiscountPreview() {
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var rate = parseInt(document.getElementById('discountRate').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var preview = document.getElementById('discountPreview');
+  if (merch > 0 && discount > 0) {
+    var net = Math.max(0, merch - discount);
+    preview.textContent = '商品割引後: ¥' + net.toLocaleString() + '（−¥' + discount.toLocaleString() + (rate ? '　' + rate + '% OFF' : '') + '）';
+    preview.style.color = '#1a5276';
+  } else {
+    preview.textContent = '';
+  }
+}
+document.getElementById('merchAmt').addEventListener('input', function(){
+  // 割引率が設定されていれば割引額を再計算
+  var rate = parseInt(document.getElementById('discountRate').value) || 0;
+  if (rate > 0) {
+    var merch = parseInt(this.value) || 0;
+    var d = Math.floor(merch * rate / 100);
+    document.getElementById('discountAmt').value = d > 0 ? d : '';
+  }
+  updateDiscountPreview();
+  updateTotal();
+});
 document.getElementById('discountRate').addEventListener('change', function(){
   var rate = parseInt(this.value) || 0;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
   if (rate > 0) {
-    var base = (planSel ? planSel.amount : 0);
-    var rt = 0;
-    if (matSel) rt += Number(matSel.amount);
-    rentalSel.forEach(function(r){ rt += r.amount; });
-    base += rt;
-    var d = Math.floor(base * rate / 100);
-    document.getElementById('discountAmt').value = d;
-    document.getElementById('discountPreview').textContent = '割引後: ¥' + (base - d).toLocaleString() + '（' + rate + '% OFF → −¥' + d.toLocaleString() + '）';
+    var d = Math.floor(merch * rate / 100);
+    document.getElementById('discountAmt').value = d > 0 ? d : '';
   } else {
     document.getElementById('discountAmt').value = '';
-    document.getElementById('discountPreview').textContent = '';
   }
+  updateDiscountPreview();
   updateTotal();
 });
 document.getElementById('discountAmt').addEventListener('input', function(){
   document.getElementById('discountRate').value = '';
-  document.getElementById('discountPreview').textContent = '';
+  updateDiscountPreview();
+  updateTotal();
+});
+
+// 調整金額リスナー
+document.getElementById('adjustAmt').addEventListener('input', function(){
+  var adj = parseInt(this.value) || 0;
+  var preview = document.getElementById('adjustPreview');
+  if (adj > 0) {
+    preview.textContent = '追加請求: ＋¥' + adj.toLocaleString();
+    preview.style.color = '#c62828';
+  } else if (adj < 0) {
+    preview.textContent = '値引き: −¥' + Math.abs(adj).toLocaleString();
+    preview.style.color = '#2e7d32';
+  } else {
+    preview.textContent = '';
+  }
   updateTotal();
 });
 
