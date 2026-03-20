@@ -217,7 +217,7 @@ nav a:hover { color: #fff; }
     <div class="login-logo">🧗 MONO</div>
     <div class="login-sub">Mono Climbing Studio — スタッフログイン</div>
     <div class="login-label">パスワード</div>
-    <input type="password" id="loginPass" class="login-input" placeholder="スタッフパスワードを入力" autocomplete="current-password">
+    <input type="password" id="loginPass" class="login-input" placeholder="スタップパスワードを入力" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">ログイン</button>
     <div class="login-err" id="loginErr"></div>
   </div>
@@ -410,6 +410,9 @@ var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
 var CACHE_TTL = 30 * 60 * 1000; // 30min
 
+// 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
+var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
+
 function callAPI(action, params) {
   return fetch('/api/gas', {
     method: 'POST',
@@ -475,8 +478,9 @@ function init() {
 }
 
 // ── GASデータ構造:
-//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "トライアル"）
+//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券"）
 //   plan2 = 属性（例: "学生", "大人", "未就学児", "シニア"）
+//          みたは 利用区分（"月パス利用", "昼月パス利用", "回数券利用"）→ Step B に表示
 //   小学生エントリ: plan1 の末尾が "小"（例: "2h小", "1day小"）、plan2="学生"
 // ────────────────────────────────────────────────
 
@@ -504,14 +508,15 @@ function buildAttrDropdown() {
   wrap.innerHTML = '';
 
   // plan2（属性）の一覧を収集 + 小学生（plan1末尾"小"）を追加
+  // ※ PASS_PLAN2 の種別はStep Bに表示するためStep Aから除外
   var attrs = [];
   allPlans.forEach(function(p){
     var attr = getAttrOfEntry(p);
-    if (attr && attrs.indexOf(attr) < 0) attrs.push(attr);
+    if (attr && attrs.indexOf(attr) < 0 && PASS_PLAN2.indexOf(attr) < 0) attrs.push(attr);
   });
 
-  // 表示順固定: 未就学児→小学生→学生→大人→シニア→パス・回数券
-  var ORDER = ['未就学児','小学生','学生','大人','シニア','月パス利用','昼月パス利用','回数券利用'];
+  // 表示順固定: 未就学児→小学生→学生→大人→シニア
+  var ORDER = ['未就学児','小学生','学生','大人','シニア'];
   attrs.sort(function(a, b) {
     var ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
     if (ai < 0) ai = 999; if (bi < 0) bi = 999;
@@ -561,11 +566,19 @@ function buildPlanDropdown(attrName) {
   var filtered = allPlans.filter(function(p){
     return getAttrOfEntry(p) === attrName;
   });
-  if (!filtered.length) return;
 
-  // プランが1つだけなら自動確定
-  if (filtered.length === 1) {
-    var p = filtered[0];
+  // パス・回数券利用プラン（全属性共通でStep Bに表示）
+  var passEntries = allPlans.filter(function(p){
+    return PASS_PLAN2.indexOf(getAttrOfEntry(p)) >= 0;
+  });
+
+  // 通常プランもパスプランもなければ何もしない
+  var allOptions = filtered.concat(passEntries);
+  if (!allOptions.length) return;
+
+  // 合計1つだけなら自動確定
+  if (allOptions.length === 1) {
+    var p = allOptions[0];
     planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
     summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
     summaryEl.style.display = 'block';
@@ -576,11 +589,26 @@ function buildPlanDropdown(attrName) {
   var sel = document.createElement('select');
   sel.id = 'planSelect';
   sel.className = 'plan-select';
-  // 金額非表示、利用の種類ラベルのみ表示
   var opts = '<option value="">-- 利用の種類を選択してください --</option>';
-  filtered.forEach(function(p, i){
-    opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
-  });
+
+  // 通常利用グループ
+  if (filtered.length) {
+    opts += '<optgroup label="通常利用">';
+    filtered.forEach(function(p, i){
+      opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
+  // パス・回数券グループ
+  if (passEntries.length) {
+    opts += '<optgroup label="パス・回数券">';
+    passEntries.forEach(function(p, i){
+      opts += '<option value="' + (filtered.length + i) + '">' + esc(getAttrOfEntry(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
   sel.innerHTML = opts;
   wrap.appendChild(sel);
 
@@ -591,7 +619,7 @@ function buildPlanDropdown(attrName) {
       this.className = 'plan-select';
       summaryEl.style.display = 'none';
     } else {
-      var p = filtered[idx];
+      var p = allOptions[idx];
       planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
       this.className = 'plan-select has-val';
       summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
