@@ -164,7 +164,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="s-label">レンタル</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sRental">0</span></div>
       </div>
-    2 <div class="summary-card highlight">
+      <div class="summary-card highlight">
         <div class="s-label">売上合計</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sTotal">0</span></div>
       </div>
@@ -192,7 +192,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <p style="font-size:.88rem;color:var(--sub);margin-bottom:12px;">表示中のデータを「売上集計」シートに書き出します。</p>
-      <p class="warn-note">⚠ 同じ日付のデータを再転記するな重複します。</p>
+      <p class="warn-note">⚠ 同じ日付のデータを再転記すると重複します。</p>
       <div style="margin-top:14px;">
         <button class="transfer-btn" id="transferBtn">売上を転記する</button>
       </div>
@@ -324,11 +324,20 @@ document.getElementById('transferBtn').addEventListener('click', function(){
     btn.textContent = '売上を転記する';
     if(res.ok && res.data && res.data.success){
       msg.className = 'transfer-msg ok';
-      msg.textContent = '✓ 転記しました（' + res.data.rows + '件 → 売上集計シート）';
-      btn.disabled = true; // prevent double submit
+      msg.textContent = '✓ 転記しました（' + (res.data.rows || currentEntries.length) + '件 → 売上集計シート）';
+      btn.disabled = true; // 二重転記防止
     } else {
+      // エラー詳細を表示（デバッグ用にレスポンス全体を確認）
+      var errDetail = '';
+      if (res.data && res.data.error) {
+        errDetail = res.data.error;
+      } else if (res.error) {
+        errDetail = res.error;
+      } else {
+        errDetail = 'サーバーからの応答: ' + JSON.stringify(res);
+      }
       msg.className = 'transfer-msg err';
-      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error||'不明');
+      msg.textContent = 'エラー: ' + errDetail;
       btn.disabled = false;
     }
   }).catch(function(e){
