@@ -191,53 +191,9 @@ nav a:hover { color: #fff; }
 .delete-entry-btn:hover:not(:disabled) { background: #fdecea; }
 .delete-entry-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Login Overlay ── */
-#loginOverlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: var(--dark);
-  display: flex; align-items: center; justify-content: center;
-}
-#loginOverlay.hidden { display: none; }
-.login-box {
-  background: #fff; border-radius: 14px;
-  padding: 36px 32px; width: 100%; max-width: 360px;
-  box-shadow: 0 8px 40px rgba(0,0,0,.4);
-  text-align: center;
-}
-.login-logo { font-size: 1.5rem; font-weight: 800; color: var(--dark); margin-bottom: 4px; letter-spacing: .03em; }
-.login-sub { font-size: 0.82rem; color: var(--sub); margin-bottom: 28px; }
-.login-label { font-size: 0.8rem; color: var(--sub); font-weight: 600; text-align: left; margin-bottom: 6px; }
-.login-input {
-  width: 100%; padding: 12px 14px;
-  border: 1.5px solid var(--border); border-radius: 8px;
-  font-size: 1rem; outline: none; transition: border .15s;
-  margin-bottom: 14px;
-}
-.login-input:focus { border-color: var(--dark); }
-.login-btn {
-  width: 100%; padding: 13px;
-  background: var(--accent); color: #fff;
-  border: none; border-radius: 8px;
-  font-size: 1rem; font-weight: 700; cursor: pointer;
-  transition: opacity .15s;
-}
-.login-btn:hover { opacity: 0.88; }
-.login-err { margin-top: 10px; font-size: 0.85rem; color: #c62828; font-weight: 600; min-height: 20px; }
 </style>
 </head>
 <body>
-
-<!-- ── ログイン画面 ── -->
-<div id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo">🧗 MONO</div>
-    <div class="login-sub">Mono Climbing Studio — スタッフログイン</div>
-    <div class="login-label">パスワード</div>
-    <input type="password" id="loginPass" class="login-input" placeholder="スタッフパスワードを入力" autocomplete="current-password">
-    <button class="login-btn" id="loginBtn">ログイン</button>
-    <div class="login-err" id="loginErr"></div>
-  </div>
-</div>
 
 <nav>
   <div class="logo">🧗 MONO</div>
@@ -302,7 +258,7 @@ nav a:hover { color: #fff; }
         <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
       </div>
 
-      <!-- STEP B: 利用の種類（区分②） -->
+      <!-- STEP B: 利用の種類（区分①） -->
       <div id="planSubWrap" class="sub-plan-area">
         <div class="plan-step-label">
           <div class="step-badge">B</div>
@@ -416,7 +372,7 @@ nav a:hover { color: #fff; }
       <div class="section-title">調整金額 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
     </div>
     <div class="card">
-      <div class="field-label">調整顝（下追加請求 / −値引き）</div>
+      <div class="field-label">調整額（＋追加請求 / −値引き）</div>
       <div class="merch-input-row">
         <input type="number" id="adjustAmt" class="full-input" placeholder="例: -500 または 300" style="max-width:220px;">
         <span style="font-size:0.85rem;color:var(--sub);align-self:center;">円</span>
@@ -485,7 +441,7 @@ var CACHE_TTL = 30 * 60 * 1000; // 30min
 var lastEntryRef = null; // 登録直後の削除用
 var deleteTimer = null;
 
-// 月パス・映月パス・回数券利用 は「利用の種類」（Step B に表示）
+// 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
 var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
 
 // 表示ラベルマッピング（「トライアル」→「初回体験」など）
@@ -567,7 +523,7 @@ function init() {
 }
 
 // ── GASデータ構造:
-//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券")
+//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券"）
 //   plan2 = 属性（例: "学生", "大人", "未就学児", "シニア"）
 //          または 利用区分（"月パス利用", "昼月パス利用", "回数券利用"）→ Step B に表示
 //   小学生エントリ: plan1 の末尾が "小"（例: "2h小", "1day小"）、plan2="学生"
@@ -613,70 +569,338 @@ function buildAttrDropdown() {
     return;
   }
 
-  var sel = document.createElement('select'); �6V��B�vGG%6V�V7Bs��6V��6�74��R�w���6V�V7Bs��f"�G2�s��F���f�VS�"#���[�h
-~8).��h��8~8n8�88^8B�����F����s��GG'2�f�$V6��gV�7F���GG"����G2��s��F���f�VS�"r�W64GG"�GG"��r#�r�W62�GG"��s���F����s��ғ��6V����W$�D����G3��w&�V�D6���B�6V���6V��FDWfV�DƗ7FV�W"�v6��vRr�gV�7F��ₗ��f"6B�F��2�f�VS����6V���V�ð�F��2�6�74��R�w���6V�V7Br��6B�r�2�f�r�rr���WFFUF�F���f"7V%w&�F�7V�V�B�vWDV�V�V�D'��B�w��7V%w&r����b�6B���'V��E��G&�F�v�6B���7V%w&�7G��R�F�7���v&��6�s���V�6R��7V%w&�7G��R�F�7���v���Rs��F�7V�V�B�vWDV�V�V�D'��B�w��7V��'�r��7G��R�F�7���v���Rs��Тғ��Р���)H)H5DU#�X��yJ�8�z���88�8:�88>89~888*n8;2)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H �gV�7F���'V��E��G&�F�v�GG$��R���f"w&�F�7V�V�B�vWDV�V�V�D'��B�w��w&r���w&���W$�D���rs��f"7V��'�V��F�7V�V�B�vWDV�V�V�D'��B�w��7V��'�r���7V��'�V��7G��R�F�7���v���Rs����6V���V�ð��f"f��FW&VB�����2�f��FW"�gV�7F������&WGW&�vWDGG$�dV�G'������GG$��S��ғ���f"74V�G&�W2�����2�f��FW"�gV�7F������&WGW&�55���"��FW��b�vWDGG$�dV�G'��������ғ���f"���F���2�f��FW&VB�6��6B�74V�G&�W2����b����F���2��V�wF��&WGW&㰠��b����F���2��V�wF�������f"����F���5�Ӱ���6V������������#����"��&Vâ��&V����V�C��V�&W"����V�B�Ӱ�7V��'�V��FW�D6��FV�B�~)�2r�W62���&V�~8*Rr��V�&W"����V�B��F���6�U7G&��r����7V��'�V��7G��R�F�7���v&��6�s��WFFUF�F���&WGW&㰢Р�f"6V��F�7V�V�B�7&VFTV�V�V�B�w6V�V7Br���6V��B�w��6V�V7Bs��6V��6�74��R�w���6V�V7Bs��f"�G2�s��F���f�VS�"#���X��yJ�8�z���8).��h��8~8n8�88^8B�����F����s����b�f��FW&VB��V�wF�����G2��s��Fw&�W�&V��.�	�[��X��yJ�#�s��f��FW&VB�f�$V6��gV�7F���������G2��s��F���f�VS�"r���r#�r�W62�vWEW6vT�&V���s���F����s��ғ���G2��s���Fw&�W�s��Р��b�74V�G&�W2��V�wF�����G2��s��Fw&�W�&V��.898+�8;�Y��i[X��#�s��74V�G&�W2�f�$V6��gV�7F����������������̀����ѥ���م�Ք􈜀������ѕɕ������Ѡ����������������͌�������=��������������ѥ�����(�������(�������̀����ѝɽ�����(���((��͕�������!Q50������(���Ʌ��������
-�����͕���((��͕�����ٕ��1��ѕ��Ƞ�����������չ�ѥ�����(����مȁ��������͕%�Сѡ�̹م�Ք��(��������ѡ�̹م�Ք���􀜜������9�8���त��(����������M����ձ��(������ѡ�̹�����9����������͕���М�(�������յ��������屔��������􀝹�����(����􁕱͔��(������مȁ��􁅱�=�ѥ���m���t�(����������M�����������������İ�������������Ȱ�������������������չ��9յ��ȡ�����չХ��(������ѡ�̹�����9����������͕���Ё��̵م���(�������յ������ѕ��
-��ѕ�Ѐ􀟊rL�������͌��������������
-�����9յ��ȡ�����չФ�ѽ1�����M�ɥ�����(�������յ��������屔��������􀝉������(�����(��������ѕQ�х����(�����)�((����R�R ��f�2˚Zd��R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R )���յ��й���������	�%���ɕ���
-����������ٕ��1��ѕ��Ƞ�����������չ�ѥ�����(�����յ��й���������	�%���ɕ����х��̜����屔���������ѡ�̹������������������耝������(������ѕI�������)���)���յ��й���������	�%���ɕ����М�����ٕ��1��ѕ��Ƞ�����М������ѕI������)���յ��й���������	�%����ѡ��Mѽɕ�͌������ٕ��1��ѕ��Ƞ�����������չ�ѥ�����(�����յ��й���������	�%����ѡ���͍�х��̜����屔���������ѡ�̹������������������耝������(������ѕI�������)���)���յ��й���������	�%����ѡ���͍I�є������ٕ��1��ѕ��Ƞ��������������ѕI������()�չ�ѥ������I��������(����������յ��й���������	�%���ɕ���
-����������������ɕ��ɸ���(��مȁ��Ѐ����͕%�С���յ��й���������	�%���ɕ����М��م�Ք�������(��مȁ��͍
-�������􁑽�յ��й���������	�%����ѡ��Mѽɕ�͌�����������(��مȁ��͍I�є�􁑥͍
-�������������͕%�С���յ��й���������	�%����ѡ���͍I�є���م�Ք�����������(��مȁ��͍�Ѐ􁑥͍I�є�������5�Ѡ�����ȡ��Ѐ����͍I�є�����������(��ɕ��ɸ�5�Ѡ���������Ѐ����͍�Ф�)�()�չ�ѥ�������ѕI��������(��مȁ��������􁑽�յ��й���������	�%���ɕ���
-���������������(��مȁ�յ����􁑽�յ��й���������	�%������Mյ���䜤�(������������������յ����ѕ��
-��ѕ�Ѐ􀜜�����ѕQ�х����ɕ��ɸ��(��مȁ��Ѐ����͕%�С���յ��й���������	�%���ɕ����М��م�Ք�������(��مȁ��͍
-�������􁑽�յ��й���������	�%����ѡ��Mѽɕ�͌�����������(��مȁ��͍I�є�􁑥͍
-�������������͕%�С���յ��й���������	�%����ѡ���͍I�є���م�Ք�����������(��مȁ��͍�Ѐ􁑥͍I�є�������5�Ѡ�����ȡ��Ѐ����͍I�є�����������(��مȁ�������5�Ѡ���������Ѐ����͍�Ф�(��������͍�Ѐ������(�����յ����ѕ��
-��ѕ�Ѐ􀟞f�2˚Zd�
-�����������ѽ1�����M�ɥ����������#
-�������йѽ1�����M�ɥ���������\��������������͍I�є���������[��_�"_�&˖�W��$��(��􁕱͔�������Ѐ������(�����յ����ѕ��
-��ѕ�Ѐ􀟞f�2˚Zd�
-�����������ѽ1�����M�ɥ�����(��􁕱͔��(�����յ����ѕ��
-��ѕ�Ѐ􀜜�(���(������ѕQ�х����)�((����R�R ����ώ
-����
-�
-��
-ߎ��̃�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R�R )�չ�ѥ����ե��I��х�M��ѥ���ɕ�х�̰��̤��(���̹�����!Q50�􀜜�(�����=�ѥ��̀�mt�(�����M����ձ��((�������ɕ�х�̹����Ѡ���(�����̹�����!Q50����������屔􉍽����مȠ���Ո�홽�еͥ����ɕ������\��������(����ɕ��ɸ�(���((��مȁ���%ѕ�̀�ɕ�х�̹���ѕȡ�չ�ѥ���ȥ�ɕ��ɸ�ȹ��������ȹ����������=����{�� ����������(��مȁ�ѡ��I��х�̀�ɕ�х�̹���ѕȡ�չ�ѥ���ȥ�ɕ��ɸ��ȹ��������ȹ����������=����{�� ����������(�����=�ѥ��̀􁵅�%ѕ���((���������%ѕ�̹����Ѡ���(����مȁ���I�܀􁑽�յ��й�ɕ�ѕ�����Р���؜��(�������I�ܹ�����9�����ɕ�х����еɽܜ�(����مȁ�������؀􁑽�յ��й�ɕ�ѕ�����Р���؜��(�����������ع�����9�����ɕ�х����е�����Ȝ�(�����������ع�����!Q50��(��������؁������ɕ�х����е�������~�`��
-����
-���ώ
-Î{�� 𽑥�����(��������؁������ɕ�х����е���Ј������{���+�VÎ
-K��*x𽑥����(�������I�ܹ������
-������������ؤ�(����مȁ���̀���ѥ���م�Ք�Ĉ����\��ѥ�����(�������%ѕ�̹��������չ�ѥ���Ȱ����(���������̀����ѥ���م�Ք􈜀��������������͌�ȹ����������
-�����9յ��ȡȹ���չФ�ѽ1�����M�ɥ����������ѥ�����(�������(����مȁ���M��}���􁑽�յ��й�ɕ�ѕ�����Р�͕���М��(�������M��}������􀝵��M����М�(�������M��}��������9����􀝵�е͕���М�(�������M��}��������!Q50������(�������I�ܹ������
-��������M��}����(�����̹������
-��������I�ܤ�(�������M��}������ٕ��1��ѕ��Ƞ�����������չ�ѥ�����(������مȁ��������͕%�Сѡ�̹م�Ք��(���������M���􀡥�������������=�ѥ���m���t�聹ձ��(������ѡ�̹�����9����􀝵�е͕���М������������������̵م���耜���(����������ѕQ�х����(�������(���((�������ѡ��I��х�̹����Ѡ���(�����������%ѕ�̹����Ѡ���(������مȁ�ѡ��1�����􁑽�յ��й�ɕ�ѕ�����Р���؜��(�������ѡ��1����������9�����ɕ�х���ѡ�ȵ�������(�������ѡ��1�����ѕ��
-��ѕ�Ѐ􀟎w����[�����ώ
-�����(�������̹������
-������ѡ��1������(�����(����مȁ����]Ʌ��􁑽�յ��й�ɕ�ѕ�����Р���؜��(��������]Ʌ�������9����􀝍�����ɽ����(�����ѡ��I��х�̹��������չ�ѥ���ȥ�(������مȁ�Ѹ�􁑽�յ��й�ɕ�ѕ�����Р����ѽ����(�������Ѹ������9�����ɕ�х��������(�������Ѹ�ѕ��
-��ѕ�Ѐ�ȹ���������
-�����9յ��ȡȹ���չФ�ѽ1�����M�ɥ�����(�������Ѹ����ٕ��1��ѕ��Ƞ����������չ�ѥ�����(��������مȁ�����ɕ�х�M�������%���࡙չ�ѥ�����ɕ��ɸ�๹�������ȹ��������(����������������������ɕ�х�M������������ఀĤ쁉Ѹ������1��йɕ��ٔ��͕�����(����������͔��ɕ�х�M�����͠�������ȹ���������չ��9յ��ȡȹ���չХ��쁉Ѹ������1��й�����͕�����(������������ѕQ�х����(���������(����������]Ʌ��������
-������Ѹ��(�������(�����̹������
-���������]Ʌ���(���((����������%ѕ�̹����Ѡ������ѡ��I��х�̹����Ѡ���(�����̹�����!Q50����������屔􉍽����مȠ���Ո�홽�еͥ����ɕ������\��������(���)�((���A�嵕�Ӿ�#�3�w����[�7����*���$)���յ��й�Օ��M����ѽ��������䵍��������������չ�ѥ����Ѹ��(���Ѹ����ٕ��1��ѕ��Ƞ����������չ�ѥ�����(�������յ��й�Օ��M����ѽ��������䵍��������������չ�ѥ�����쁈������1��йɕ��ٔ��͕�������(�����Ѹ������1��й�����͕����(������嵕��M����Ѹ���х͕й��ѡ���(�������յ��й���������	�%����ѡ��A��]Ʌ������屔�����������嵕��M�����􀟎w����X�������������耝������(��������ѕI����ѕ�	Ѹ���(�����)���((����B#��#��#��_��!=7�nӚZÎ��_���S��#��_��$)�չ�ѥ�������Q�х�����(��مȁЀ�����M���������M������չЀ���(��Ѐ�􁝕�I�������(��مȁɕ�х�Q�х�����(���������M����ɕ�х�Q�х����9յ��ȡ���M������չФ�(��ɕ�х�M�����������չ�ѥ���ȥ�ɕ�х�Q�х����ȹ���չ�����(��Ѐ��ɕ�х�Q�х��(��مȁ��ɍ������͕%�С���յ��й���������	�%�����ɍ��М��م�Ք�������(��مȁ��͍�չЀ����͕%�С���յ��й���������	�%�����͍�չ��М��م�Ք�������(��Ѐ��5�Ѡ���������ɍ������͍�չФ�(��مȁ�����Ѐ����͕%�С���յ��й���������	�%����������М��م�Ք�������(��Ѐ�􁅑�����(��ɕ��ɸ�5�Ѡ�������Ф�)�()�չ�ѥ�������ѕQ�х�����(��مȁЀ�����M���������M������չЀ���(��مȁɕ����􁝕�I�������(��Ѐ��ɕ����(��مȁɕ�х�Q�х�����(���������M����ɕ�х�Q�х����9յ��ȡ���M������չФ�(��ɕ�х�M�����������չ�ѥ���ȥ�ɕ�х�Q�х����ȹ���չ�����(��Ѐ��ɕ�х�Q�х��(��مȁ��ɍ������͕%�С���յ��й���������	�%�����ɍ��М��م�Ք�������(��مȁ��͍�չЀ����͕%�С���յ��й���������	�%�����͍�չ��М��م�Ք�������(��مȁ���5�ɍ���5�Ѡ���������ɍ������͍�չФ�(��Ѐ�􁹕�5�ɍ��(��مȁ�����Ѐ����͕%�С���յ��й���������	�%����������М��م�Ք�������(��Ѐ�􁅑�����(������Ѐ�����Ѐ���(�����յ��й���������	�%���ѽх�9մ���ѕ��
-��ѕ�Ѐ�йѽ1�����M�ɥ�����(��مȁ���􀜜�(����������M��������􀟎_�����
-���������M������չйѽ1�����M�ɥ�����(������ɕ�������������􀡉��������/� ��耜�������f�2˚Zd�
-�����ɕ����ѽ1�����M�ɥ�����(������ɕ�х�Q�х�����������􀡉��������/� ��耜���������ώ
-����
-�����ɕ�х�Q�х��ѽ1�����M�ɥ�����(��������ɍ��������(����������͍�չЀ������(����������􀡉��������/� ��耜�������V�N�
-��������5�ɍ��ѽ1�����M�ɥ����������#�&˖�W�"K
-�������͍�չйѽ1�����M�ɥ����������$��(����􁕱͔��(����������􀡉��������/� ��耜�������V�N�
-�������ɍ��ѽ1�����M�ɥ�����(�����(���(�����������Ѐ���������􀡉��������/� ��耜����������V��
-����������йѽ1�����M�ɥ�����(�����������Ѐ���������􀡉�������"K� ��耜����������V�胊"K
-�����5�Ѡ���̡�����Ф�ѽ1�����M�ɥ�����(�����յ��й���������	�%���ѽх�	ɕ����ݸ���ѕ��
-��ѕ�Ѐ􁉐�(������ѕI����ѕ�	Ѹ���)�((����f�2ˎs�
-��Ϛr'�*�2[�"���k��#�_���Ϧ�*{�����?���_�"_��*{������#��$)�չ�ѥ�������ѕI����ѕ�	Ѹ����(��مȁ�ѽɔ�􁝕�Mѽɔ���(��������ѽɔ���(�������յ��й���������	�%���ɕ���ѕ�	Ѹ�����ͅ��������Ք�(����ɕ��ɸ�(���(��مȁѽх��􁍅��Q�х����(��مȁ��i�ɽe����ѽх�������(������B#�� Ö���R��&W��Z��W��7����#�n{�VÖ"����Zg�"��R�������$(�����յ��й���������	�%���ɕ���ѕ�	Ѹ�����ͅ�����􀄡��嵕��M��������i�ɽe����)�((���5����ȁ͕�ɍ�)���յ��й���������	�%���͕�ɍ�	Ѹ������ٕ��1��ѕ��Ƞ����������չ�ѥ�����(��مȁ�����􁑽�յ��й���������	�%���������
-������م�Ք��ɥ����(�������������쁅���Р���k�N��V��>ߎ
-K���*o�_���?���W����ɕ��ɸ��(��مȁ�ѽɔ�􁝕�Mѽɔ���(��مȁ������􁑽�յ��й���������	�%���������	�������(�������������9����􀝵����ȵ��������љ�չ���(��������ѕ��
-��ѕ�Ѐ􀟚�s�ҋ�ⴸ����(����������屔��������􀝉������(������A$�����5����Ȝ��퍽��聍������ѽɔ��ѽɔ���������ф����ѡ����չ�ѥ���ɕ̥�(����مȁ���ɕ̹��ф�(����������������������(�����������������9����􀝵����ȵ��������չ���(������������ѕ��
-��ѕ�Ѐ􀟊rL�������������������#��k�N��V��>�耜�������������$��(���������յ��й���������	�%����Օ��9������م�Ք�􀜜�(����􁕱͔��(�����������������9����􀝵����ȵ��������љ�չ���(������������ѕ��
-��ѕ�Ѐ􀟒�k�N��V��>܀����������������r��f�2ˎ��d��(�����(�������э���չ�ѥ����쁉�����ѕ��
-��ѕ�Ѐ􀟎
-�����3�f�R�_���_�|�����)���)���յ��й���������	�%���������
-���������ٕ��1��ѕ��Ƞ���命ݸ����չ�ѥ������(���������������ѕȜ�����յ��й���������	�%���͕�ɍ�	Ѹ�����������)���((���I����ѕ˾�#�_���Ϧ�*{���?���_�"_��*{����#��$)���յ��й���������	�%���ɕ���ѕ�	Ѹ������ٕ��1��ѕ��Ƞ����������չ�ѥ�����(��مȁ�ѽɔ�􁝕�Mѽɔ���(��������ѽɔ���(�������յ��й���������	�%����ѽɕI��եɕ�5͜�����屔��������􀝉������(����ɕ��ɸ�(���(��مȁѽх��􁍅��Q�х����(��مȁ��i�ɽe����ѽх�������(��مȁ�����ѥٕA�嵕�Ѐ���嵕��M���������i�ɽe������Ö��聹ձ���(������������ѥٕA�嵕�Ф�ɕ��ɸ�((������3�w����[�7����ӖB#����˒�+��B7�
-K�B��
-�
-,(��مȁ�ѡ��A��9�������嵕��M�����􀟎w����X���������յ��й���������	�%����ѡ��A��9������م�Ք��ɥ�����耜��(��مȁ��嵕��1��������嵕��M�����􀟎w����X������ѡ��A��9���������w����X������ѡ��A��9����������聕����ѥٕA�嵕���((��مȁ������􁑽�յ��й���������	�%���������	�������(��مȁ�����9����􀡉����������9���������=�����չ�����������������ѕ��
-��ѕ�йɕ��������rL������������Р���� ��l�t��ɥ����耜��(��مȁ������9����􁉅���9����������յ��й���������	�%����Օ��9������م�Ք��ɥ���������
-ˎ
-� ��(��مȁɕ�х��������ɕ�х�9���̀�mt�(���������M�����ɕ�х������9յ��ȡ���M������չФ�ɕ�х�9���̹��͠����M����������(��ɕ�х�M�����������չ�ѥ���ȥ�ɕ�х������ȹ���չ��ɕ�х�9���̹��͠�ȹ���������(��مȁ��ɍ������͕%�С���յ��й���������	�%�����ɍ��М��م�Ք�������(��مȁ��͍�չЀ����͕%�С���յ��й���������	�%�����͍�չ��М��م�Ք�������(��مȁ�����Ѐ����͕%�С���յ��й���������	�%����������М��م�Ք�������(��مȁ���5�ɍ���5�Ѡ���������ɍ������͍�չФ�(��مȁɕ����􁝕�I�������( var regFeeRaw = document.getElementById('regFeeCheck').checked ? (parseInt(document.getElementById('regFeeAmt').value) || 0) : 0;
+  var sel = document.createElement('select');
+  sel.id = 'attrSelect';
+  sel.className = 'plan-select';
+  var opts = '<option value="">-- 属性を選択してください --</option>';
+  attrs.forEach(function(attr){
+    opts += '<option value="' + escAttr(attr) + '">' + esc(attr) + '</option>';
+  });
+  sel.innerHTML = opts;
+  wrap.appendChild(sel);
+
+  sel.addEventListener('change', function(){
+    var cat = this.value;
+    planSel = null;
+    this.className = 'plan-select' + (cat ? ' has-val' : '');
+    updateTotal();
+    var subWrap = document.getElementById('planSubWrap');
+    if (cat) {
+      buildPlanDropdown(cat);
+      subWrap.style.display = 'block';
+    } else {
+      subWrap.style.display = 'none';
+      document.getElementById('planSummary').style.display = 'none';
+    }
+  });
+}
+
+// ── STEP B: 利用の種類ドロップダウン ────────────────
+function buildPlanDropdown(attrName) {
+  var wrap = document.getElementById('planWrap');
+  wrap.innerHTML = '';
+  var summaryEl = document.getElementById('planSummary');
+  summaryEl.style.display = 'none';
+  planSel = null;
+
+  var filtered = allPlans.filter(function(p){
+    return getAttrOfEntry(p) === attrName;
+  });
+
+  var passEntries = allPlans.filter(function(p){
+    return PASS_PLAN2.indexOf(getAttrOfEntry(p)) >= 0;
+  });
+
+  var allOptions = filtered.concat(passEntries);
+  if (!allOptions.length) return;
+
+  if (allOptions.length === 1) {
+    var p = allOptions[0];
+    planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+    summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+    summaryEl.style.display = 'block';
+    updateTotal();
+    return;
+  }
+
+  var sel = document.createElement('select');
+  sel.id = 'planSelect';
+  sel.className = 'plan-select';
+  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
+
+  if (filtered.length) {
+    opts += '<optgroup label="通常利用">';
+    filtered.forEach(function(p, i){
+      opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
+  if (passEntries.length) {
+    opts += '<optgroup label="パス・回数券">';
+    passEntries.forEach(function(p, i){
+      opts += '<option value="' + (filtered.length + i) + '">' + esc(getAttrOfEntry(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
+  sel.innerHTML = opts;
+  wrap.appendChild(sel);
+
+  sel.addEventListener('change', function(){
+    var idx = parseInt(this.value);
+    if (this.value === '' || isNaN(idx)) {
+      planSel = null;
+      this.className = 'plan-select';
+      summaryEl.style.display = 'none';
+    } else {
+      var p = allOptions[idx];
+      planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+      this.className = 'plan-select has-val';
+      summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+      summaryEl.style.display = 'block';
+    }
+    updateTotal();
+  });
+}
+
+// ── 登録料 ────────────────────────────────────────
+document.getElementById('regFeeCheck').addEventListener('change', function(){
+  document.getElementById('regFeeDetails').style.display = this.checked ? 'block' : 'none';
+  updateRegFee();
+});
+document.getElementById('regFeeAmt').addEventListener('input', updateRegFee);
+document.getElementById('otherStoreDisc').addEventListener('change', function(){
+  document.getElementById('otherDiscDetails').style.display = this.checked ? 'block' : 'none';
+  updateRegFee();
+});
+document.getElementById('otherDiscRate').addEventListener('change', updateRegFee);
+
+function getRegFee() {
+  if (!document.getElementById('regFeeCheck').checked) return 0;
+  var amt = parseInt(document.getElementById('regFeeAmt').value) || 0;
+  var discChecked = document.getElementById('otherStoreDisc').checked;
+  var discRate = discChecked ? (parseInt(document.getElementById('otherDiscRate').value) || 0) : 0;
+  var discAmt = discRate > 0 ? Math.floor(amt * discRate / 100) : 0;
+  return Math.max(0, amt - discAmt);
+}
+
+function updateRegFee() {
+  var checked = document.getElementById('regFeeCheck').checked;
+  var summary = document.getElementById('feeSummary');
+  if (!checked) { summary.textContent = ''; updateTotal(); return; }
+  var amt = parseInt(document.getElementById('regFeeAmt').value) || 0;
+  var discChecked = document.getElementById('otherStoreDisc').checked;
+  var discRate = discChecked ? (parseInt(document.getElementById('otherDiscRate').value) || 0) : 0;
+  var discAmt = discRate > 0 ? Math.floor(amt * discRate / 100) : 0;
+  var netFee = Math.max(0, amt - discAmt);
+  if (discAmt > 0) {
+    summary.textContent = '登録料: ¥' + netFee.toLocaleString() + '（¥' + amt.toLocaleString() + ' × ' + (100 - discRate) + '% 他店舗割引）';
+  } else if (amt > 0) {
+    summary.textContent = '登録料: ¥' + netFee.toLocaleString();
+  } else {
+    summary.textContent = '';
+  }
+  updateTotal();
+}
+
+// ── レンタルセクション ──────────────────────────────
+function buildRentalSection(rentals, rs) {
+  rs.innerHTML = '';
+  matOptions = [];
+  matSel = null;
+
+  if (!rentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+    return;
+  }
+
+  var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('マット') >= 0; });
+  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
+  matOptions = matItems;
+
+  if (matItems.length) {
+    var matRow = document.createElement('div');
+    matRow.className = 'rental-mat-row';
+    var headerDiv = document.createElement('div');
+    headerDiv.className = 'rental-mat-header';
+    headerDiv.innerHTML =
+      '<div class="rental-mat-name">🧘 クライミングマット</div>' +
+      '<div class="rental-mat-hint">種類・泥数を選択</div>';
+    matRow.appendChild(headerDiv);
+    var opts = '<option value="-1">なし</option>';
+    matItems.forEach(function(r, i){
+      opts += '<option value="' + i + '">' + esc(r.name) + '　¥' + Number(r.amount).toLocaleString() + '</option>';
+    });
+    var matSel_el = document.createElement('select');
+    matSel_el.id = 'matSelect';
+    matSel_el.className = 'mat-select';
+    matSel_el.innerHTML = opts;
+    matRow.appendChild(matSel_el);
+    rs.appendChild(matRow);
+    matSel_el.addEventListener('change', function(){
+      var idx = parseInt(this.value);
+      matSel = (idx >= 0) ? matOptions[idx] : null;
+      this.className = 'mat-select' + (idx >= 0 ? ' has-val' : '');
+      updateTotal();
+    });
+  }
+
+  if (otherRentals.length) {
+    if (matItems.length) {
+      var otherLabel = document.createElement('div');
+      otherLabel.className = 'rental-other-label';
+      otherLabel.textContent = 'その他のレンタル';
+      rs.appendChild(otherLabel);
+    }
+    var chipWrap = document.createElement('div');
+    chipWrap.className = 'chip-group';
+    otherRentals.forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className = 'rental-chip';
+      btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
+      btn.addEventListener('click', function(){
+        var idx = rentalSel.findIndex(function(x){ return x.name === r.name; });
+        if (idx >= 0) { rentalSel.splice(idx, 1); btn.classList.remove('sel'); }
+        else { rentalSel.push({name: r.name, amount: Number(r.amount)}); btn.classList.add('sel'); }
+        updateTotal();
+      });
+      chipWrap.appendChild(btn);
+    });
+    rs.appendChild(chipWrap);
+  }
+
+  if (!matItems.length && !otherRentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+  }
+}
+
+// Payment（「その他」追加）
+document.querySelectorAll('.pay-chip').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.pay-chip').forEach(function(b){ b.classList.remove('sel'); });
+    btn.classList.add('sel');
+    paymentSel = btn.dataset.method;
+    document.getElementById('otherPayWrap').style.display = (paymentSel === 'その他') ? 'block' : 'none';
+    updateRegisterBtn();
+  });
+});
+
+// 合計計算（DOM更新なし・純計算）
+function calcTotal() {
+  var t = planSel ? planSel.amount : 0;
+  t += getRegFee();
+  var rentalTotal = 0;
+  if (matSel) rentalTotal += Number(matSel.amount);
+  rentalSel.forEach(function(r){ rentalTotal += r.amount; });
+  t += rentalTotal;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  t += Math.max(0, merch - discount);
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  t += adjust;
+  return Math.max(0, t);
+}
+
+function updateTotal() {
+  var t = planSel ? planSel.amount : 0;
+  var regFee = getRegFee();
+  t += regFee;
+  var rentalTotal = 0;
+  if (matSel) rentalTotal += Number(matSel.amount);
+  rentalSel.forEach(function(r){ rentalTotal += r.amount; });
+  t += rentalTotal;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var netMerch = Math.max(0, merch - discount);
+  t += netMerch;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  t += adjust;
+  if (t < 0) t = 0;
+  document.getElementById('totalNum').textContent = t.toLocaleString();
+  var bd = '';
+  if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
+  if (regFee > 0) bd += (bd ? '　＋　' : '') + '登録料: ¥' + regFee.toLocaleString();
+  if (rentalTotal > 0) bd += (bd ? '　＋　' : '') + 'レンタル: ¥' + rentalTotal.toLocaleString();
+  if (merch > 0) {
+    if (discount > 0) {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + netMerch.toLocaleString() + '（割引−¥' + discount.toLocaleString() + '）';
+    } else {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + merch.toLocaleString();
+    }
+  }
+  if (adjust > 0) bd += (bd ? '　＋　' : '') + '調整: ¥' + adjust.toLocaleString();
+  if (adjust < 0) bd += (bd ? '　−　' : '') + '調整: −¥' + Math.abs(adjust).toLocaleString();
+  document.getElementById('totalBreakdown').textContent = bd;
+  updateRegisterBtn();
+}
+
+// 登録ボタン有効化判定（プラン選択は任意・店舗選択は必須）
+function updateRegisterBtn() {
+  var store = getStore();
+  if (!store) {
+    document.getElementById('registerBtn').disabled = true;
+    return;
+  }
+  var total = calcTotal();
+  var isZeroYen = total === 0;
+  // 合計0円は支払い方法不要（回数刷・無料利用など）
+  document.getElementById('registerBtn').disabled = !(paymentSel || isZeroYen);
+}
+
+// Member search
+document.getElementById('searchBtn').addEventListener('click', function(){
+  var code = document.getElementById('memberCode').value.trim();
+  if (!code) { alert('会員番号を入力してください'); return; }
+  var store = getStore();
+  var badge = document.getElementById('memberBadge');
+  badge.className = 'member-badge notfound';
+  badge.textContent = '検索中...';
+  badge.style.display = 'block';
+  callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
+    var m = res.data;
+    if (m && m.name) {
+      badge.className = 'member-badge found';
+      badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
+      document.getElementById('guestName').value = '';
+    } else {
+      badge.className = 'member-badge notfound';
+      badge.textContent = '会員番号 ' + code + ' は未登録です';
+    }
+  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+});
+document.getElementById('memberCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+});
+
+// Register（プラン選択任意・店舗選択必須）
+document.getElementById('registerBtn').addEventListener('click', function(){
+  var store = getStore();
+  if (!store) {
+    document.getElementById('storeRequiredMsg').style.display = 'block';
+    return;
+  }
+  var total = calcTotal();
+  var isZeroYen = total === 0;
+  var effectivePayment = paymentSel || (isZeroYen ? '0円' : null);
+  if (!effectivePayment) return;
+
+  // 「その他」の場合は売上元名を含める
+  var otherPayName = (paymentSel === 'その他') ? (document.getElementById('otherPayName').value.trim()) : '';
+  var paymentLabel = (paymentSel === 'その他' && otherPayName) ? 'その他(' + otherPayName + ')' : effectivePayment;
+
+  var badge = document.getElementById('memberBadge');
+  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
+  var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
+  var rentalFee = 0, rentalNames = [];
+  if (matSel) { rentalFee += Number(matSel.amount); rentalNames.push(matSel.name); }
+  rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  var netMerch = Math.max(0, merch - discount);
+  var regFee = getRegFee();
+  var regFeeRaw = document.getElementById('regFeeCheck').checked ? (parseInt(document.getElementById('regFeeAmt').value) || 0) : 0;
   var otherStoreDisc = document.getElementById('otherStoreDisc').checked;
   var regFeeNote = otherStoreDisc ? '他店舗割引適用' : '';
   var paymentDate = document.getElementById('paymentDate').value;
@@ -720,7 +944,7 @@ K�B��
     btn.classList.remove('loading');
     if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
-      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
+         msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
       // 削除ボタンを3分間表示
       lastEntryRef = {store: store, entryTime: res.data.entryTime || '', rowId: res.data.rowId || null};
       var delBar = document.getElementById('deleteEntryBar');
@@ -837,37 +1061,6 @@ function esc(s) {
 function escAttr(s) {
   return String(s || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
-// ── ログイン ───────────────────────────────────────
-(function(){
-  var STAFF_PASS = 'mono2024';
-  var SESSION_KEY = 'mono_auth';
-  var overlay = document.getElementById('loginOverlay');
-  var passInput = document.getElementById('loginPass');
-  var loginBtn = document.getElementById('loginBtn');
-  var errEl = document.getElementById('loginErr');
-
-  function doLogin() {
-    if (passInput.value === STAFF_PASS) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      overlay.classList.add('hidden');
-      errEl.textContent = '';
-      passInput.value = '';
-    } else {
-      errEl.textContent = 'パスワードが正しくありません';
-      passInput.select();
-    }
-  }
-
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    overlay.classList.add('hidden');
-  }
-
-  loginBtn.addEventListener('click', doLogin);
-  passInput.addEventListener('keydown', function(e){
-    if (e.key === 'Enter') doLogin();
-  });
-})();
 
 init();
 </script>
