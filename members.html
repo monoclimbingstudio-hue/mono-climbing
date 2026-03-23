@@ -76,6 +76,8 @@ nav a:hover { color: #fff; }
 .filter-input:focus { border-color: var(--dark); }
 .reload-btn { padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.85rem; color: var(--mid); transition: all .15s; white-space: nowrap; }
 .reload-btn:hover { border-color: var(--dark); background: var(--dark); color: #fff; }
+.load-list-btn { width: 100%; padding: 13px; background: var(--dark); color: #fff; font-size: 0.92rem; font-weight: 700; border: none; border-radius: var(--radius); cursor: pointer; transition: opacity .15s; }
+.load-list-btn:hover { opacity: .8; }
 .member-count { font-size: 0.8rem; color: var(--sub); margin-bottom: 10px; font-weight: 500; }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
@@ -85,6 +87,44 @@ tbody tr:hover td { background: #fafafa; }
 tbody tr:last-child td { border-bottom: none; }
 .code-cell { font-family: monospace; font-size: 0.9rem; font-weight: 700; color: var(--dark); }
 .empty-state { text-align: center; padding: 40px 0; color: var(--sub); font-size: 0.88rem; }
+.not-loaded-state { text-align: center; padding: 30px 0; color: var(--sub); font-size: 0.88rem; }
+
+/* Row action buttons */
+.row-actions { display: flex; gap: 6px; }
+.row-edit-btn, .row-del-btn {
+  padding: 5px 11px; font-size: 0.78rem; font-weight: 700;
+  border-radius: 6px; cursor: pointer; border: 1.5px solid; transition: all .15s;
+  white-space: nowrap;
+}
+.row-edit-btn { border-color: var(--dark); color: var(--dark); background: #fff; }
+.row-edit-btn:hover { background: var(--dark); color: #fff; }
+.row-del-btn { border-color: #e53935; color: #e53935; background: #fff; }
+.row-del-btn:hover { background: #fdecea; }
+
+/* Edit modal overlay */
+#editModal {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.45);
+  display: none; align-items: center; justify-content: center;
+}
+#editModal.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 14px;
+  padding: 28px 26px; width: 100%; max-width: 400px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.3);
+}
+.modal-title { font-size: 1rem; font-weight: 800; color: var(--dark); margin-bottom: 18px; }
+.modal-field-label { font-size: 0.79rem; color: var(--sub); margin-bottom: 5px; font-weight: 500; }
+.modal-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: border .15s; margin-bottom: 14px; }
+.modal-input:focus { border-color: var(--dark); }
+.modal-btns { display: flex; gap: 10px; }
+.modal-save-btn { flex: 1; padding: 12px; background: var(--accent); color: #fff; font-size: 0.92rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity .15s; }
+.modal-save-btn:hover { opacity: .88; }
+.modal-cancel-btn { padding: 12px 18px; background: #fff; color: var(--mid); font-size: 0.92rem; font-weight: 600; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .15s; }
+.modal-cancel-btn:hover { border-color: var(--dark); }
+.modal-msg { margin-top: 10px; font-size: 0.85rem; font-weight: 600; min-height: 18px; }
+.modal-msg.err { color: #c62828; }
+.modal-msg.ok { color: var(--success); }
 
 .dot-loader { display: flex; gap: 4px; }
 .dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
@@ -117,6 +157,22 @@ tbody tr:last-child td { border-bottom: none; }
     <input type="password" id="loginPass" class="login-input" placeholder="スタッフパスワードを入力" autocomplete="current-password">
     <button class="login-btn" id="loginBtn">ログイン</button>
     <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- 会員名編集モーダル -->
+<div id="editModal">
+  <div class="modal-box">
+    <div class="modal-title">会員名を変更する</div>
+    <div class="modal-field-label">会員番号</div>
+    <input type="text" id="editCode" class="modal-input" readonly style="background:#f5f5f5;color:var(--sub);">
+    <div class="modal-field-label">氏名（変更後）</div>
+    <input type="text" id="editName" class="modal-input" placeholder="新しい氏名を入力">
+    <div class="modal-btns">
+      <button class="modal-save-btn" id="editSaveBtn">上書き保存する</button>
+      <button class="modal-cancel-btn" id="editCancelBtn">キャンセル</button>
+    </div>
+    <div class="modal-msg" id="editModalMsg"></div>
   </div>
 </div>
 
@@ -178,12 +234,12 @@ tbody tr:last-child td { border-bottom: none; }
           <input type="text" id="addName" class="full-input" placeholder="例: 山田 太郎">
         </div>
       </div>
-      <button class="action-btn" id="addBtn">会員を追加する</button>
+      <button class="action-btn" id="addBtn">会員を追加すク</button>
       <div id="msgAdd" class="msg-box"></div>
     </div>
   </div>
 
-  <!-- 会員一覧 -->
+  <!-- 会員一覧（遅延ロード・編集/削除対応） -->
   <div class="section">
     <div class="section-head">
       <span class="step-badge">LIST</span>
@@ -191,14 +247,17 @@ tbody tr:last-child td { border-bottom: none; }
       <span class="store-badge" id="listStoreBadge">📍 博多店</span>
     </div>
     <div class="card">
-      <div class="list-toolbar">
-        <input type="text" id="listFilter" class="filter-input" placeholder="🔍  番号または氏名で絞り込み...">
-        <button class="reload-btn" id="reloadBtn">↻ 再読込</button>
+      <div id="listToolbar" style="display:none;">
+        <div class="list-toolbar">
+          <input type="text" id="listFilter" class="filter-input" placeholder="🔍  番号または氏名で絞り込み...">
+          <button class="reload-btn" id="reloadBtn">↻ 再読込</button>
+        </div>
       </div>
       <div id="memberCount" class="member-count"></div>
       <div id="memberTableWrap">
-        <div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;">
-          <div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...
+        <div class="not-loaded-state">
+          <p style="margin-bottom:14px;color:var(--sub);">会員一覧を表示するには読み込みボタンを押してください</p>
+          <button class="load-list-btn" id="loadListBtn">📋 会員一覧を読み込む</button>
         </div>
       </div>
     </div>
@@ -208,6 +267,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 <script>
 var allMembers = [];
+var membersLoaded = false;
 var STORE_LABEL = {hakata: '博多店', omura: '大村店', sasebo: '佐世保店'};
 
 function callAPI(action, params) {
@@ -228,7 +288,6 @@ function getStoreLabel() {
   return STORE_LABEL[getStore()] || getStore();
 }
 
-// Update store badges
 function updateStoreBadges() {
   var label = '📍 ' + getStoreLabel();
   document.getElementById('searchStoreBadge').textContent = label;
@@ -242,13 +301,14 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
     updateStoreBadges();
-    // Reset search result
     var sr = document.getElementById('searchResult');
     sr.className = 'result-box'; sr.style.display = 'none';
     document.getElementById('searchCode').value = '';
-    // Reload member list for new store
-    document.getElementById('listFilter').value = '';
-    loadMembers();
+    // 一覧が既に読み込み済みなら再読込
+    if (membersLoaded) {
+      document.getElementById('listFilter').value = '';
+      loadMembers();
+    }
   });
 });
 
@@ -258,7 +318,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
   if (!code) { alert('会員番号を入力してください'); return; }
   var result = document.getElementById('searchResult');
   result.className = 'result-box notfound';
-  result.textContent = '検索中...';
+  result.textContent = '検索仭...';
   result.style.display = 'block';
   callAPI('getMember', {code: code, store: getStore()}).then(function(res){
     var m = res.data;
@@ -295,7 +355,7 @@ document.getElementById('addBtn').addEventListener('click', function(){
       msg.textContent = '✓ ' + getStoreLabel() + ' に登録しました（' + code + ' / ' + name + '）';
       document.getElementById('addCode').value = '';
       document.getElementById('addName').value = '';
-      loadMembers();
+      if (membersLoaded) loadMembers();
     } else {
       msg.className = 'msg-box err';
       msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
@@ -308,14 +368,22 @@ document.getElementById('addBtn').addEventListener('click', function(){
   });
 });
 
-// ── LOAD MEMBERS ─────────────────────────────────
+// ── LOAD MEMBERS（ボタン押下時のみ） ─────────────────
+document.getElementById('loadListBtn').addEventListener('click', function(){
+  loadMembers();
+});
+
 function loadMembers(){
   var wrap = document.getElementById('memberTableWrap');
   var count = document.getElementById('memberCount');
   count.textContent = '';
   wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>';
+  document.getElementById('listToolbar').style.display = 'none';
+
   callAPI('getMemberList', {store: getStore()}).then(function(res){
     allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
+    membersLoaded = true;
+    document.getElementById('listToolbar').style.display = 'block';
     renderMemberTable(allMembers);
   }).catch(function(e){
     wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
@@ -330,16 +398,98 @@ function renderMemberTable(members){
     wrap.innerHTML = '<div class="empty-state">' + getStoreLabel() + ' の会員データがありません</div>';
     return;
   }
-  var html = '<table><thead><tr><th>会員番号</th><th>氏名</th><th>登録日</th></tr></thead><tbody>';
+  var html = '<table><thead><tr><th>会員番号</th><th>氏名</th><th>登録日</th><th>操作</th></tr></thead><tbody>';
   members.forEach(function(m){
+    var code = esc(String(m.code));
+    var name = esc(m.name || '');
     html += '<tr>' +
-      '<td class="code-cell">' + esc(String(m.code)) + '</td>' +
-      '<td>' + esc(m.name || '') + '</td>' +
+      '<td class="code-cell">' + code + '</td>' +
+      '<td>' + name + '</td>' +
       '<td style="color:var(--sub);font-size:.82rem;">' + esc(m.joinDate || '') + '</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="row-edit-btn" data-code="' + code + '" data-name="' + name + '">編集</button>' +
+        '<button class="row-del-btn" data-code="' + code + '" data-name="' + name + '">削除</button>' +
+      '</div></td>' +
       '</tr>';
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
+
+  // 編集ボタン
+  wrap.querySelectorAll('.row-edit-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      openEditModal(this.dataset.code, this.dataset.name);
+    });
+  });
+
+  // 削除ボタン
+  wrap.querySelectorAll('.row-del-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      deleteMember(this.dataset.code, this.dataset.name);
+    });
+  });
+}
+
+// ── 編集モーダル ──────────────────────────────────
+function openEditModal(code, currentName) {
+  document.getElementById('editCode').value = code;
+  document.getElementById('editName').value = currentName;
+  document.getElementById('editModalMsg').textContent = '';
+  document.getElementById('editModalMsg').className = 'modal-msg';
+  document.getElementById('editModal').classList.add('open');
+  document.getElementById('editName').focus();
+  document.getElementById('editName').select();
+}
+
+document.getElementById('editCancelBtn').addEventListener('click', function(){
+  document.getElementById('editModal').classList.remove('open');
+});
+
+document.getElementById('editModal').addEventListener('click', function(e){
+  if (e.target === this) this.classList.remove('open');
+});
+
+document.getElementById('editSaveBtn').addEventListener('click', function(){
+  var code = document.getElementById('editCode').value.trim();
+  var newName = document.getElementById('editName').value.trim();
+  var msgEl = document.getElementById('editModalMsg');
+  if (!newName) { msgEl.className = 'modal-msg err'; msgEl.textContent = '氏名を入力してください'; return; }
+
+  // 上書き確認ポップアップ
+  if (!confirm('会員番号 ' + code + ' の氏名を\n「' + newName + '」に上書きしますか？')) return;
+
+  var saveBtn = this;
+  saveBtn.disabled = true; saveBtn.textContent = '保存中...';
+  msgEl.textContent = '';
+
+  callAPI('updateMember', {code: code, name: newName, store: getStore()}).then(function(res){
+    saveBtn.disabled = false; saveBtn.textContent = '上書き保存する';
+    if (res.ok && res.data && res.data.success) {
+      document.getElementById('editModal').classList.remove('open');
+      if (membersLoaded) loadMembers();
+    } else {
+      msgEl.className = 'modal-msg err';
+      msgEl.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
+    }
+  }).catch(function(e){
+    saveBtn.disabled = false; saveBtn.textContent = '上書き保存する';
+    msgEl.className = 'modal-msg err';
+    msgEl.textContent = 'エラー: ' + e.message;
+  });
+});
+
+// ── 会員削除 ──────────────────────────────────────
+function deleteMember(code, name) {
+  if (!confirm('会員番号 ' + code + '「' + name + '」を削除しますか？\nこの操作は取り消せません。')) return;
+  callAPI('deleteMember', {code: code, store: getStore()}).then(function(res){
+    if (res.ok && res.data && res.data.success) {
+      if (membersLoaded) loadMembers();
+    } else {
+      alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));
+    }
+  }).catch(function(e){
+    alert('削除エラー: ' + e.message);
+  });
 }
 
 // Filter
@@ -357,8 +507,6 @@ document.getElementById('reloadBtn').addEventListener('click', function(){
   document.getElementById('listFilter').value = '';
   loadMembers();
 });
-
-loadMembers();
 
 // ── ログイン ──────────────────────────────────────
 (function(){
