@@ -16,9 +16,13 @@
   --sub: #777;
   --success: #2e7d32;
   --radius: 10px;
+  --store-bg: var(--light-bg);
 }
+body.store-hakata  { --store-bg: #e8f0fe; }
+body.store-omura   { --store-bg: #e6f4ea; }
+body.store-sasebo  { --store-bg: #fef3e0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg); color: var(--text); transition: background .3s; }
 
 nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
 nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
@@ -38,6 +42,9 @@ nav a:hover { color: #fff; }
 .store-tabs { display: flex; gap: 8px; }
 .store-tab { flex: 1; padding: 11px 8px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 600; text-align: center; transition: all .15s; color: var(--mid); }
 .store-tab.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+.store-tab[data-store="hakata"].sel { background: #1a73e8; border-color: #1a73e8; }
+.store-tab[data-store="omura"].sel  { background: #2e7d32; border-color: #2e7d32; }
+.store-tab[data-store="sasebo"].sel { background: #e65100; border-color: #e65100; }
 .store-tab:hover:not(.sel) { border-color: #aaa; }
 
 /* Store indicator badge */
@@ -134,7 +141,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 </style>
 </head>
-<body>
+<body class="store-hakata">
 
 <!-- 会員名編集モーダル -->
 <div id="editModal">
@@ -154,7 +161,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 <nav>
   <div class="logo">🧗 MONO</div>
-  <a href="index.html">入店登��</a>
+  <a href="index.html">入店登録</a>
   <a href="members.html" class="active">会員管理</a>
   <a href="sales.html">売上管理</a>
 </nav>
@@ -276,6 +283,8 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
+    document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+    document.body.classList.add('store-' + btn.dataset.store);
     updateStoreBadges();
     var sr = document.getElementById('searchResult');
     sr.className = 'result-box'; sr.style.display = 'none';
