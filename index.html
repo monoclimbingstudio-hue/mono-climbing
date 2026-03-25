@@ -18,9 +18,9 @@
   --radius: 10px;
   --store-bg: var(--light-bg);
 }
-body.store-hakata  { --store-bg: #e8f0fe; }
-body.store-omura   { --store-bg: #e6f4ea; }
-body.store-sasebo  { --store-bg: #fef3e0; }
+body.store-hakata  { --store-bg: #bbdefb; }
+body.store-omura   { --store-bg: #c8e6c9; }
+body.store-sasebo  { --store-bg: #ffe0b2; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg); color: var(--text); transition: background .3s; }
 
@@ -200,7 +200,41 @@ nav a:hover { color: #fff; }
 
 </style>
 </head>
-<body>
+<body class="store-hakata">
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
+    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.95rem;outline:none;margin-bottom:12px;text-align:center;">
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="margin-top:10px;font-size:0.82rem;color:#c62828;font-weight:600;min-height:18px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PASS = 'mono';
+  if (sessionStorage.getItem('mono_auth') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  function doLogin(){
+    var v = document.getElementById('loginPass').value;
+    if (v === PASS) {
+      sessionStorage.setItem('mono_auth', '1');
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  }
+})();
+</script>
 
 <nav>
   <div class="logo">🧗 MONO</div>
@@ -242,8 +276,8 @@ nav a:hover { color: #fff; }
       </div>
       <div id="memberBadge" class="member-badge"></div>
       <div class="guest-row">
-        <div class="field-label">ゲスト氏名（会員でない場合）</div>
-        <input type="text" id="guestName" class="full-input" placeholder="氏名を入力">
+        <div class="field-label">ゲスト汏名（会員でない場合）</div>
+        <input type="text" id="guestName" class="full-input" placeholder="汏名を入力">
       </div>
     </div>
   </div>
@@ -252,7 +286,7 @@ nav a:hover { color: #fff; }
   <div class="section">
     <div class="section-head">
       <div class="step-num">②</div>
-      <div class="section-title">利用プラン <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+      <div class="section-title">利用プラン <span style="font-size:.78rem;font-weight:400;color:var(--sub);">件意</span></div>
     </div>
     <div class="card">
 
@@ -282,7 +316,7 @@ nav a:hover { color: #fff; }
   <div class="section">
     <div class="section-head">
       <div class="step-num">③</div>
-      <div class="section-title">登録料 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">件意</span></div>
+      <div class="section-title">登録料 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
     </div>
     <div class="card">
       <label class="check-label">
@@ -407,7 +441,7 @@ nav a:hover { color: #fff; }
       </div>
       <!-- その他の場合: 売上元を入力 -->
       <div class="other-pay-wrap" id="otherPayWrap">
-        <div class="field-label">売上元・備考（じゃらん / グルーン など）</div>
+        <div class="field-label">売上元・備考（じゃらん / グルーン な��缉</div>
         <input type="text" id="otherPayName" class="full-input" placeholder="例: じゃらん、グルーン">
       </div>
       <!-- 支払い日（任意） -->
@@ -422,7 +456,7 @@ nav a:hover { color: #fff; }
   <div class="section">
     <div class="section-head">
       <div class="step-num" style="background:var(--accent);">✓</div>
-      <div class="section-title">確認・登録</div>
+      <div class="section-title">確認・登��</div>
     </div>
     <div class="card">
       <div class="total-display"><span>¥</span><span id="totalNum">0</span></div>
@@ -489,33 +523,65 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
-��[Y[����K��\�Ә[YHH��[Y[����K��\�Ә[YK��\X�J��ܙKW����	��K��[J
-N��[Y[����K��\��\��Y
-	��ܙKI�
-����]\�]��ܙJN��[Y[���][[Y[��RY
-	��ܙT�\]Z\�Y\���K��[K�\�^HH	ۛۙI�\]T�Y�\�\���
-NJNJN�[��[ۈ�]�ܙJ
-H�\��[H��[Y[��]Y\�T�[X�܊	˜�ܙK]X���[	�N�]\���[��[�]\�]��ܙH��[B����8� 8� [�]8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ��[��[ۈ[�]
+    document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+    document.body.classList.add('store-' + btn.dataset.store);
+    document.getElementById('storeRequiredMsg').style.display = 'none';
+    updateRegisterBtn();
+  });
+});
+function getStore() {
+  var sel = document.querySelector('.store-tab.sel');
+  return sel ? sel.dataset.store : null;
+}
 
-H�\��X�Y[��H�]�X�Y
-	�[���NY�
-�X�Y[��H[[��H�X�Y[���Z[]����ۊ
-NH[�H�[TJ	��]�X�S\�	��JK�[��[��[ۊ�^[[��H��]H�N�]�X�J	�[���[[��N�Z[]����ۊ
-NJK��]�
-�[��[ۊ
-^��[Y[���][[Y[��RY
-	�]�ܘ\	�K�[��\�SH	��[��[OH���܎��Yٛ۝\�^�N��
-\�[H��*�x�o�/�8�o��8��x����[���JNB���\���H��[Y[���][[Y[��RY
-	ܙ[�[�X�[ۉ�N�\��X�Y�[�[�H�]�X�Y
-	ܙ[�[��NY�
-�X�Y�[�[�H�Z[�[�[�X�[ۊ�X�Y�[�[���NH[�H�[TJ	��]�[�[\�	��JK�[��[��[ۊ��^�\��[�[�H���]H�N�]�X�J	ܙ[�[���[�[�N�Z[�[�[�X�[ۊ�[�[���NJK��]�
-�[��[ۊ
-^�˚[��\�SH	��[��[OH���܎��Yٛ۝\�^�N��
-\�[H��*�x�o�/�8�o��8��x����[���JNB�B����8� 8� �T������8�����`(����[�HH9b*y�*8�k��+�hg�����8��{�"9/�Έ�����9l#ȋ�Y^yl#ȋ��"8��x�H���/9�"8��x�H��f繥l9b.��"B���[��H9lg��)��"9/�Έ�ki��'ȋ�i)�.�����*�l,yki�ad�������ਈ��"B���8�o��g��k�9b*y�*9c.�b!��"��"8��x�yb*y�*���/9�"8��x�yb*y�*��f繥l9b.9b*y�*��"x����\�8�j�(j9�.����9l#�ki��'��8�����8�ꎈ[�H8�k��*�l/��c�l#Ȼ�"9/�Έ��9l#ȋ�Y^yl#Ȼ�"x� \[��H�ki��'Ȃ���8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� 8� ���[��[ۈ\���[��J
-H�]\���[�H	���[�K��X�JLJHOOH	�l#��B���[��[ۈ�]]�ّ[��J
-HY�
-\���[��J
-JH�]\��	�l#�ki��'���]\���[��	��B����8��x��x�����������`jy�*;�"8�#8��8��x�8ਸ����#x����#9b'yf�/d�j$��#x�j��ا���
+// ── Init ──────────────────────────────────────────
+function init() {
+  var cachedPlans = getCached('plans');
+  if (cachedPlans) {
+    allPlans = cachedPlans;
+    buildAttrDropdown();
+  } else {
+    callAPI('getPriceList', {}).then(function(pr){
+      allPlans = pr.data || [];
+      setCache('plans', allPlans);
+      buildAttrDropdown();
+    }).catch(function(){
+      document.getElementById('attrWrap').innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+    });
+  }
+
+  var rs = document.getElementById('rentalSection');
+  var cachedRentals = getCached('rentals');
+  if (cachedRentals) {
+    buildRentalSection(cachedRentals, rs);
+  } else {
+    callAPI('getRentalList', {}).then(function(rr){
+      var rentals = rr.data || [];
+      setCache('rentals', rentals);
+      buildRentalSection(rentals, rs);
+    }).catch(function(){
+      rs.innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+    });
+  }
+}
+
+// ── GASデータ構逢:
+//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券"）
+//   plan2 = 属性（例: "学生", "大人", "未就学児", "シニア"）
+//          または 利用区分（"月パス利用", "昼月パス利用", "回数券利用"）→ Step B に表示
+//   小学生エントリ: plan1 の末尾が "小"（例: "2h小", "1day小"）、plan2="学生"
+// ────────────────────────────────────────────────
+
+function isKoEntry(p) {
+  return p.plan1 && p.plan1.slice(-1) === '小';
+}
+
+function getAttrOfEntry(p) {
+  if (isKoEntry(p)) return '小学生';
+  return p.plan2 || '';
+}
+
+// ラベルマップ適用（「トライアル」→「初回体験」など）
 function getUsageLabel(p) {
   var t = p.plan1 || p.label;
   if (isKoEntry(p)) t = t.slice(0, -1);
@@ -585,124 +651,461 @@ function buildPlanDropdown(attrName) {
   });
 
   var passEntries = allPlans.filter(function(p){
-    retu&�55���"��FW��b�vWDGG$�dV�G'��������ғ���f"���F���2�f��FW&VB�6��6B�74V�G&�W2����b����F���2��V�wF��&WGW&㰠��b����F���2��V�wF�������f"����F���5�Ӱ���6V������������#����"��&Vâ��&V����V�C��V�&W"����V�B�Ӱ�7V��'�V��FW�D6��FV�B�~)�2r�W62���&V�~8*Rr��V�&W"����V�B��F���6�U7G&��r����7V��'�V��7G��R�F�7���v&��6�s��WFFUF�F���&WGW&㰢Р�f"6V��F�7V�V�B�7&VFTV�V�V�B�w6V�V7Br���6V��B�w��6V�V7Bs��6V��6�74��R�w���6V�V7Bs��f"�G2�s��F���f�VS�"#���X��yJ�8�z���8).��h��8~8n8�88^8B�����F����s����b�f��FW&VB��V�wF�����G2��s��Fw&�W�&V��.�	�[��X��yJ�#�s��f��FW&VB�f�$V6��gV�7F���������G2��s��F���f�VS�"r���r#�r�W62�vWEW6vT�&V���s���F����s��ғ���G2��s���Fw&�W�s��Р��b�74V�G&�W2��V�wF�����G2��s��Fw&�W�&V��.898+�8;�Y��i[X��#�s��74V�G&�W2�f�$V6��gV�7F���������G2��s��F���f�VS�"r��f��FW&VB��V�wF�����r#�r�W62�vWDGG$�dV�G'�����s���F����s��ғ���G2��s���Fw&�W�s��Р�6V����W$�D����G3��w&�V�D6���B�6V���6V��FDWfV�DƗ7FV�W"�v6��vRr�gV�7F��ₗ��f"�G��'6T��B�F��2�f�VR����b�F��2�f�VR���rr���4�↖G�������6V���V�ð�F��2�6�74��R�w���6V�V7Bs��7V��'�V��7G��R�F�7���v���Rs���V�6R��f"����F���5��G�Ӱ���6V������������#����"��&Vâ��&V����V�C��V�&W"����V�B�Ӱ�F��2�6�74��R�w���6V�V7B�2�f�s��7V��'�V��FW�D6��FV�B�~)�2r�W62���&V�~8*Rr��V�&W"����V�B��F���6�U7G&��r����7V��'�V��7G��R�F�7���v&��6�s��ТWFFUF�F���ғ��Р���)H)Hy����.ii�)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H �F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT6�V6�r��FDWfV�DƗ7FV�W"�v6��vRr�gV�7F��ₗ��F�7V�V�B�vWDV�V�V�D'��B�w&VtfVTFWF��2r��7G��R�F�7���F��2�6�V6�VB�v&��6�r�v���Rs��WFFU&VtfVR����ғ��F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT�Br��FDWfV�DƗ7FV�W"�v��WBr�WFFU&VtfVR���F�7V�V�B�vWDV�V�V�D'��B�v�F�W%7F�&TF�62r��FDWfV�DƗ7FV�W"�v6��vRr�gV�7F��ₗ��F�7V�V�B�vWDV�V�V�D'��B�v�F�W$F�64FWF��2r��7G��R�F�7���F��2�6�V6�VB�v&��6�r�v���Rs��WFFU&VtfVR����ғ��F�7V�V�B�vWDV�V�V�D'��B�v�F�W$F�65&FRr��FDWfV�DƗ7FV�W"�v6��vRr�WFFU&VtfVR����gV�7F���vWE&VtfVR�����b�F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT6�V6�r��6�V6�VB�&WGW&���f"�B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT�Br��f�VR�����f"F�646�V6�VB�F�7V�V�B�vWDV�V�V�D'��B�v�F�W%7F�&TF�62r��6�V6�VC��f"F�65&FR�F�646�V6�VB��'6T��B�F�7V�V�B�vWDV�V�V�D'��B�v�F�W$F�65&FRr��f�VR�������f"F�64�B�F�65&FR���F��f���"��B�F�65&FR�����&WGW&��F�������B�F�64�B���Р�gV�7F���WFFU&VtfVR����f"6�V6�VB�F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT6�V6�r��6�V6�VC��f"7V��'��F�7V�V�B�vWDV�V�V�D'��B�vfVU7V��'�r����b�6�V6�VB��7V��'��FW�D6��FV�B�rs�WFFUF�F��&WGW&�Тf"�B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�w&VtfVT�Br��f�VR�����f"F�646�V6�VB�F�7V�V�B�vWDV�V�V�D'��B�v�F�W%7F�&TF�62r��6�V6�VC��f"F�65&FR�F�646�V6�VB��'6T��B�F�7V�V�B�vWDV�V�V�D'��B�v�F�W$F�65&FRr��f�VR�������f"F�64�B�F�65&FR���F��f���"��B�F�65&FR�����f"�WDfVR��F�������B�F�64�B����b�F�64�B����7V��'��FW�D6��FV�B�~y����.ii��*Rr��WDfVR�F���6�U7G&��r���~�Ȍ*Rr��B�F���6�U7G&��r���r9rr���F�65&FR��rRK�n[�~��~X�.[�^�Ȓs���V�6R�b��B����7V��'��FW�D6��FV�B�~y����.ii��*Rr��WDfVR�F���6�U7G&��r�����V�6R��7V��'��FW�D6��FV�B�rs��ТWFFUF�F���Р���)H)H8:�8;>8+�8:�8+�8*�8+~8:~8;2)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H)H �gV�7F���'V��E&V�F�6V7F���&V�F�2�'2���'2���W$�D���rs���D�F���2��Ӱ��E6V���V�ð���b�&V�F�2��V�wF����'2���W$�D���s�7�7G��S�&6���#�f"���7V"��f��B�6��S��W&V�#�8�8s��7��s��&WGW&㰢Р�f"�D�FV�2�&V�F�2�f��FW"�gV�7F���"��&WGW&�"���Rbb"���R��FW��b�~89�88>88�r����ғ��f"�F�W%&V�F�2�&V�F�2�f��FW"�gV�7F���"��&WGW&�"���R��"���R��FW��b�~89�88>88�r���ғ���D�F���2��D�FV�3����b��D�FV�2��V�wF����f"�E&�r�F�7V�V�B�7&VFTV�V�V�B�vF�br����E&�r�6�74��R�w&V�F���B�&�rs��f"�VFW$F�b�F�7V�V�B�7&VFTV�V�V�B�vF�br����VFW$F�b�6�74��R�w&V�F���BֆVFW"s���VFW$F�b���W$�D��Тs�F�b6�73�'&V�F���B���R#�	�y�8*�8:�8*N89�8;>8+89�88>88���F�c�r��s�F�b6�73�'&V�F���Bֆ��B#�z���8;�k9�i[8).��h����F�c�s���E&�r�V�D6���B��VFW$F�b���f"�G2�s��F���f�VS�"�#�8�8s���F����s���D�FV�2�f�$V6��gV�7F���"������G2��s��F���f�VS�"r���r#�r�W62�"���R��~8*Rr��V�&W"�"���V�B��F���6�U7G&��r���s���F����s��ғ��f"�E6V��V��F�7V�V�B�7&VFTV�V�V�B�w6V�V7Br����E6V��V��B�v�E6V�V7Bs���E6V��V��6�74��R�v�B�6V�V7Bs���E6V��V����W$�D����G3���E&�r�V�D6���B��E6V��V��'2�V�D6���B��E&�r����E6V��V��FDWfV�DƗ7FV�W"�v6��vRr�gV�7F��ₗ��f"�G��'6T��B�F��2�f�VR����E6V����G������D�F���5��G����V�ð�F��2�6�74��R�v�B�6V�V7Br���G����r�2�f�r�rr���WFFUF�F���ғ��Р��b��F�W%&V�F�2��V�wF�����b��D�FV�2��V�wF����f"�F�W$�&V��F�7V�V�B�7&VFTV�V�V�B�vF�br����F�W$�&V��6�74��R�w&V�F���F�W"��&V�s���F�W$�&V��FW�D6��FV�B�~8�8�K�n8�8:�8;>8+�8:�s��'2�V�D6���B��F�W$�&V��Тf"6��w&�F�7V�V�B�7&VFTV�V�V�B�vF�br���6��w&�6�74��R�v6���w&�Ws���F�W%&V�F�2�f�$V6��gV�7F���"���f"'F��F�7V�V�B�7&VFTV�V�V�B�v'WGF��r���'F��6�74��R�w&V�F��6��s��'F��FW�D6��FV�B�"���R�~8*Rr��V�&W"�"���V�B��F���6�U7G&��r����'F��FDWfV�DƗ7FV�W"�v6Ɩ6�r�gV�7F��ₗ��f"�G��&V�F�6V��f��D��FW��gV�7F��⇂��&WGW&�����R���"���S�ғ���b��G�����&V�F�6V��7Ɩ6R��G����'F��6�74Ɨ7B�&V��fR�w6V�r��ТV�6R�&V�F�6V��W6�����S�"���R���V�C��V�&W"�"���V�B�ғ�'F��6�74Ɨ7B�FB�w6V�r��ТWFFUF�F���ғ��6��w&�V�D6���B�'F⓰�ғ��'2�V�D6���B�6��w&���Р��b��D�FV�2��V�wF�bb�F�W%&V�F�2��V�wF����'2���W$�D���s�7�7G��S�&6���#�f"���7V"��f��B�6��S��W&V�#�8�8s��7��s��ЧР�����V�N�Ȏ8�8�8�K�n8ދ��X��Ȑ�F�7V�V�B�VW'�6V�V7F�$�r���6��r��f�$V6��gV�7F���'F◰�'F��FDWfV�DƗ7FV�W"�v6Ɩ6�r�gV�7F��ₗ��F�7V�V�B�VW'�6V�V7F�$�r���6��r��f�$V6��gV�7F���"��"�6�74Ɨ7B�&V��fR�w6V�r��ғ��'F��6�74Ɨ7B�FB�w6V�r�����V�E6V��'F��FF6WB��WF��C��F�7V�V�B�vWDV�V�V�D'��B�v�F�W%�w&r��7G��R�F�7������V�E6V����~8�8�K�br��v&��6�r�v���Rs��WFFU&Vv�7FW$'Fₓ��ғ��ғ�����Y�������z�~�ȄD��i�Nik8�8~8;�{IN���z�~�Ȑ�gV�7F���6�5F�F���f"B���6V����6V����V�B���B��vWE&VtfVR����f"&V�F�F�F�����b��E6V&V�F�F�F����V�&W"��E6V����V�B���&V�F�6V��f�$V6��gV�7F���"��&V�F�F�F���"���V�C�ғ��B��&V�F�F�Fð�f"�W&6��'6T��B�F�7V�V�B�vWDV�V�V�D'��B�v�W&6��Br��f�VR�����f"F�66�V�B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�vF�66�V�D�Br��f�VR�����B���F�������W&6��F�66�V�B���f"F�W7B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�vF�W7D�Br��f�VR�����B��F�W7C��&WGW&��F������B���Р�gV�7F���WFFUF�F���f"B���6V����6V����V�B���f"&VtfVR�vWE&VtfVR����B��&VtfVS��f"&V�F�F�F�����b��E6V&V�F�F�F����V�&W"��E6V����V�B���&V�F�6V��f�$V6��gV�7F���"��&V�F�F�F���"���V�C�ғ��B��&V�F�F�Fð�f"�W&6��'6T��B�F�7V�V�B�vWDV�V�V�D'��B�v�W&6��Br��f�VR�����f"F�66�V�B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�vF�66�V�D�Br��f�VR�����f"�WD�W&6���F�������W&6��F�66�V�B���B���WD�W&6���f"F�W7B�'6T��B�F�7V�V�B�vWDV�V�V�D'��B�vF�W7D�Br��f�VR�����B��F�W7C���b�B��B���F�7V�V�B�vWDV�V�V�D'��B�wF�F��V�r��FW�D6��FV�B�B�F���6�U7G&��r����f"&B�rs���b���6V&B��~89~8:�8;3�*Rr���6V����V�B�F���6�U7G&��r�����b�&VtfVR��&B���&B�~8�Ⱦ8r�rr��~y����.ii��*Rr�&VtfVR�F���6�U7G&��r�����b�&V�F�F�F���&B���&B�~8�Ⱦ8r�rr��~8:�8;>8+�8:��*Rr�&V�F�F�F��F���6�U7G&��r�����b��W&6������b�F�66�V�B����&B���&B�~8�Ⱦ8r�rr��~YXnY8�*Rr��WD�W&6��F���6�U7G&��r���~�ȎX�.[�^(�,*Rr�F�66�V�B�F���6�U7G&��r���~�Ȓs���V�6R��&B���&B�~8�Ⱦ8r�rr��~YXnY8�*Rr��W&6��F���6�U7G&��r����ТТ�b�F�W7B��&B���&B�~8�Ⱦ8r�rr��~���i[C�*Rr�F�W7B�F���6�U7G&��r�����b�F�W7B��&B���&B�~8(�.8r�rr��~���i[C�(�,*Rr��F��'2�F�W7B��F���6�U7G&��r����F�7V�V�B�vWDV�V�V�D'��B�wF�F�'&V�F�v�r��FW�D6��FV�B�&C��WFFU&Vv�7FW$'Fₓ��Р���y����.89�8+�8;>iȞX��X�nX�NZ��Ȏ89~8:�8;>��h��8�K��hH�8;�[�~��~��h��8�[�^���Ȑ�gV�7F���WFFU&Vv�7FW$'Fₒ��f"7F�&R�vWE7F�&R�����b�7F�&R���F�7V�V�B�vWDV�V�V�D'��B�w&Vv�7FW$'F�r��F�6&�VB�G'VS��&WGW&㰢Тf"F�F��6�5F�F���f"�5�W&��V��F�F��������Y����Xhn8�iJ�h�^8Nik�k9^K�ފh�ȎY��i[X��8;�xJii�X��yJ�8�8��)���B���[Y[���][[Y[��RY
-	ܙY�\�\����K�\�X�YHJ^[Y[��[\֙\��Y[�NB����Y[X�\��X\�����[Y[���][[Y[��RY
-	��X\�����K�Y]�[�\�[�\�	��X����[��[ۊ
-^�\���HH��[Y[���][[Y[��RY
-	�Y[X�\���I�K��[YK��[J
-NY�
-X��JH�[\�
-	�/&�d�y�j�c��हaiyb���e��i��c��h8�ex�a	�N��]\���B��\��ܙHH�]�ܙJ
-N�\��Y�HH��[Y[���][[Y[��RY
-	�Y[X�\��Y�I�N�Y�K��\�Ә[YHH	�Y[X�\�X�Y�H����[�	��Y�K�^�۝[�H	��'9�(�.+K�����Y�K��[K�\�^HH	؛�����[TJ	��]Y[X�\�����N���K�ܙN��ܙH	�Z�]I�JK�[��[��[ۊ�\�^�\�HH�\˙]NY�
-H	��K��[YJH�Y�K��\�Ә[YHH	�Y[X�\�X�Y�H��[�	��Y�K�^�۝[�H	��$�	�
-�K��[YH
-�	�� ;�"9/&�d�y�j�c�Έ	�
-���H
-�	��"I���[Y[���][[Y[��RY
-	��Y\��[YI�K��[YHH	��H[�H�Y�K��\�Ә[YHH	�Y[X�\�X�Y�H����[�	��Y�K�^�۝[�H	�/&�d�y�j�c��	�
-���H
-�	�8�k��*��n�c,��i��fI�B�JK��]�
-�[��[ۊ
-^��Y�K�^�۝[�H	��8��x��8�c9�n��'��e��o��e��g���JNJN��[Y[���][[Y[��RY
-	�Y[X�\���I�K�Y]�[�\�[�\�	��^Y�ۉ��[��[ۊJ^Y�
-K��^HOOH	�[�\��H��[Y[���][[Y[��RY
-	��X\�����K��X��
-NJN����Y�\�\��"8�����x���`n9���.���#����n��"%�`n9���o�zh";�"B���[Y[���][[Y[��RY
-	ܙY�\�\����K�Y]�[�\�[�\�	��X����[��[ۊ
-^�\��ܙHH�]�ܙJ
-NY�
-\�ܙJH��[Y[���][[Y[��RY
-	��ܙT�\]Z\�Y\���K��[K�\�^HH	؛�����]\��B��\��[H�[��[
+    return PASS_PLAN2.indexOf(getAttrOfEntry(p)) >= 0;
+  });
 
-N�\�\֙\��Y[�H�[OOH�\�Y��X�]�T^[Y[�H^[Y[��[
-\֙\��Y[��	�9a�����[
-NY�
-YY��X�]�T^[Y[�
-H�]\�����8�#8�gx�k�.��#x�k�h-9d"8�k�h�."�a`�d#xहd*��x��\��\�^S�[YHH
-^[Y[��[OOH	��gx�k�.��H�
-��[Y[���][[Y[��RY
-	��\�^S�[YI�K��[YK��[J
-JH�	���\�^[Y[�X�[H
-^[Y[��[OOH	��gx�k�.��	���\�^S�[YJH�	��gx�k�.�	�
-��\�^S�[YH
-�	�I��Y��X�]�T^[Y[���\��Y�HH��[Y[���][[Y[��RY
-	�Y[X�\��Y�I�N�\��Y�S�[YHH
-�Y�K��\�Ә[YK�[�^ي	ٛ�[�	�H�H
-H��Y�K�^�۝[���\X�J	��$�	�	��K��]
-	�� ;�"	�V�K��[J
-H�	���\�Y[X�\��[YHH�Y�S�[YH��[Y[���][[Y[��RY
-	��Y\��[YI�K��[YK��[J
-H	�ସ�x��	��\��[�[�YHH�[�[�[Y\�H�NY�
-X]�[
-H��[�[�YH
-�H�[X�\�X]�[�[[�[�
-N��[�[�[Y\˜\�
-X]�[��[YJN�B��[�[�[��ܑXX�
-�[��[ۊ�^��[�[�YH
-�H��[[�[���[�[�[Y\˜\�
-���[YJN�JN�\�Y\��H\��R[�
-��[Y[���][[Y[��RY
-	�Y\��[]	�K��[YJH�\�\���[�H\��R[�
-��[Y[���][[Y[��RY
-	�\���[�[]	�K��[YJH�\�Y�\�H\��R[�
-��[Y[���][[Y[��RY
-	�Y�\�[]	�K��[YJH�\��]Y\��HX]�X^
-Y\��H\���[�
-N�\��YљYHH�]�YљYJ
-N�\��YљYT�]�H��[Y[���][[Y[��RY
-	ܙYљYP�X���K��X��Y�
-\��R[�
-��[Y[���][[Y[��RY
-	ܙYљYP[]	�K��[YJH
-H��\��\��ܙQ\��H��[Y[���][[Y[��RY
-	��\��ܙQ\���K��X��Y�\��YљYS��HH�\��ܙQ\���	�.�n��"%�bl�o%z`jy�*	��	���\�^[Y[�]HH��[Y[���][[Y[��RY
-	�^[Y[�]I�K��[YN��\�\�[\�H�ܙN��ܙK�Y[X�\���N���[Y[���][[Y[��RY
-	�Y[X�\���I�K��[YK��[J
-K�Y[X�\��[YN�Y[X�\��[YK��YљYN��YљYK��YљYT�]Έ�YљYT�]���YљYS��N��YљYS��K�[�N�[��[�[��[�[�H�	���[���[��[�[��[�[���	���[�X�[�[��[�[��[�X�[�	���\�Y�Q�YN�[��[�[��[�[[�[���Y\��[]��]Y\���Y\����N���[Y[���][[Y[��RY
-	�Y\����I�K��[YK��[J
-K��[�[��N��[�[�[Y\˚��[�	�	�K��[�[�YN��[�[�YK�Y�\�Y[��Y�\��Y�\���N���[Y[���][[Y[��RY
-	�Y�\���I�K��[YK��[J
-K��[��[�^[Y[��^[Y[�X�[�^[Y[�]N�^[Y[�]K��\��Y��X�]�T^[Y[�OOH	���a�I���[��ܙY]�Y��X�]�T^[Y[�OOH	�����8�8�����	���[��[[ۙ^N�Y��X�]�T^[Y[�OOH	�f��kd8����x��	���[��\��
-Y��X�]�T^[YA�Ѐ���EK�
-ώ�$����������ѥٕA�嵕�Ѐ��􀟎w����X�����ѽх�����(�����Ʌ�ͥ�聕����ѥٕA�嵕�Ѐ��􀟒ꓦk���%����ѽх�����(������ѕ�聽ѡ��A��9���(����((��مȁ�Ѹ�􁑽�յ��й���������	�%���ɕ���ѕ�	Ѹ���(��مȁ�͜�􁑽�յ��й���������	�%����͜���(���Ѹ������1��й���������������(���͜������9����􀜜�(���͜���屔��������􀝹�����(�����յ��й���������	�%�������ѕ����	�Ȝ����屔��������􀝹�����((������A$��ɕ���ѕ����䜰����Ʌ�����Ʌ�����ѡ����չ�ѥ���ɕ̥�(�����Ѹ������1��йɕ��ٔ������������(��������ɕ̹������ɕ̹��ф����ɕ̹��ф��Ս���̤��(�������͜������9����􀝽���(�������͜�ѕ��
-��ѕ�Ѐ􀟊rL�����_�f�2ˎ_���_���������ɕ̹��ф������Q�����������(����������&+�f��s�
-��ώ
-Hϖ"�ZO������(��������������I������ѽɔ��ѽɔ�������Q����ɕ̹��ф������Q�����������ɽ�%��ɕ̹��ф�ɽ�%������ձ���(������مȁ���	�Ȁ􁑽�յ��й���������	�%�������ѕ����	�Ȝ��(������مȁ���	Ѹ�􁑽�յ��й���������	�%�������ѕ����	Ѹ���(���������	Ѹ�ѕ��
-��ѕ�Ѐ��~^D��O���f�2ˎ
-K�&+�f��g�
-/��#���*o��
-����ӖB#��$��(���������	Ѹ���ͅ�����􁙅�͔�(���������	�ȹ��屔��������􀝉������(��������������ѕQ���Ȥ������Q�����С����ѕQ���Ȥ�(����������ѕQ���Ȁ�͕�Q�����С�չ�ѥ�����(�����������	�ȹ��屔��������􀝹�����(����������������I����ձ��(���������̀�������������(������͕�Q�����С�չ�ѥ����쁱���ѥ���ɕ����������������(����􁕱͔��(�������͜������9����􀝕�Ȝ�(�������͜�ѕ��
-��ѕ�Ѐ􀟎
-�����耜����ɕ̹��ф���ɕ̹��ф���ɽȀ�ɕ̹��ɽȁ������7�b8���(�����(�������э���չ�ѥ������(�����Ѹ������1��йɕ��ٔ������������(�����͜������9����􀝕�Ȝ�(�����͜�ѕ��
-��ѕ�Ѐ􀟎
-�����耜��������ͅ���(�����)���((����&+�f��s�
-��Ͼ�#�f�2˖�0ϖ"������*o��
-�
-K�&+�f���$)���յ��й���������	�%�������ѕ����	Ѹ������ٕ��1��ѕ��Ƞ����������չ�ѥ�����(���������������I����쁅���Р��&+�f�����Ƈ���f�2˚��ǎ3��/���/�
-+���o�
-L���ɕ��ɸ��(������������ɴ���O������_�f�2ˎ
-K�&+�f��_���g�/��}q���_�"\耜�����������I����ѽɔ����q��f�ZL耜�����������I��������Q������ɕ��ɸ�(��مȁ�Ѹ�􁑽�յ��й���������	�%�������ѕ����	Ѹ���(���Ѹ�ѕ��
-��ѕ�Ѐ􀟖&+�f��ⴸ����(���Ѹ���ͅ��������Ք�(������A$������ѕ���䜰���ѽɔ聱�������I����ѽɔ�������Q���聱�������I��������Q�����ɽ�%�聱�������I���ɽ�%���(�����ѡ����չ�ѥ���ɕ̥�(����������ɕ̹������ɕ̹��ф����ɕ̹��ф��Ս���̤��(�����������յ��й���������	�%�������ѕ����	�Ȝ����屔��������􀝹�����(��������مȁ�͜�􁑽�յ��й���������	�%����͜���(���������͜������9����􀝽���(���������͜�ѕ��
-��ѕ�Ѐ􀟊rL��f�2ˎ
-K�&+�f��_���_�|��(����������������I����ձ��(������􁕱͔��(���������Ѹ�ѕ��
-��ѕ�Ѐ��~^D��O���f�2ˎ
-K�&+�f��g�
-/��#���*o��
-����ӖB#��$��(���������Ѹ���ͅ�����􁙅�͔�(������������Р��&+�f��
-�����耜����ɕ̹��ф���ɕ̹��ф���ɽȀ�ɕ̹��ɽȁ������7�b8����(�������(���������э���չ�ѥ������(�������Ѹ�ѕ��
-��ѕ�Ѐ��~^D��O���f�2ˎ
-K�&+�f��g�
-/��#���*o��
-����ӖB#��$��(�������Ѹ���ͅ�����􁙅�͔�(����������Р��&+�f��
-�����耜��������ͅ����(�������)���((���5�ɍ�����͍�չЁ���ѕ����)�չ�ѥ�������ѕ�͍�չ�Aɕ٥�ܠ���(��مȁ��ɍ������͕%�С���յ��й���������	�%�����ɍ��М��م�Ք�������(��مȁɅє�����͕%�С���յ��й���������	�%�����͍�չ�I�є���م�Ք�������(��مȁ��͍�չЀ����͕%�С���յ��й���������	�%�����͍�չ��М��م�Ք�������(��مȁ�ɕ٥�܀􁑽�յ��й���������	�%�����͍�չ�Aɕ٥�ܜ��(��������ɍ�����������͍�չЀ������(����مȁ��Ѐ�5�Ѡ���������ɍ������͍�չФ�(�����ɕ٥�ܹѕ��
-��ѕ�Ѐ􀟖V�N�&˖�W��0�
-�������йѽ1�����M�ɥ����������#�"K
-�������͍�չйѽ1�����M�ɥ��������Ʌє����� ����Ʌє������=��耜��������$��(�����ɕ٥�ܹ��屔�����Ȁ􀜌ń���؜�(��􁕱͔��(�����ɕ٥�ܹѕ��
-��ѕ�Ѐ􀜜�(���)�)���յ��й���������	�%�����ɍ��М�����ٕ��1��ѕ��Ƞ�����М���չ�ѥ�����(��مȁɅє�����͕%�С���յ��й���������	�%�����͍�չ�I�є���م�Ք�������(������Ʌє�������(����مȁ��ɍ������͕%�Сѡ�̹م�Ք�������(����مȁ���5�Ѡ�����ȡ��ɍ����Ʌє��������(�������յ��й���������	�%�����͍�չ��М��م�Ք�􁐀��������耜��(���(������ѕ�͍�չ�Aɕ٥�ܠ��(������ѕQ�х����)���)���յ��й���������	�%�����͍�չ�I�є������ٕ��1��ѕ��Ƞ�����������չ�ѥ�����(��مȁɅє�����͕%�Сѡ�̹م�Ք�������(��مȁ��ɍ������͕%�С���յ��й���������	�%�����ɍ��М��م�Ք�������(������Ʌє�������(����مȁ���5�Ѡ�����ȡ��ɍ����Ʌє��������(�������յ��й���������	�%�����͍�չ��М��م�Ք�􁐀��������耜��(��􁕱͔��(�������յ��й���������	�%�����͍�չ��М��م�Ք�􀜜�(���(������ѕ�͍�չ�Aɕ٥�ܠ��(������ѕQ�х����)���)���յ��й���������	�%�����͍�չ��М�����ٕ��1��ѕ��Ƞ�����М���չ�ѥ�����(�����յ��й���������	�%�����͍�չ�I�є���م�Ք�􀜜�(������ѕ�͍�չ�Aɕ٥�ܠ��(������ѕQ�х����)���((�������VӦG��7���
-�+��)���յ��й���������	�%����������М�����ٕ��1��ѕ��Ƞ�����М���չ�ѥ�����(��مȁ��������͕%�Сѡ�̹م�Ք�������(��مȁ�ɕ٥�܀􁑽�յ��й���������	�%���������Aɕ٥�ܜ��(����������������(�����ɕ٥�ܹѕ��
-��ѕ�Ѐ􀟢���*���/��胾�/
-���������ѽ1�����M�ɥ�����(�����ɕ٥�ܹ��屔�����Ȁ􀜍��������(��􁕱͔���������������(�����ɕ٥�ܹѕ��
-��ѕ�Ѐ􀟖���W�4胊"K
-�����5�Ѡ���̡�����ѽ1�����M�ɥ�����(�����ɕ٥�ܹ��屔�����Ȁ􀜌ɔݐ�Ȝ�(��􁕱͔��(�����ɕ٥�ܹѕ��
-��ѕ�Ѐ􀜜�(���(������ѕQ�х����)���((���aML��������)�չ�ѥ����͌�̤��(��ɕ��ɸ�M�ɥ���́�������ɕ����������������윤�ɕ�������𽜰����윤�ɕ���������������윤�ɕ��������������ս�윤�)�)�չ�ѥ����͍��ȡ̤��(��ɕ��ɸ�M�ɥ���́�������ɕ��������������ս�윤�ɕ����������������윤�)�()���Р��(�͍ɥ���(𽉽���(�ѵ��(
+  var allOptions = filtered.concat(passEntries);
+  if (!allOptions.length) return;
+
+  if (allOptions.length === 1) {
+    var p = allOptions[0];
+    planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+    summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+    summaryEl.style.display = 'block';
+    updateTotal();
+    return;
+  }
+
+  var sel = document.createElement('select');
+  sel.id = 'planSelect';
+  sel.className = 'plan-select';
+  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
+
+  if (filtered.length) {
+    opts += '<optgroup label="通常利用">';
+    filtered.forEach(function(p, i){
+      opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
+  if (passEntries.length) {
+    opts += '<optgroup label="パス・回数券">';
+    passEntries.forEach(function(p, i){
+      opts += '<option value="' + (filtered.length + i) + '">' + esc(getAttrOfEntry(p)) + '</option>';
+    });
+    opts += '</optgroup>';
+  }
+
+  sel.innerHTML = opts;
+  wrap.appendChild(sel);
+
+  sel.addEventListener('change', function(){
+    var idx = parseInt(this.value);
+    if (this.value === '' || isNaN(idx)) {
+      planSel = null;
+      this.className = 'plan-select';
+      summaryEl.style.display = 'none';
+    } else {
+      var p = allOptions[idx];
+      planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
+      this.className = 'plan-select has-val';
+      summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+      summaryEl.style.display = 'block';
+    }
+    updateTotal();
+  });
+}
+
+// ── 登録料 ────────────────────────────────────────
+document.getElementById('regFeeCheck').addEventListener('change', function(){
+  document.getElementById('regFeeDetails').style.display = this.checked ? 'block' : 'none';
+  updateRegFee();
+});
+document.getElementById('regFeeAmt').addEventListener('input', updateRegFee);
+document.getElementById('otherStoreDisc').addEventListener('change', function(){
+  document.getElementById('otherDiscDetails').style.display = this.checked ? 'block' : 'none';
+  updateRegFee();
+});
+document.getElementById('otherDiscRate').addEventListener('change', updateRegFee);
+
+function getRegFee() {
+  if (!document.getElementById('regFeeCheck').checked) return 0;
+  var amt = parseInt(document.getElementById('regFeeAmt').value) || 0;
+  var discChecked = document.getElementById('otherStoreDisc').checked;
+  var discRate = discChecked ? (parseInt(document.getElementById('otherDiscRate').value) || 0) : 0;
+  var discAmt = discRate > 0 ? Math.floor(amt * discRate / 100) : 0;
+  return Math.max(0, amt - discAmt);
+}
+
+function updateRegFee() {
+  var checked = document.getElementById('regFeeCheck').checked;
+  var summary = document.getElementById('feeSummary');
+  if (!checked) { summary.textContent = ''; updateTotal(); return; }
+  var amt = parseInt(document.getElementById('regFeeAmt').value) || 0;
+  var discChecked = document.getElementById('otherStoreDisc').checked;
+  var discRate = discChecked ? (parseInt(document.getElementById('otherDiscRate').value) || 0) : 0;
+  var discAmt = discRate > 0 ? Math.floor(amt * discRate / 100) : 0;
+  var netFee = Math.max(0, amt - discAmt);
+  if (discAmt > 0) {
+    summary.textContent = '登録料: ¥' + netFee.toLocaleString() + '（¥' + amt.toLocaleString() + ' × ' + (100 - discRate) + '% 他店舗割引）';
+  } else if (amt > 0) {
+    summary.textContent = '登録料: ¥' + netFee.toLocaleString();
+  } else {
+    summary.textContent = '';
+  }
+  updateTotal();
+}
+
+// ── レンタルセクション ──────────────────────────────
+function buildRentalSection(rentals, rs) {
+  rs.innerHTML = '';
+  matOptions = [];
+  matSel = null;
+
+  if (!rentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+    return;
+  }
+
+  var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('マット') >= 0; });
+  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
+  matOptions = matItems;
+
+  if (matItems.length) {
+    var matRow = document.createElement('div');
+    matRow.className = 'rental-mat-row';
+    var headerDiv = document.createElement('div');
+    headerDiv.className = 'rental-mat-header';
+    headerDiv.innerHTML =
+      '<div class="rental-mat-name">🧘 クライミングマット</div>' +
+      '<div class="rental-mat-hint">種類・泊数を選択</div>';
+    matRow.appendChild(headerDiv);
+    var opts = '<option value="-1">なし</option>';
+    matItems.forEach(function(r, i){
+      opts += '<option value="' + i + '">' + esc(r.name) + '　¥' + Number(r.amount).toLocaleString() + '</option>';
+    });
+    var matSel_el = document.createElement('select');
+    matSel_el.id = 'matSelect';
+    matSel_el.className = 'mat-select';
+    matSel_el.innerHTML = opts;
+    matRow.appendChild(matSel_el);
+    rs.appendChild(matRow);
+    matSel_el.addEventListener('change', function(){
+      var idx = parseInt(this.value);
+      matSel = (idx >= 0) ? matOptions[idx] : null;
+      this.className = 'mat-select' + (idx >= 0 ? ' has-val' : '');
+      updateTotal();
+    });
+  }
+
+  if (otherRentals.length) {
+    if (matItems.length) {
+      var otherLabel = document.createElement('div');
+      otherLabel.className = 'rental-other-label';
+      otherLabel.textContent = 'その他のレンタル';
+      rs.appendChild(otherLabel);
+    }
+    var chipWrap = document.createElement('div');
+    chipWrap.className = 'chip-group';
+    otherRentals.forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className = 'rental-chip';
+      btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
+      btn.addEventListener('click', function(){
+        var idx = rentalSel.findIndex(function(x){ return x.name === r.name; });
+        if (idx >= 0) { rentalSel.splice(idx, 1); btn.classList.remove('sel'); }
+        else { rentalSel.push({name: r.name, amount: Number(r.amount)}); btn.classList.add('sel'); }
+        updateTotal();
+      });
+      chipWrap.appendChild(btn);
+    });
+    rs.appendChild(chipWrap);
+  }
+
+  if (!matItems.length && !otherRentals.length) {
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+  }
+}
+
+// Payment（「その他」追加）
+document.querySelectorAll('.pay-chip').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.pay-chip').forEach(function(b){ b.classList.remove('sel'); });
+    btn.classList.add('sel');
+    paymentSel = btn.dataset.method;
+    document.getElementById('otherPayWrap').style.display = (paymentSel === 'その他') ? 'block' : 'none';
+    updateRegisterBtn();
+  });
+});
+
+// 合計計算（DOM更新なし・純計算）
+function calcTotal() {
+  var t = planSel ? planSel.amount : 0;
+  t += getRegFee();
+  var rentalTotal = 0;
+  if (matSel) rentalTotal += Number(matSel.amount);
+  rentalSel.forEach(function(r){ rentalTotal += r.amount; });
+  t += rentalTotal;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  t += Math.max(0, merch - discount);
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  t += adjust;
+  return Math.max(0, t);
+}
+
+function updateTotal() {
+  var t = planSel ? planSel.amount : 0;
+  var regFee = getRegFee();
+  t += regFee;
+  var rentalTotal = 0;
+  if (matSel) rentalTotal += Number(matSel.amount);
+  rentalSel.forEach(function(r){ rentalTotal += r.amount; });
+  t += rentalTotal;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var netMerch = Math.max(0, merch - discount);
+  t += netMerch;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  t += adjust;
+  if (t < 0) t = 0;
+  document.getElementById('totalNum').textContent = t.toLocaleString();
+  var bd = '';
+  if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
+  if (regFee > 0) bd += (bd ? '　＋　' : '') + '登録料: ¥' + regFee.toLocaleString();
+  if (rentalTotal > 0) bd += (bd ? '　＋　' : '') + 'レンタル: ¥' + rentalTotal.toLocaleString();
+  if (merch > 0) {
+    if (discount > 0) {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + netMerch.toLocaleString() + '（割引−¥' + discount.toLocaleString() + '）';
+    } else {
+      bd += (bd ? '　＋　' : '') + '商品: ¥' + merch.toLocaleString();
+    }
+  }
+  if (adjust > 0) bd += (bd ? '　＋　' : '') + '調整: ¥' + adjust.toLocaleString();
+  if (adjust < 0) bd += (bd ? '　−　' : '') + '調整: −¥' + Math.abs(adjust).toLocaleString();
+  document.getElementById('totalBreakdown').textContent = bd;
+  updateRegisterBtn();
+}
+
+// 登録ボタン有効化判定（プラン選択は任意・店舗選択は必須）
+function updateRegisterBtn() {
+  var store = getStore();
+  if (!store) {
+    document.getElementById('registerBtn').disabled = true;
+    return;
+  }
+  var total = calcTotal();
+  var isZeroYen = total === 0;
+  // 合計0円は支払い方法不要（回数券・無料利用など）
+  document.getElementById('registerBtn').disabled = !(paymentSel || isZeroYen);
+}
+
+// Member search
+document.getElementById('searchBtn').addEventListener('click', function(){
+  var code = document.getElementById('memberCode').value.trim();
+  if (!code) { alert('会員番号を入力してください'); return; }
+  var store = getStore();
+  var badge = document.getElementById('memberBadge');
+  badge.className = 'member-badge notfound';
+  badge.textContent = '検索中...';
+  badge.style.display = 'block';
+  callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
+    var m = res.data;
+    if (m && m.name) {
+      badge.className = 'member-badge found';
+      badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
+      document.getElementById('guestName').value = '';
+    } else {
+      badge.className = 'member-badge notfound';
+      badge.textContent = '会員番号 ' + code + ' は未登録です';
+    }
+  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+});
+document.getElementById('memberCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+});
+
+// Register（プラン選択任意・店舗選択必須）
+document.getElementById('registerBtn').addEventListener('click', function(){
+  var store = getStore();
+  if (!store) {
+    document.getElementById('storeRequiredMsg').style.display = 'block';
+    return;
+  }
+  var total = calcTotal();
+  var isZeroYen = total === 0;
+  var effectivePayment = paymentSel || (isZeroYen ? '0円' : null);
+  if (!effectivePayment) return;
+
+  // 「その他」の場合は売上元名を含める
+  var otherPayName = (paymentSel === 'その他') ? (document.getElementById('otherPayName').value.trim()) : '';
+  var paymentLabel = (paymentSel === 'その他' && otherPayName) ? 'その他(' + otherPayName + ')' : effectivePayment;
+
+  var badge = document.getElementById('memberBadge');
+  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
+  var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
+  var rentalFee = 0, rentalNames = [];
+  if (matSel) { rentalFee += Number(matSel.amount); rentalNames.push(matSel.name); }
+  rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
+  var netMerch = Math.max(0, merch - discount);
+  var regFee = getRegFee();
+  var regFeeRaw = document.getElementById('regFeeCheck').checked ? (parseInt(document.getElementById('regFeeAmt').value) || 0) : 0;
+  var otherStoreDisc = document.getElementById('otherStoreDisc').checked;
+  var regFeeNote = otherStoreDisc ? '他店舗割引適用' : '';
+  var paymentDate = document.getElementById('paymentDate').value;
+
+  var params = {
+    store: store,
+    memberCode: document.getElementById('memberCode').value.trim(),
+    memberName: memberName,
+    regFee: regFee,
+    regFeeRaw: regFeeRaw,
+    regFeeNote: regFeeNote,
+    plan1: planSel ? planSel.plan1 : '',
+    plan2: planSel ? planSel.plan2 : '',
+    planLabel: planSel ? planSel.label : '',
+    usageFee: planSel ? planSel.amount : 0,
+    merchAmt: netMerch,
+    merchNote: document.getElementById('merchNote').value.trim(),
+    rentalNote: rentalNames.join(','),
+    rentalFee: rentalFee,
+    adjustment: adjust,
+    adjustNote: document.getElementById('adjustNote').value.trim(),
+    total: total,
+    payment: paymentLabel,
+    paymentDate: paymentDate,
+    cash: effectivePayment === '現金' ? total : 0,
+    credit: effectivePayment === 'クレジット' ? total : 0,
+    emoney: effectivePayment === '電子マネー' ? total : 0,
+    qr: (effectivePayment === 'QRコード' || effectivePayment === 'その他') ? total : 0,
+    transit: effectivePayment === '交通系IC' ? total : 0,
+    notes: otherPayName
+  };
+
+  var btn = document.getElementById('registerBtn');
+  var msg = document.getElementById('msg');
+  btn.classList.add('loading');
+  msg.className = '';
+  msg.style.display = 'none';
+  document.getElementById('deleteEntryBar').style.display = 'none';
+
+  callAPI('registerEntry', {params: params}).then(function(res){
+    btn.classList.remove('loading');
+    if (res.ok && res.data && res.data.success) {
+      msg.className = 'ok';
+      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
+      // 削除ボタンを3分間表示
+      lastEntryRef = {store: store, entryTime: res.data.entryTime || '', rowId: res.data.rowId || null};
+      var delBar = document.getElementById('deleteEntryBar');
+      var delBtn = document.getElementById('deleteEntryBtn');
+      delBtn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+      delBtn.disabled = false;
+      delBar.style.display = 'block';
+      if (deleteTimer) clearTimeout(deleteTimer);
+      deleteTimer = setTimeout(function(){
+        delBar.style.display = 'none';
+        lastEntryRef = null;
+      }, 3 * 60 * 1000);
+      setTimeout(function(){ location.reload(); }, 2200);
+    } else {
+      msg.className = 'err';
+      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
+    }
+  }).catch(function(e){
+    btn.classList.remove('loading');
+    msg.className = 'err';
+    msg.textContent = 'エラー: ' + e.message;
+  });
+});
+
+// 削除ボタン（登録後3分以内に入力ミスを削除）
+document.getElementById('deleteEntryBtn').addEventListener('click', function(){
+  if (!lastEntryRef) { alert('削除対象の登録情報が見つかりません'); return; }
+  if (!confirm('この入店登録を削除しますか？\n店舗: ' + lastEntryRef.store + '\n時間: ' + lastEntryRef.entryTime)) return;
+  var btn = document.getElementById('deleteEntryBtn');
+  btn.textContent = '削除中...';
+  btn.disabled = true;
+  callAPI('deleteEntry', {store: lastEntryRef.store, entryTime: lastEntryRef.entryTime, rowId: lastEntryRef.rowId})
+    .then(function(res){
+      if (res.ok && res.data && res.data.success) {
+        document.getElementById('deleteEntryBar').style.display = 'none';
+        var msg = document.getElementById('msg');
+        msg.className = 'ok';
+        msg.textContent = '✓ 登録を削除しました';
+        lastEntryRef = null;
+      } else {
+        btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+        btn.disabled = false;
+        alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));
+      }
+    }).catch(function(e){
+      btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+      btn.disabled = false;
+      alert('削除エラー: ' + e.message);
+    });
+});
+
+// Merch & Discount listeners
+function updateDiscountPreview() {
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  var rate = parseInt(document.getElementById('discountRate').value) || 0;
+  var discount = parseInt(document.getElementById('discountAmt').value) || 0;
+  var preview = document.getElementById('discountPreview');
+  if (merch > 0 && discount > 0) {
+    var net = Math.max(0, merch - discount);
+    preview.textContent = '商品割引徊: ¥' + net.toLocaleString() + '（−¥' + discount.toLocaleString() + (rate ? '　' + rate + '% OFF' : '') + '）';
+    preview.style.color = '#1a5276';
+  } else {
+    preview.textContent = '';
+  }
+}
+document.getElementById('merchAmt').addEventListener('input', function(){
+  var rate = parseInt(document.getElementById('discountRate').value) || 0;
+  if (rate > 0) {
+    var merch = parseInt(this.value) || 0;
+    var d = Math.floor(merch * rate / 100);
+    document.getElementById('discountAmt').value = d > 0 ? d : '';
+  }
+  updateDiscountPreview();
+  updateTotal();
+});
+document.getElementById('discountRate').addEventListener('change', function(){
+  var rate = parseInt(this.value) || 0;
+  var merch = parseInt(document.getElementById('merchAmt').value) || 0;
+  if (rate > 0) {
+    var d = Math.floor(merch * rate / 100);
+    document.getElementById('discountAmt').value = d > 0 ? d : '';
+  } else {
+    document.getElementById('discountAmt').value = '';
+  }
+  updateDiscountPreview();
+  updateTotal();
+});
+document.getElementById('discountAmt').addEventListener('input', function(){
+  document.getElementById('discountRate').value = '';
+  updateDiscountPreview();
+  updateTotal();
+});
+
+// 調整金額リスナー
+document.getElementById('adjustAmt').addEventListener('input', function(){
+  var adj = parseInt(this.value) || 0;
+  var preview = document.getElementById('adjustPreview');
+  if (adj > 0) {
+    preview.textContent = '追加請求: ＋¥' + adj.toLocaleString();
+    preview.style.color = '#c62828';
+  } else if (adj < 0) {
+    preview.textContent = '値引き: −¥' + Math.abs(adj).toLocaleString();
+    preview.style.color = '#2e7d32';
+  } else {
+    preview.textContent = '';
+  }
+  updateTotal();
+});
+
+// XSS helpers
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s || '').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+init();
+</script>
+</body>
+</html>
