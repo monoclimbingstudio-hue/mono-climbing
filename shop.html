@@ -314,7 +314,7 @@ function loadInventory() {
       wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
       return;
     }
-    allInventory = res.data;
+    allInventory = (res.data && res.data.inventory) ? res.data.inventory : res.data;
     var categories = Object.keys(allInventory);
     if (categories.length === 0) {
       wrap.innerHTML = '<div class="empty-state">在庫データがありません</div>';
@@ -458,7 +458,7 @@ document.getElementById('modalConfirm').addEventListener('click', function(){
     row: item.row,
     sheet: item.sheet
   }).then(function(res){
-    if (res.ok && res.data && res.data.success) {
+    if (res.ok && res.data && (res.data.ok || res.data.success)) {
       msg.className = 'modal-msg ok';
       msg.textContent = '✓ 売上を記録しました（' + qty + '点 ¥' + (qty * Number(item.price||0)).toLocaleString() + '）';
       // Update local data
