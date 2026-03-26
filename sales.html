@@ -16,9 +16,13 @@
   --sub: #777;
   --success: #2e7d32;
   --radius: 10px;
+  --store-bg: #bbdefb;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg, var(--light-bg)); color: var(--text); }
+body.store-hakata  { --store-bg: #bbdefb; }
+body.store-omura   { --store-bg: #c8e6c9; }
+body.store-sasebo  { --store-bg: #ffe0b2; }
 nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
 nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
 nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
@@ -84,7 +88,41 @@ tbody tr:last-child td { border-bottom: none; }
 
 </style>
 </head>
-<body>
+<body class="store-hakata">
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
+    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:1rem;outline:none;margin-bottom:12px;text-align:center;" autofocus>
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="color:#c62828;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PASS = 'mono';
+  if (sessionStorage.getItem('mono_auth') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  function doLogin(){
+    var v = document.getElementById('loginPass').value;
+    if (v === PASS) {
+      sessionStorage.setItem('mono_auth', '1');
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  }
+})();
+</script>
 
 <nav>
   <div class="logo">🧗 MONO</div>
@@ -322,6 +360,17 @@ document.getElementById('transferBtn').addEventListener('click', function(){
     msg.className = 'transfer-msg err';
     msg.textContent = 'エラー: ' + e.message;
   });
+});
+
+// Store filter → background color change
+document.getElementById('storeFilter').addEventListener('change', function(){
+  var store = this.value;
+  document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+  if (store) {
+    document.body.classList.add('store-' + store);
+  } else {
+    document.body.classList.add('store-hakata');
+  }
 });
 
 </script>
