@@ -18,9 +18,9 @@
   --radius: 10px;
   --store-bg: var(--light-bg);
 }
-body.store-hakata  { --store-bg: #e8f0fe; }
-body.store-omura   { --store-bg: #e6f4ea; }
-body.store-sasebo  { --store-bg: #fef3e0; }
+body.store-hakata  { --store-bg: #bbdefb; }
+body.store-omura   { --store-bg: #c8e6c9; }
+body.store-sasebo  { --store-bg: #ffe0b2; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg); color: var(--text); transition: background .3s; }
 
@@ -142,6 +142,40 @@ tbody tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body class="store-hakata">
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
+    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.95rem;outline:none;margin-bottom:12px;text-align:center;">
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="margin-top:10px;font-size:0.82rem;color:#c62828;font-weight:600;min-height:18px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PASS = 'mono';
+  if (sessionStorage.getItem('mono_auth') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  function doLogin(){
+    var v = document.getElementById('loginPass').value;
+    if (v === PASS) {
+      sessionStorage.setItem('mono_auth', '1');
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  }
+})();
+</script>
 
 <!-- 会員名編集モーダル -->
 <div id="editModal">
@@ -289,7 +323,6 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     var sr = document.getElementById('searchResult');
     sr.className = 'result-box'; sr.style.display = 'none';
     document.getElementById('searchCode').value = '';
-    // 一覧が既に読み込み済みなら再読込
     if (membersLoaded) {
       document.getElementById('listFilter').value = '';
       loadMembers();
@@ -353,7 +386,7 @@ document.getElementById('addBtn').addEventListener('click', function(){
   });
 });
 
-// ── LOAD MEMBERS（ボタン押下時のみ） ─────────────────
+// ── LOAD MEMBERS ─────────────────
 document.getElementById('loadListBtn').addEventListener('click', function(){
   loadMembers();
 });
@@ -400,14 +433,12 @@ function renderMemberTable(members){
   html += '</tbody></table>';
   wrap.innerHTML = html;
 
-  // 編集ボタン
   wrap.querySelectorAll('.row-edit-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       openEditModal(this.dataset.code, this.dataset.name);
     });
   });
 
-  // 削除ボタン
   wrap.querySelectorAll('.row-del-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       deleteMember(this.dataset.code, this.dataset.name);
@@ -440,7 +471,6 @@ document.getElementById('editSaveBtn').addEventListener('click', function(){
   var msgEl = document.getElementById('editModalMsg');
   if (!newName) { msgEl.className = 'modal-msg err'; msgEl.textContent = '氏名を入力してください'; return; }
 
-  // 上書き確認ポップアップ
   if (!confirm('会員番号 ' + code + ' の氏名を\n「' + newName + '」に上書きしますか？')) return;
 
   var saveBtn = this;
