@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物販管理 - Mono Climbing Studio</title>
+<style>
+:root {
+  --accent: #e84c2c;
+  --dark: #1a1a1a;
+  --mid: #444;
+  --light-bg: #f7f7f7;
+  --card-bg: #ffffff;
+  --border: #e0e0e0;
+  --text: #222;
+  --sub: #777;
+  --success: #2e7d32;
+  --radius: 10px;
+  --store-bg: #f5f5f5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg, var(--light-bg)); color: var(--text); }
+body.store-hakata  { --store-bg: #f5f5f5; }
+body.store-omura   { --store-bg: #b3e5fc; }
+body.store-sasebo  { --store-bg: #c8e6c9; }
+nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
+nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+nav a.active { color: #fff; border-bottom-color: var(--accent); }
+nav a:hover { color: #fff; }
+.page { max-width: 960px; margin: 0 auto; padding: 16px 14px 60px; }
+.section { margin-bottom: 14px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.section-badge { padding: 3px 10px; border-radius: 100px; background: var(--dark); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+/* Filter bar */
+.filter-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.filter-field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 0.78rem; color: var(--sub); font-weight: 500; }
+.filter-input { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
+.filter-input:focus { border-color: var(--dark); }
+.load-btn { padding: 11px 24px; background: var(--dark); color: #fff; font-size: 0.92rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+.load-btn:hover { opacity: .8; }
+
+/* Category tabs */
+.cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.cat-tab { padding: 8px 16px; border-radius: 100px; border: 1.5px solid var(--border); background: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+.cat-tab.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+.cat-tab:hover:not(.active) { border-color: var(--mid); }
+
+/* Summary grid */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+@media(max-width:600px){ .summary-grid { grid-template-columns: repeat(2,1fr); } }
+.summary-card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.summary-card .s-label { font-size: 0.75rem; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.summary-card .s-value { font-size: 1.5rem; font-weight: 800; color: var(--dark); }
+.summary-card .s-unit { font-size: 0.85rem; font-weight: 600; }
+.summary-card.highlight { background: var(--dark); }
+.summary-card.highlight .s-label { color: #888; }
+.summary-card.highlight .s-value { color: #fff; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
+thead th { background: #f5f5f5; padding: 9px 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700; color: var(--mid); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+tbody tr:hover td { background: #fafafa; }
+tbody tr:last-child td { border-bottom: none; }
+.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.empty-state { text-align: center; padding: 40px 0; color: var(--sub); font-size: 0.88rem; }
+
+/* Stock indicator */
+.stock-ok { color: var(--success); font-weight: 700; }
+.stock-low { color: #e65100; font-weight: 700; }
+.stock-zero { color: #c62828; font-weight: 700; }
+
+/* Sell button */
+.sell-btn { padding: 4px 12px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+.sell-btn:hover { opacity: .8; }
+.sell-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; z-index: 9000; background: rgba(26,26,26,.7); display: none; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+.modal h3 { font-size: 1rem; margin-bottom: 16px; }
+.modal-field { margin-bottom: 12px; }
+.modal-field label { display: block; font-size: 0.82rem; color: var(--sub); margin-bottom: 4px; font-weight: 500; }
+.modal-field input, .modal-field select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; }
+.modal-field input:focus, .modal-field select:focus { border-color: var(--dark); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.92rem; font-weight: 700; cursor: pointer; }
+.btn-cancel { background: #eee; color: var(--mid); }
+.btn-confirm { background: var(--accent); color: #fff; }
+.btn-confirm:disabled { opacity: .35; cursor: not-allowed; }
+.modal-msg { margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: none; }
+.modal-msg.ok { background: #e8f5e9; color: var(--success); display: block; }
+.modal-msg.err { background: #fdeeea; color: #c62828; display: block; }
+
+.dot-loader { display: flex; gap: 4px; }
+.dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
+.dot-loader span:nth-child(2) { animation-delay: .15s; }
+.dot-loader span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+</style>
+</head>
+<body class="store-hakata">
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
+    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:1rem;outline:none;margin-bottom:12px;text-align:center;" autofocus>
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="color:#c62828;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PASS = 'mono';
+  if (sessionStorage.getItem('mono_auth') === '1') {
+    document.getElementById('loginOverlay').style.display = 'none';
+    return;
+  }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  function doLogin(){
+    var v = document.getElementById('loginPass').value;
+    if (v === PASS) {
+      sessionStorage.setItem('mono_auth', '1');
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  }
+})();
+</script>
+
+<nav>
+  <div class="logo">🧗 MONO</div>
+  <a href="index.html">入店登録</a>
+  <a href="members.html">会員管理</a>
+  <a href="sales.html">売上管理</a>
+  <a href="shop.html" class="active">物販管理</a>
+</nav>
+
+<div class="page">
+
+  <!-- 店舗選択 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">STORE</span>
+      <div class="section-title">店舗選択</div>
+    </div>
+    <div class="card">
+      <div class="filter-bar">
+        <div class="filter-field">
+          <div class="field-label">店舗</div>
+          <select id="storeSelect" class="filter-input">
+            <option value="hakata">博多店</option>
+            <option value="omura">大村店</option>
+            <option value="sasebo">佐世保店</option>
+          </select>
+        </div>
+        <button class="load-btn" id="loadBtn">在庫を表示</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カテゴリータブ -->
+  <div class="section" id="catSection" style="display:none;">
+    <div class="section-head">
+      <span class="section-badge">CATEGORY</span>
+      <div class="section-title">カテゴリー</div>
+    </div>
+    <div class="cat-tabs" id="catTabs"></div>
+  </div>
+
+  <!-- サマリー -->
+  <div class="section" id="summarySection" style="display:none;">
+    <div class="section-head">
+      <span class="section-badge">SUMMARY</span>
+      <div class="section-title">在庫サマリー</div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="s-label">商品種類</div>
+        <div class="s-value"><span id="sItemCount">0</span><span class="s-unit"> 種</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">在庫点数</div>
+        <div class="s-value"><span id="sStockCount">0</span><span class="s-unit"> 点</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">在庫金額</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sStockValue">0</span></div>
+      </div>
+      <div class="summary-card highlight">
+        <div class="s-label">在庫切れ</div>
+        <div class="s-value"><span id="sOutOfStock">0</span><span class="s-unit"> 種</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 在庫一覧 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">INVENTORY</span>
+      <div class="section-title">在庫一覧</div>
+    </div>
+    <div class="card">
+      <div id="inventoryWrap">
+        <div class="empty-state">店舗を選択して「在庫を表示」を押してください</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 売上記録モーダル -->
+<div class="modal-overlay" id="sellModal">
+  <div class="modal">
+    <h3>🛒 物販売上を記録</h3>
+    <div class="modal-field">
+      <label>商品</label>
+      <input type="text" id="modalProduct" readonly>
+    </div>
+    <div class="modal-field">
+      <label>カテゴリー</label>
+      <input type="text" id="modalCategory" readonly>
+    </div>
+    <div class="modal-field">
+      <label>サイズ</label>
+      <input type="text" id="modalSize" readonly>
+    </div>
+    <div class="modal-field">
+      <label>単価</label>
+      <input type="text" id="modalPrice" readonly>
+    </div>
+    <div class="modal-field">
+      <label>数量</label>
+      <select id="modalQty">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>支払方法</label>
+      <select id="modalPayment">
+        <option value="現金">現金</option>
+        <option value="クレジット">クレジット</option>
+        <option value="電子マネー">電子マネー</option>
+        <option value="QRコード">QRコード</option>
+        <option value="交通系IC">交通系IC</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">キャンセル</button>
+      <button class="btn-confirm" id="modalConfirm">売上を記録</button>
+    </div>
+    <div id="modalMsg" class="modal-msg"></div>
+  </div>
+</div>
+
+<script>
+var allInventory = {};
+var currentCategory = '';
+var currentStore = '';
+
+function callAPI(action, params) {
+  return fetch('/api/gas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({action:action}, params))
+  }).then(function(r){ return r.json(); });
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Store select → background color change
+document.getElementById('storeSelect').addEventListener('change', function(){
+  var store = this.value;
+  document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+  if (store) {
+    document.body.classList.add('store-' + store);
+  }
+});
+
+document.getElementById('loadBtn').addEventListener('click', loadInventory);
+
+function loadInventory() {
+  currentStore = document.getElementById('storeSelect').value;
+  var wrap = document.getElementById('inventoryWrap');
+  wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>在庫データを読み込み中...</div>';
+  document.getElementById('catSection').style.display = 'none';
+  document.getElementById('summarySection').style.display = 'none';
+
+  // Change body class for store
+  document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+  document.body.classList.add('store-' + currentStore);
+
+  callAPI('getInventory', {store: currentStore}).then(function(res){
+    if (!res.ok || !res.data) {
+      var errMsg = (res.data && res.data.error) ? res.data.error : (res.error || 'データ取得エラー');
+      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
+      return;
+    }
+    allInventory = res.data;
+    var categories = Object.keys(allInventory);
+    if (categories.length === 0) {
+      wrap.innerHTML = '<div class="empty-state">在庫データがありません</div>';
+      return;
+    }
+    renderCategoryTabs(categories);
+    currentCategory = categories[0];
+    renderInventory(currentCategory);
+    renderSummary();
+    document.getElementById('catSection').style.display = 'block';
+    document.getElementById('summarySection').style.display = 'block';
+  }).catch(function(e){
+    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+  });
+}
+
+function renderCategoryTabs(categories) {
+  var html = '';
+  categories.forEach(function(cat, i){
+    html += '<div class="cat-tab' + (i===0?' active':'') + '" data-cat="' + esc(cat) + '">' + esc(cat) + '</div>';
+  });
+  var container = document.getElementById('catTabs');
+  container.innerHTML = html;
+  container.querySelectorAll('.cat-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      container.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
+      this.classList.add('active');
+      currentCategory = this.getAttribute('data-cat');
+      renderInventory(currentCategory);
+    });
+  });
+}
+
+function renderInventory(category) {
+  var wrap = document.getElementById('inventoryWrap');
+  var items = allInventory[category];
+  if (!items || !items.length) {
+    wrap.innerHTML = '<div class="empty-state">このカテゴリーの商品がありません</div>';
+    return;
+  }
+  var storeLabel = {hakata:'博多', omura:'大村', sasebo:'佐世保'}[currentStore] || currentStore;
+  var html = '<div class="table-wrap"><table><thead><tr>'
+    + '<th>商品名</th><th>サイズ</th><th class="num-cell">価格</th>'
+    + '<th class="num-cell">在庫数</th><th class="num-cell">在庫金額</th><th>操作</th>'
+    + '</tr></thead><tbody>';
+  items.forEach(function(item, idx){
+    var stock = Number(item.stock || 0);
+    var stockClass = stock === 0 ? 'stock-zero' : (stock <= 2 ? 'stock-low' : 'stock-ok');
+    var stockValue = stock * Number(item.price || 0);
+    html += '<tr>'
+      + '<td style="font-weight:600;">' + esc(item.name) + '</td>'
+      + '<td>' + esc(item.size || '-') + '</td>'
+      + '<td class="num-cell">¥' + Number(item.price||0).toLocaleString() + '</td>'
+      + '<td class="num-cell"><span class="' + stockClass + '">' + stock + '</span></td>'
+      + '<td class="num-cell">¥' + stockValue.toLocaleString() + '</td>'
+      + '<td><button class="sell-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '"'
+      + (stock <= 0 ? ' disabled' : '') + '>販売</button></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+
+  // Attach sell button events
+  wrap.querySelectorAll('.sell-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var cat = this.getAttribute('data-cat');
+      var idx = parseInt(this.getAttribute('data-idx'));
+      openSellModal(cat, idx);
+    });
+  });
+}
+
+function renderSummary() {
+  var totalItems = 0, totalStock = 0, totalValue = 0, outOfStock = 0;
+  Object.keys(allInventory).forEach(function(cat){
+    allInventory[cat].forEach(function(item){
+      totalItems++;
+      var s = Number(item.stock || 0);
+      totalStock += s;
+      totalValue += s * Number(item.price || 0);
+      if (s <= 0) outOfStock++;
+    });
+  });
+  document.getElementById('sItemCount').textContent = totalItems;
+  document.getElementById('sStockCount').textContent = totalStock.toLocaleString();
+  document.getElementById('sStockValue').textContent = totalValue.toLocaleString();
+  document.getElementById('sOutOfStock').textContent = outOfStock;
+}
+
+// Sell Modal
+function openSellModal(category, idx) {
+  var item = allInventory[category][idx];
+  document.getElementById('modalProduct').value = item.name;
+  document.getElementById('modalCategory').value = category;
+  document.getElementById('modalSize').value = item.size || '-';
+  document.getElementById('modalPrice').value = '¥' + Number(item.price||0).toLocaleString();
+  document.getElementById('modalQty').value = '1';
+  document.getElementById('modalMsg').className = 'modal-msg';
+  document.getElementById('modalMsg').style.display = 'none';
+  document.getElementById('modalConfirm').disabled = false;
+  document.getElementById('modalConfirm').textContent = '売上を記録';
+  document.getElementById('sellModal').classList.add('show');
+
+  // Store item info for submission
+  document.getElementById('modalConfirm').dataset.cat = category;
+  document.getElementById('modalConfirm').dataset.idx = idx;
+}
+
+document.getElementById('modalCancel').addEventListener('click', function(){
+  document.getElementById('sellModal').classList.remove('show');
+});
+
+document.getElementById('modalConfirm').addEventListener('click', function(){
+  var btn = this;
+  var cat = btn.dataset.cat;
+  var idx = parseInt(btn.dataset.idx);
+  var item = allInventory[cat][idx];
+  var qty = parseInt(document.getElementById('modalQty').value);
+  var payment = document.getElementById('modalPayment').value;
+  var msg = document.getElementById('modalMsg');
+
+  if (qty > Number(item.stock || 0)) {
+    msg.className = 'modal-msg err';
+    msg.textContent = '在庫数を超えています（残り ' + item.stock + ' 点）';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '記録中...';
+  msg.className = 'modal-msg';
+  msg.style.display = 'none';
+
+  callAPI('recordShopSale', {
+    store: currentStore,
+    category: cat,
+    productName: item.name,
+    size: item.size || '',
+    price: item.price,
+    qty: qty,
+    payment: payment,
+    row: item.row,
+    sheet: item.sheet
+  }).then(function(res){
+    if (res.ok && res.data && res.data.success) {
+      msg.className = 'modal-msg ok';
+      msg.textContent = '✓ 売上を記録しました（' + qty + '点 ¥' + (qty * Number(item.price||0)).toLocaleString() + '）';
+      // Update local data
+      item.stock = Number(item.stock) - qty;
+      // Re-render after short delay
+      setTimeout(function(){
+        document.getElementById('sellModal').classList.remove('show');
+        renderInventory(currentCategory);
+        renderSummary();
+      }, 1200);
+    } else {
+      var errDetail = (res.data && res.data.error) ? res.data.error : (res.error || '記録に失敗しました');
+      msg.className = 'modal-msg err';
+      msg.textContent = 'エラー: ' + errDetail;
+      btn.disabled = false;
+      btn.textContent = '売上を記録';
+    }
+  }).catch(function(e){
+    msg.className = 'modal-msg err';
+    msg.textContent = 'エラー: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '売上を記録';
+  });
+});
+
+// Close modal on overlay click
+document.getElementById('sellModal').addEventListener('click', function(e){
+  if (e.target === this) this.classList.remove('show');
+});
+
+</script>
+</body>
+</html>
