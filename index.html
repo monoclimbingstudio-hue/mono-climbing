@@ -240,6 +240,7 @@ nav a:hover { color: #fff; }
   <a href="index.html" class="active">入店登録</a>
   <a href="members.html">会員管理</a>
   <a href="sales.html">売上管理</a>
+  <a href="shop.html">物販管理</a>
 </nav>
 
 <div class="page">
@@ -275,8 +276,8 @@ nav a:hover { color: #fff; }
       </div>
       <div id="memberBadge" class="member-badge"></div>
       <div class="guest-row">
-        <div class="field-label">ゲスト汏名（会員でない場合）</div>
-        <input type="text" id="guestName" class="full-input" placeholder="汏名を入力">
+        <div class="field-label">ゲスト氏名（会員でない場合）</div>
+        <input type="text" id="guestName" class="full-input" placeholder="氏名を入力">
       </div>
     </div>
   </div>
@@ -285,7 +286,7 @@ nav a:hover { color: #fff; }
   <div class="section">
     <div class="section-head">
       <div class="step-num">②</div>
-      <div class="section-title">利用プラン <span style="font-size:.78rem;font-weight:400;color:var(--sub);">件意</span></div>
+      <div class="section-title">利用プラン <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
     </div>
     <div class="card">
 
@@ -370,7 +371,8 @@ nav a:hover { color: #fff; }
     <div class="section-head">
       <div class="step-num">⑤</div>
       <div class="section-title">商品購入 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
-    </div>
+    <a href="shop.html" style="font-size:0.82rem;color:var(--accent);text-decoration:none;font-weight:600;margin-left:auto;">物販管理へ →</a>
+      </div>
     <div class="card">
       <div class="field-label">購入金額</div>
       <div class="merch-input-row">
@@ -523,7 +525,7 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
-    document.body.className = document.body.className.replace(/store-\\S+/g, '').trim();
+    document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
     document.body.classList.add('store-' + btn.dataset.store);
     document.getElementById('storeRequiredMsg').style.display = 'none';
     updateRegisterBtn();
@@ -570,7 +572,7 @@ function init() {
   }
 }
 
-// ── GASデータ構逢:
+// ── GASデータ構造:
 //   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券"）
 //   plan2 = 属性（例: "学生", "大人", "未就学児", "シニア"）
 //          または 利用区分（"月パス利用", "昼月パス利用", "回数券利用"）→ Step B に表示
@@ -1070,7 +1072,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
 // 削除ボタン（登録後3分以内に入力ミスを削除）
 document.getElementById('deleteEntryBtn').addEventListener('click', function(){
   if (!lastEntryRef) { alert('削除対象の登録情報が見つかりません'); return; }
-  if (!confirm('この入店登録を削除しますか？\\n店舗: ' + lastEntryRef.store + '\\n時間: ' + lastEntryRef.entryTime)) return;
+  if (!confirm('この入店登録を削除しますか？\n店舗: ' + lastEntryRef.store + '\n時間: ' + lastEntryRef.entryTime)) return;
   var btn = document.getElementById('deleteEntryBtn');
   btn.textContent = '削除中...';
   btn.disabled = true;
@@ -1103,7 +1105,7 @@ function updateDiscountPreview() {
   var preview = document.getElementById('discountPreview');
   if (merch > 0 && discount > 0) {
     var net = Math.max(0, merch - discount);
-    preview.textContent = '商品割引徊: ¥' + net.toLocaleString() + '（−¥' + discount.toLocaleString() + (rate ? '　' + rate + '% OFF' : '') + '）';
+    preview.textContent = '商品割引後: ¥' + net.toLocaleString() + '（−¥' + discount.toLocaleString() + (rate ? '　' + rate + '% OFF' : '') + '）';
     preview.style.color = '#1a5276';
   } else {
     preview.textContent = '';
