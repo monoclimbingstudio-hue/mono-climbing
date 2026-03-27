@@ -339,6 +339,7 @@ document.getElementById('transferBtn').addEventListener('click', function(){
     btn.textContent = '売上を転記する';
     if(res.ok && res.data && res.data.success){
       msg.className = 'transfer-msg ok';
+      msg.style.display = '';
       msg.textContent = '✓ 転記しました（' + (res.data.rows || currentEntries.length) + '件 → 売上集計シート）';
       btn.disabled = true; // 二重転記防止
     } else {
@@ -352,6 +353,7 @@ document.getElementById('transferBtn').addEventListener('click', function(){
         errDetail = 'サーバーからの応答: ' + JSON.stringify(res);
       }
       msg.className = 'transfer-msg err';
+      msg.style.display = '';
       msg.textContent = 'エラー: ' + errDetail;
       btn.disabled = false;
     }
@@ -359,6 +361,7 @@ document.getElementById('transferBtn').addEventListener('click', function(){
     btn.textContent = '売上を転記する';
     btn.disabled = false;
     msg.className = 'transfer-msg err';
+    msg.style.display = '';
     msg.textContent = 'エラー: ' + e.message;
   });
 });
