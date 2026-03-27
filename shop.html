@@ -425,6 +425,22 @@ function renderInventory(category) {
       openSellModal(cat, idx);
     });
   });
+    // Select button: navigate to index.html with product info
+    wrap.querySelectorAll('.select-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var cat = this.getAttribute('data-cat');
+        var idx = parseInt(this.getAttribute('data-idx'));
+        var item = allInventory[cat][idx];
+        var sellStore = item.storeName || currentStore;
+        var p = 'merch=' + encodeURIComponent(item.name)
+          + '&merchAmt=' + (Number(item.price) || 0)
+          + '&store=' + sellStore
+          + '&sheet=' + encodeURIComponent(cat)
+          + '&row=' + (item.row || 0)
+          + '&stockCol=' + (item.stockCol || 0);
+        window.location.href = 'index.html?' + p;
+      });
+    });
 }
 
 function renderSummary() {
