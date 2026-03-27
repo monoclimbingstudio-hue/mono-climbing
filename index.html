@@ -261,17 +261,17 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- 会員番号 -->
+  <!-- 会員検索 -->
   <div class="section">
     <div class="section-head">
       <div class="step-num">①</div>
-      <div class="section-title">会員番号</div>
+      <div class="section-title">会員検索</div>
     </div>
     <div class="card">
       <div class="input-row">
-        <input type="text" id="memberCode" placeholder="例: 1234" inputmode="numeric" style="max-width:160px;">
+        <input type="text" id="memberCode" placeholder="会員番号" inputmode="numeric" style="max-width:120px;">
+        <input type="text" id="memberNameSearch" placeholder="名前で検索" style="flex:1;">
         <button class="icon-btn" id="searchBtn">検索</button>
-        <span id="memberNameInline" style="font-size:.9rem;font-weight:600;align-self:center;"></span>
       </div>
       <div id="memberBadge" class="member-badge"></div>
       <div class="guest-row">
@@ -899,28 +899,63 @@ function updateRegisterBtn() {
   document.getElementById('registerBtn').disabled = !(paymentSel || isZeroYen);
 }
 
-// Member search
+// Member search (by code or name)
 document.getElementById('searchBtn').addEventListener('click', function(){
   var code = document.getElementById('memberCode').value.trim();
-  if (!code) { alert('会員番号を入力してください'); return; }
+  var nameQuery = document.getElementById('memberNameSearch').value.trim();
+  if (!code && !nameQuery) { alert('会員番号または名前を入力してください'); return; }
   var store = getStore();
   var badge = document.getElementById('memberBadge');
   badge.className = 'member-badge notfound';
   badge.textContent = '検索中...';
   badge.style.display = 'block';
-  callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
-    var m = res.data;
-    if (m && m.name) {
-      badge.className = 'member-badge found';
-      badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
-      document.getElementById('guestName').value = '';
-    } else {
-      badge.className = 'member-badge notfound';
-      badge.textContent = '会員番号 ' + code + ' は未登録です';
-    }
-  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+
+  if (code) {
+    callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
+      var m = res.data;
+      if (m && m.name) {
+        badge.className = 'member-badge found';
+        badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
+        document.getElementById('guestName').value = '';
+      } else {
+        badge.className = 'member-badge notfound';
+        badge.textContent = '会員番号 ' + code + ' は未登録です';
+      }
+    }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+  } else {
+    callAPI('getMemberList', {store: store || 'hakata'}).then(function(res){
+      var list = (res.data && Array.isArray(res.data)) ? res.data : [];
+      var q = nameQuery.toLowerCase();
+      var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
+      if (matches.length === 0) {
+        badge.className = 'member-badge notfound';
+        badge.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
+      } else if (matches.length === 1) {
+        badge.className = 'member-badge found';
+        badge.textContent = '✓  ' + matches[0].name + '　（会員番号: ' + matches[0].code + '）';
+        document.getElementById('memberCode').value = matches[0].code;
+        document.getElementById('guestName').value = '';
+      } else {
+        badge.className = 'member-badge found';
+        badge.innerHTML = matches.slice(0, 10).map(function(m){
+          return '<div style="cursor:pointer;padding:4px 0;" class="name-result" data-code="' + m.code + '" data-name="' + m.name.replace(/"/g,'&quot;') + '">✓ ' + m.name + '（' + m.code + '）</div>';
+        }).join('') + (matches.length > 10 ? '<div style="color:var(--sub);font-size:.82rem;">他 ' + (matches.length - 10) + ' 件...</div>' : '');
+        badge.querySelectorAll('.name-result').forEach(function(el){
+          el.addEventListener('click', function(){
+            document.getElementById('memberCode').value = this.dataset.code;
+            badge.className = 'member-badge found';
+            badge.textContent = '✓  ' + this.dataset.name + '　（会員番号: ' + this.dataset.code + '）';
+            document.getElementById('guestName').value = '';
+          });
+        });
+      }
+    }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+  }
 });
 document.getElementById('memberCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+});
+document.getElementById('memberNameSearch').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
 });
 
@@ -995,6 +1030,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     btn.classList.remove('loading');
     if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
+      msg.style.display = '';
       msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
           // Reduce inventory if product was selected from shop
           if (pendingShopItem) {
@@ -1020,11 +1056,13 @@ document.getElementById('registerBtn').addEventListener('click', function(){
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
+      msg.style.display = '';
       msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
     }
   }).catch(function(e){
     btn.classList.remove('loading');
     msg.className = 'err';
+    msg.style.display = '';
     msg.textContent = 'エラー: ' + e.message;
   });
 });
@@ -1042,6 +1080,7 @@ document.getElementById('deleteEntryBtn').addEventListener('click', function(){
         document.getElementById('deleteEntryBar').style.display = 'none';
         var msg = document.getElementById('msg');
         msg.className = 'ok';
+        msg.style.display = '';
         msg.textContent = '✓ 登録を削除しました';
         lastEntryRef = null;
       } else {

@@ -20,7 +20,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg, var(--light-bg)); color: var(--text); }
-body.store-all     { --store-bg: #fff9c4; }
+body.store-all     { --store-bg: #fff; }
 body.store-hakata  { --store-bg: #f5f5f5; }
 body.store-omura   { --store-bg: #b3e5fc; }
 body.store-sasebo  { --store-bg: #c8e6c9; }
@@ -228,53 +228,6 @@ tbody tr:last-child td { border-bottom: none; }
 
 </div>
 
-<!-- 売上記録モーダル -->
-<div class="modal-overlay" id="sellModal">
-  <div class="modal">
-    <h3>🛒 物販売上を記録</h3>
-    <div class="modal-field">
-      <label>商品</label>
-      <input type="text" id="modalProduct" readonly>
-    </div>
-    <div class="modal-field">
-      <label>カテゴリー</label>
-      <input type="text" id="modalCategory" readonly>
-    </div>
-    <div class="modal-field">
-      <label>サイズ</label>
-      <input type="text" id="modalSize" readonly>
-    </div>
-    <div class="modal-field">
-      <label>単価</label>
-      <input type="text" id="modalPrice" readonly>
-    </div>
-    <div class="modal-field">
-      <label>数量</label>
-      <select id="modalQty">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-    </div>
-    <div class="modal-field">
-      <label>支払方法</label>
-      <select id="modalPayment">
-        <option value="現金">現金</option>
-        <option value="クレジット">クレジット</option>
-        <option value="電子マネー">電子マネー</option>
-        <option value="QRコード">QRコード</option>
-        <option value="交通系IC">交通系IC</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="modalCancel">キャンセル</button>
-      <button class="btn-confirm" id="modalConfirm">売上を記録</button>
-    </div>
-    <div id="modalMsg" class="modal-msg"></div>
-  </div>
-</div>
 
 <script>
 var allInventory = {};
@@ -410,22 +363,13 @@ function renderInventory(category) {
       + '<td class="num-cell">¥' + Number(item.price||0).toLocaleString() + '</td>'
       + '<td class="num-cell"><span class="' + stockClass + '">' + stock + '</span></td>'
       + '<td class="num-cell">¥' + stockValue.toLocaleString() + '</td>'
-      + '<td><button class="sell-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '"'
-      + (stock <= 0 ? ' disabled' : '') + '>販売</button> <button class="select-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '">選択</button></td>'
+      + '<td><button class="select-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '">選択</button></td>'
       + '</tr>';
   });
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 
-  // Attach sell button events
-  wrap.querySelectorAll('.sell-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var cat = this.getAttribute('data-cat');
-      var idx = parseInt(this.getAttribute('data-idx'));
-      openSellModal(cat, idx);
-    });
-  });
-    // Select button: navigate to index.html with product info
+      // Select button: navigate to index.html with product info
     wrap.querySelectorAll('.select-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var cat = this.getAttribute('data-cat');
@@ -460,96 +404,6 @@ function renderSummary() {
   document.getElementById('sOutOfStock').textContent = outOfStock;
 }
 
-// Sell Modal
-function openSellModal(category, idx) {
-  var item = allInventory[category][idx];
-  var displayName = item.name;
-  if (item.storeLabel) displayName = '【' + item.storeLabel + '】' + item.name;
-  document.getElementById('modalProduct').value = displayName;
-  document.getElementById('modalCategory').value = category;
-  document.getElementById('modalSize').value = item.size || '-';
-  document.getElementById('modalPrice').value = '¥' + Number(item.price||0).toLocaleString();
-  document.getElementById('modalQty').value = '1';
-  document.getElementById('modalMsg').className = 'modal-msg';
-  document.getElementById('modalMsg').style.display = 'none';
-  document.getElementById('modalConfirm').disabled = false;
-  document.getElementById('modalConfirm').textContent = '売上を記録';
-  document.getElementById('sellModal').classList.add('show');
-
-  // Store item info for submission
-  document.getElementById('modalConfirm').dataset.cat = category;
-  document.getElementById('modalConfirm').dataset.idx = idx;
-}
-
-document.getElementById('modalCancel').addEventListener('click', function(){
-  document.getElementById('sellModal').classList.remove('show');
-});
-
-document.getElementById('modalConfirm').addEventListener('click', function(){
-  var btn = this;
-  var cat = btn.dataset.cat;
-  var idx = parseInt(btn.dataset.idx);
-  var item = allInventory[cat][idx];
-  var qty = parseInt(document.getElementById('modalQty').value);
-  var payment = document.getElementById('modalPayment').value;
-  var msg = document.getElementById('modalMsg');
-
-  if (qty > Number(item.stock || 0)) {
-    msg.className = 'modal-msg err';
-    msg.textContent = '在庫数を超えています（残り ' + item.stock + ' 点）';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '記録中...';
-  msg.className = 'modal-msg';
-  msg.style.display = 'none';
-
-  var sellStore = item.storeName || currentStore;
-  callAPI('recordShopSale', {
-    store: sellStore,
-    category: cat,
-    productName: item.name,
-    size: item.size || '',
-    price: item.price,
-    qty: qty,
-    payment: payment,
-    row: item.row,
-    sheet: item.sheet,
-    stockCol: item.stockCol || 0
-  }).then(function(res){
-    if (res.ok && res.data && (res.data.ok || res.data.success)) {
-      msg.className = 'modal-msg ok';
-      var totalAmt = qty * Number(item.price||0);
-      msg.innerHTML = '✓ 売上を記録しました（' + qty + '点 ¥' + totalAmt.toLocaleString() + '）'
-        + '<br><a href="index.html?merch=' + encodeURIComponent(item.name) + '&merchAmt=' + totalAmt + '&store=' + sellStore + '" '
-        + 'style="color:var(--accent);font-weight:600;font-size:.88rem;">→ 入店登録の商品購入に反映する</a>';
-      // Update local data
-      item.stock = Number(item.stock) - qty;
-      // Re-render after short delay
-      setTimeout(function(){
-        renderInventory(currentCategory);
-        renderSummary();
-      }, 1500);
-    } else {
-      var errDetail = (res.data && res.data.error) ? res.data.error : (res.error || '記録に失敗しました');
-      msg.className = 'modal-msg err';
-      msg.textContent = 'エラー: ' + errDetail;
-      btn.disabled = false;
-      btn.textContent = '売上を記録';
-    }
-  }).catch(function(e){
-    msg.className = 'modal-msg err';
-    msg.textContent = 'エラー: ' + e.message;
-    btn.disabled = false;
-    btn.textContent = '売上を記録';
-  });
-});
-
-// Close modal on overlay click
-document.getElementById('sellModal').addEventListener('click', function(e){
-  if (e.target === this) this.classList.remove('show');
-});
 
 </script>
 </body>

@@ -222,12 +222,13 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="section">
     <div class="section-head">
       <span class="step-badge">SEARCH</span>
-      <div class="section-title">会員番号で検索</div>
+      <div class="section-title">会員検索</div>
       <span class="store-badge" id="searchStoreBadge">📍 博多店</span>
     </div>
     <div class="card">
       <div class="input-row">
-        <input type="text" id="searchCode" placeholder="会員番号を入力（例: 1234）" inputmode="numeric">
+        <input type="text" id="searchCode" placeholder="会員番号（例: 1234）" inputmode="numeric" style="max-width:140px;">
+        <input type="text" id="searchName" placeholder="名前で検索" style="flex:1;">
         <button class="search-btn" id="searchBtn">検索</button>
       </div>
       <div id="searchResult" class="result-box"></div>
@@ -331,29 +332,61 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
   });
 });
 
-// ── SEARCH ──────────────────────────────────────
+// ── SEARCH (by code or name) ──────────────────────────────────────────
 document.getElementById('searchBtn').addEventListener('click', function(){
   var code = document.getElementById('searchCode').value.trim();
-  if (!code) { alert('会員番号を入力してください'); return; }
+  var nameQuery = document.getElementById('searchName').value.trim();
+  if (!code && !nameQuery) { alert('会員番号または名前を入力してください'); return; }
   var result = document.getElementById('searchResult');
   result.className = 'result-box notfound';
   result.textContent = '検索中...';
   result.style.display = 'block';
-  callAPI('getMember', {code: code, store: getStore()}).then(function(res){
-    var m = res.data;
-    if (m && m.name) {
-      result.className = 'result-box found';
-      result.innerHTML = '✓&nbsp; <strong>' + esc(m.name) + '</strong>　（会員番号: ' + esc(code) + '）';
-    } else {
+
+  if (code) {
+    callAPI('getMember', {code: code, store: getStore()}).then(function(res){
+      var m = res.data;
+      if (m && m.name) {
+        result.className = 'result-box found';
+        result.innerHTML = '✓&nbsp; <strong>' + esc(m.name) + '</strong>　（会員番号: ' + esc(code) + '）';
+      } else {
+        result.className = 'result-box notfound';
+        result.textContent = getStoreLabel() + ' に会員番号 ' + code + ' は未登録です';
+      }
+    }).catch(function(e){
       result.className = 'result-box notfound';
-      result.textContent = getStoreLabel() + ' に会員番号 ' + code + ' は未登録です';
+      result.textContent = 'エラー: ' + e.message;
+    });
+  } else {
+    var searchFn = function(list) {
+      var q = nameQuery.toLowerCase();
+      var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
+      if (matches.length === 0) {
+        result.className = 'result-box notfound';
+        result.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
+      } else {
+        result.className = 'result-box found';
+        result.innerHTML = matches.slice(0, 15).map(function(m){
+          return '<div style="padding:3px 0;">✓ <strong>' + esc(m.name) + '</strong>（' + esc(m.code) + '）</div>';
+        }).join('') + (matches.length > 15 ? '<div style="color:var(--sub);font-size:.82rem;">他 ' + (matches.length - 15) + ' 件</div>' : '');
+      }
+    };
+    if (allMembers && allMembers.length > 0) {
+      searchFn(allMembers);
+    } else {
+      callAPI('getMemberList', {store: getStore()}).then(function(res){
+        allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
+        searchFn(allMembers);
+      }).catch(function(e){
+        result.className = 'result-box notfound';
+        result.textContent = 'エラー: ' + e.message;
+      });
     }
-  }).catch(function(e){
-    result.className = 'result-box notfound';
-    result.textContent = 'エラー: ' + e.message;
-  });
+  }
 });
 document.getElementById('searchCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('searchBtn').click();
+});
+document.getElementById('searchName').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
 });
 
