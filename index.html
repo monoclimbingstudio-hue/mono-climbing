@@ -480,7 +480,8 @@ nav a:hover { color: #fff; }
 var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hours（料金表・レンタルはほぼ変わらない）
-var lastEntryRef = null; // 登録直後の削除用
+var lastEntryRef = null;
+    var pendingShopItem = null; // 登録直後の削除用
 var deleteTimer = null;
 
 // 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
@@ -997,6 +998,15 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
       msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
+            // Reduce inventory if product was selected from shop
+            if (pendingShopItem) {
+              callAPI('recordShopSale', {
+                store: pendingShopItem.store, category: pendingShopItem.sheet,
+                productName: pendingShopItem.name, size: '', price: pendingShopItem.price,
+                qty: 1, payment: paymentLabel, row: pendingShopItem.row,
+                sheet: pendingShopItem.sheet, stockCol: pendingShopItem.stockCol
+              }).then(function(){ pendingShopItem = null; }).catch(function(){});
+            }
       // 削除ボタンを3分間表示
       lastEntryRef = {store: store, entryTime: res.data.entryTime || '', rowId: res.data.rowId || null};
       var delBar = document.getElementById('deleteEntryBar');
@@ -1126,7 +1136,7 @@ init();
     if (merchAmt) document.getElementById('merchAmt').value = merchAmt;
     if (merch) document.getElementById('merchNote').value = merch;
     if (store) {
-      var sel = document.getElementById('storeSelect');
+      var storeBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
       if (sel) {
         for (var i = 0; i < sel.options.length; i++) {
           if (sel.options[i].value === store) { sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); break; }
