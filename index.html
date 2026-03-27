@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>入店登録 - Mono Climbing Studio</title>
+<title>å¥åºç»é² - Mono Climbing Studio</title>
 <style>
 :root {
   --accent: #e84c2c;
@@ -24,24 +24,24 @@ body.store-sasebo  { --store-bg: #c8e6c9; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg); color: var(--text); transition: background .3s; }
 
-/* ── Nav ── */
+/* ââ Nav ââ */
 nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
 nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
 nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
 nav a.active { color: #fff; border-bottom-color: var(--accent); }
 nav a:hover { color: #fff; }
 
-/* ── Layout ── */
+/* ââ Layout ââ */
 .page { max-width: 680px; margin: 0 auto; padding: 16px 14px 60px; }
 
-/* ── Section ── */
+/* ââ Section ââ */
 .section { margin-bottom: 14px; }
 .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--dark); color: #fff; font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .section-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
 .card { background: var(--card-bg); border-radius: var(--radius); padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
 
-/* ── Store selector ── */
+/* ââ Store selector ââ */
 .store-tabs { display: flex; gap: 8px; }
 .store-tab { flex: 1; padding: 11px 8px; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 600; text-align: center; transition: all .15s; color: var(--mid); }
 .store-tab.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
@@ -51,7 +51,7 @@ nav a:hover { color: #fff; }
 .store-tab:hover:not(.sel) { border-color: #aaa; }
 .store-required-msg { margin-top: 8px; font-size: 0.8rem; color: var(--accent); font-weight: 600; display: none; }
 
-/* ── Member ── */
+/* ââ Member ââ */
 .input-row { display: flex; gap: 8px; align-items: stretch; }
 .input-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
 .input-row input:focus { border-color: var(--dark); }
@@ -65,7 +65,7 @@ nav a:hover { color: #fff; }
 .full-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.92rem; outline: none; transition: border .15s; }
 .full-input:focus { border-color: var(--dark); }
 
-/* ── Plan step labels ── */
+/* ââ Plan step labels ââ */
 .plan-step-label {
   display: flex; align-items: center; gap: 8px;
   font-size: 0.78rem; font-weight: 700; color: var(--sub);
@@ -80,7 +80,7 @@ nav a:hover { color: #fff; }
   flex-shrink: 0;
 }
 
-/* ── Plan/Attr Select ── */
+/* ââ Plan/Attr Select ââ */
 .plan-select {
   width: 100%;
   padding: 11px 14px;
@@ -99,27 +99,27 @@ nav a:hover { color: #fff; }
 .plan-select.has-val { border-color: var(--dark); background: #f8f8f8; }
 .plan-select option { font-weight: 500; }
 
-/* ── Plan: Step B ── */
+/* ââ Plan: Step B ââ */
 .sub-plan-area {
   margin-top: 14px; padding-top: 14px;
   border-top: 1px dashed var(--border); display: none;
 }
 
-/* ── Plan summary chip ── */
+/* ââ Plan summary chip ââ */
 .plan-summary {  margin-top: 8px; padding: 8px 12px;
   background: #f0f4ff; border: 1.5px solid #b3c3f3;
   border-radius: 8px; font-size: 0.88rem; font-weight: 600;
   color: #1a237e; display: none;
 }
 
-/* ── Registration Fee ── */
+/* ââ Registration Fee ââ */
 .check-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.92rem; font-weight: 600; user-select: none; }
 .check-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--dark); flex-shrink: 0; }
 .fee-details { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
 .fee-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .fee-summary { margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: var(--success); min-height: 18px; }
 
-/* ── Rental ── */
+/* ââ Rental ââ */
 .rental-section { display: flex; flex-direction: column; gap: 12px; }
 
 /* Mat dropdown row */
@@ -154,7 +154,7 @@ nav a:hover { color: #fff; }
 .rental-chip:hover:not(.sel) { border-color: #999; }
 .rental-chip.sel { background: #1a5276; color: #fff; border-color: #1a5276; }
 
-/* ── Payment ── */
+/* ââ Payment ââ */
 .pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .pay-chip { padding: 11px 8px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; background: #fff; font-size: 0.83rem; font-weight: 600; text-align: center; transition: all .15s; }
 .pay-chip:hover:not(.sel) { border-color: #999; }
@@ -162,7 +162,7 @@ nav a:hover { color: #fff; }
 .other-pay-wrap { margin-top: 10px; display: none; }
 .pay-date-row { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
 
-/* ── Summary ── */
+/* ââ Summary ââ */
 .total-display { font-size: 2rem; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
 .total-display span { font-size: 1.1rem; font-weight: 600; }
 .total-breakdown { margin-top: 6px; font-size: 0.82rem; color: var(--sub); min-height: 18px; }
@@ -184,14 +184,14 @@ nav a:hover { color: #fff; }
 .dot-loader span:nth-child(3) { animation-delay: .3s; }
 @keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
 
-/* ── Merch & Discount ── */
+/* ââ Merch & Discount ââ */
 .yen-prefix { font-size: 1rem; font-weight: 700; color: var(--sub); align-self: center; }
 .merch-input-row { display: flex; align-items: center; gap: 6px; }
 .discount-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .discount-row > div { flex: 1; min-width: 130px; }
 #discountPreview { margin-top: 8px; font-size: 0.85rem; color: #1a5276; font-weight: 600; min-height: 18px; }
 
-/* ── Delete entry bar ── */
+/* ââ Delete entry bar ââ */
 .delete-entry-bar { margin-top: 10px; display: none; }
 .delete-entry-btn { width: 100%; padding: 11px; background: transparent; border: 2px solid #e53935; color: #e53935; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all .15s; }
 .delete-entry-btn:hover:not(:disabled) { background: #fdecea; }
@@ -204,11 +204,11 @@ nav a:hover { color: #fff; }
 <!-- Login Overlay -->
 <div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
-    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:2rem;margin-bottom:8px;">ð§</div>
     <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
-    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
-    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.95rem;outline:none;margin-bottom:12px;text-align:center;">
-    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;">ログイン</button>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">ç®¡çã·ã¹ãã </div>
+    <input type="password" id="loginPass" placeholder="ãã¹ã¯ã¼ããå¥å" style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:0.95rem;outline:none;margin-bottom:12px;text-align:center;">
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;">ã­ã°ã¤ã³</button>
     <div id="loginErr" style="margin-top:10px;font-size:0.82rem;color:#c62828;font-weight:600;min-height:18px;"></div>
   </div>
 </div>
@@ -227,7 +227,7 @@ nav a:hover { color: #fff; }
       sessionStorage.setItem('mono_auth', '1');
       document.getElementById('loginOverlay').style.display = 'none';
     } else {
-      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginErr').textContent = 'ãã¹ã¯ã¼ããæ­£ããããã¾ãã';
       document.getElementById('loginPass').value = '';
       document.getElementById('loginPass').focus();
     }
@@ -236,74 +236,74 @@ nav a:hover { color: #fff; }
 </script>
 
 <nav>
-  <div class="logo">🧗 MONO</div>
-  <a href="index.html" class="active">入店登録</a>
-  <a href="members.html">会員管理</a>
-  <a href="sales.html">売上管理</a>
-  <a href="shop.html">物販管理</a>
+  <div class="logo">ð§ MONO</div>
+  <a href="index.html" class="active">å¥åºç»é²</a>
+  <a href="members.html">ä¼å¡ç®¡ç</a>
+  <a href="sales.html">å£²ä¸ç®¡ç</a>
+  <a href="shop.html">ç©è²©ç®¡ç</a>
 </nav>
 
 <div class="page">
 
-  <!-- 店舗 -->
+  <!-- åºè -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">店</div>
-      <div class="section-title">店舗を選択</div>
+      <div class="step-num">åº</div>
+      <div class="section-title">åºèãé¸æ</div>
     </div>
     <div class="card">
       <div class="store-tabs">
-        <button class="store-tab" data-store="hakata">博多店</button>
-        <button class="store-tab" data-store="omura">大村店</button>
-        <button class="store-tab" data-store="sasebo">佐世保店</button>
-        <button class="store-tab" data-store="test" style="border-color:#ccc;color:#999;font-size:0.78rem;">テスト</button>
+        <button class="store-tab" data-store="hakata">åå¤åº</button>
+        <button class="store-tab" data-store="omura">å¤§æåº</button>
+        <button class="store-tab" data-store="sasebo">ä½ä¸ä¿åº</button>
+        <button class="store-tab" data-store="test" style="border-color:#ccc;color:#999;font-size:0.78rem;">ãã¹ã</button>
       </div>
-      <div class="store-required-msg" id="storeRequiredMsg">⚠ 店舗を選択してください</div>
+      <div class="store-required-msg" id="storeRequiredMsg">â  åºèãé¸æãã¦ãã ãã</div>
     </div>
   </div>
 
-  <!-- 会員番号 -->
+  <!-- ä¼å¡çªå· -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">①</div>
-      <div class="section-title">会員番号</div>
+      <div class="step-num">â </div>
+      <div class="section-title">ä¼å¡çªå·</div>
     </div>
     <div class="card">
       <div class="input-row">
-        <input type="text" id="memberCode" placeholder="例: 1234" inputmode="numeric" style="max-width:160px;">
-        <button class="icon-btn" id="searchBtn">検索</button>
+        <input type="text" id="memberCode" placeholder="ä¾: 1234" inputmode="numeric" style="max-width:160px;">
+        <button class="icon-btn" id="searchBtn">æ¤ç´¢</button>
         <span id="memberNameInline" style="font-size:.9rem;font-weight:600;align-self:center;"></span>
       </div>
       <div id="memberBadge" class="member-badge"></div>
       <div class="guest-row">
-        <div class="field-label">ゲスト汏名（会員でない場合）</div>
-        <input type="text" id="guestName" class="full-input" placeholder="汏名を入力">
+        <div class="field-label">ã²ã¹ãæ±åï¼ä¼å¡ã§ãªãå ´åï¼</div>
+        <input type="text" id="guestName" class="full-input" placeholder="æ±åãå¥å">
       </div>
     </div>
   </div>
 
-  <!-- 利用プラン -->
+  <!-- å©ç¨ãã©ã³ -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">②</div>
-      <div class="section-title">利用プラン <span style="font-size:.78rem;font-weight:400;color:var(--sub);">件意</span></div>
+      <div class="step-num">â¡</div>
+      <div class="section-title">å©ç¨ãã©ã³ <span style="font-size:.78rem;font-weight:400;color:var(--sub);">ä»¶æ</span></div>
     </div>
     <div class="card">
 
-      <!-- STEP A: お客様の属性（区分②） -->
+      <!-- STEP A: ãå®¢æ§ã®å±æ§ï¼åºåâ¡ï¼ -->
       <div class="plan-step-label">
         <div class="step-badge">A</div>
-        お客様の属性を選択
+        ãå®¢æ§ã®å±æ§ãé¸æ
       </div>
       <div id="attrWrap">
-        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>èª­ã¿è¾¼ã¿ä¸­...</div>
       </div>
 
-      <!-- STEP B: 利用の種類（区分①） -->
+      <!-- STEP B: å©ç¨ã®ç¨®é¡ï¼åºåâ ï¼ -->
       <div id="planSubWrap" class="sub-plan-area">
         <div class="plan-step-label">
           <div class="step-badge">B</div>
-          利用の種類を選択
+          å©ç¨ã®ç¨®é¡ãé¸æ
         </div>
         <div id="planWrap"></div>
         <div id="planSummary" class="plan-summary"></div>
@@ -312,35 +312,35 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- 登録料 -->
+  <!-- ç»é²æ -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">③</div>
-      <div class="section-title">登録料 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+      <div class="step-num">â¢</div>
+      <div class="section-title">ç»é²æ <span style="font-size:.78rem;font-weight:400;color:var(--sub);">ä»»æ</span></div>
     </div>
     <div class="card">
       <label class="check-label">
         <input type="checkbox" id="regFeeCheck">
-        登録料を加算する
+        ç»é²æãå ç®ãã
       </label>
       <div class="fee-details" id="regFeeDetails" style="display:none;">
         <div class="fee-row">
           <div>
-            <div class="field-label">登録料金額</div>
+            <div class="field-label">ç»é²æéé¡</div>
             <div class="merch-input-row">
-              <span class="yen-prefix">¥</span>
+              <span class="yen-prefix">Â¥</span>
               <input type="number" id="regFeeAmt" class="full-input" placeholder="1100" value="1100" min="0" style="max-width:130px;">
             </div>
           </div>
           <div style="padding-bottom:2px;">
             <label class="check-label" style="font-size:.88rem;">
               <input type="checkbox" id="otherStoreDisc">
-              他店舗割引あり
+              ä»åºèå²å¼ãã
             </label>
           </div>
         </div>
         <div id="otherDiscDetails" style="display:none; margin-top:10px;">
-          <div class="field-label">割引率</div>
+          <div class="field-label">å²å¼ç</div>
           <select id="otherDiscRate" class="plan-select" style="max-width:160px;">
             <option value="10">10% OFF</option>
             <option value="20">20% OFF</option>
@@ -353,51 +353,51 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- レンタル -->
+  <!-- ã¬ã³ã¿ã« -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">④</div>
-      <div class="section-title">レンタル <span style="font-size:.78rem;font-weight:400;color:var(--sub);">複数選択可</span></div>
+      <div class="step-num">â£</div>
+      <div class="section-title">ã¬ã³ã¿ã« <span style="font-size:.78rem;font-weight:400;color:var(--sub);">è¤æ°é¸æå¯</span></div>
     </div>
     <div class="card">
       <div id="rentalSection" class="rental-section">
-        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>
+        <div class="loading-row"><div class="dot-loader"><span></span><span></span><span></span></div>èª­ã¿è¾¼ã¿ä¸­...</div>
       </div>
     </div>
   </div>
 
-  <!-- 商品購入 -->
+  <!-- ååè³¼å¥ -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">⑤</div>
-      <div class="section-title">商品購入 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+      <div class="step-num">â¤</div>
+      <div class="section-title">ååè³¼å¥ <span style="font-size:.78rem;font-weight:400;color:var(--sub);">ä»»æ</span></div>
     </div>
     <div class="card">
-      <div class="field-label">購入金額</div>
+      <div class="field-label">è³¼å¥éé¡</div>
       <div class="merch-input-row">
-        <span class="yen-prefix">¥</span>
+        <span class="yen-prefix">Â¥</span>
         <input type="number" id="merchAmt" class="full-input" placeholder="0" min="0" style="max-width:160px;">
-        <a href="shop.html" id="shopSelectBtn" style="padding:8px 14px;background:var(--dark);color:#fff;border-radius:8px;font-size:.82rem;font-weight:700;text-decoration:none;white-space:nowrap;">物販管理から選ぶ</a>
+        <a href="shop.html" id="shopSelectBtn" style="padding:8px 14px;background:var(--dark);color:#fff;border-radius:8px;font-size:.82rem;font-weight:700;text-decoration:none;white-space:nowrap;">ç©è²©ç®¡çããé¸ã¶</a>
       </div>
-      <div class="field-label" style="margin-top:10px;">商品メモ（任意）</div>
-      <input type="text" id="merchNote" class="full-input" placeholder="商品名など">
-      <!-- 割引（商品購入内） -->
+      <div class="field-label" style="margin-top:10px;">ååã¡ã¢ï¼ä»»æï¼</div>
+      <input type="text" id="merchNote" class="full-input" placeholder="åååãªã©">
+      <!-- å²å¼ï¼ååè³¼å¥åï¼ -->
       <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);">
-        <div class="field-label" style="margin-bottom:8px; font-weight:700;">割引 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+        <div class="field-label" style="margin-bottom:8px; font-weight:700;">å²å¼ <span style="font-size:.78rem;font-weight:400;color:var(--sub);">ä»»æ</span></div>
         <div class="discount-row">
           <div>
-            <div class="field-label">割引率</div>
+            <div class="field-label">å²å¼ç</div>
             <select id="discountRate" class="plan-select">
-              <option value="">なし</option>
+              <option value="">ãªã</option>
               <option value="10">10% OFF</option>
               <option value="20">20% OFF</option>
               <option value="30">30% OFF</option>
             </select>
           </div>
           <div>
-            <div class="field-label">割引額（手入力可）</div>
+            <div class="field-label">å²å¼é¡ï¼æå¥åå¯ï¼</div>
             <div class="merch-input-row">
-              <span class="yen-prefix">−¥</span>
+              <span class="yen-prefix">âÂ¥</span>
               <input type="number" id="discountAmt" class="full-input" placeholder="0" min="0" style="max-width:120px;">
             </div>
           </div>
@@ -407,69 +407,69 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
-  <!-- 調整金額 -->
+  <!-- èª¿æ´éé¡ -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">⑥</div>
-      <div class="section-title">調整金額 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
+      <div class="step-num">â¥</div>
+      <div class="section-title">èª¿æ´éé¡ <span style="font-size:.78rem;font-weight:400;color:var(--sub);">ä»»æ</span></div>
     </div>
     <div class="card">
-      <div class="field-label">調整額（＋追加請求 / −値引き）</div>
+      <div class="field-label">èª¿æ´é¡ï¼ï¼è¿½å è«æ± / âå¤å¼ãï¼</div>
       <div class="merch-input-row">
-        <input type="number" id="adjustAmt" class="full-input" placeholder="例: -500 または 300" style="max-width:220px;">
-        <span style="font-size:0.85rem;color:var(--sub);align-self:center;">円</span>
+        <input type="number" id="adjustAmt" class="full-input" placeholder="ä¾: -500 ã¾ãã¯ 300" style="max-width:220px;">
+        <span style="font-size:0.85rem;color:var(--sub);align-self:center;">å</span>
       </div>
-      <div class="field-label" style="margin-top:10px;">調整メモ（任意）</div>
-      <input type="text" id="adjustNote" class="full-input" placeholder="値引き理由・追加費用など">
+      <div class="field-label" style="margin-top:10px;">èª¿æ´ã¡ã¢ï¼ä»»æï¼</div>
+      <input type="text" id="adjustNote" class="full-input" placeholder="å¤å¼ãçç±ã»è¿½å è²»ç¨ãªã©">
       <div id="adjustPreview" style="margin-top:8px; font-size:0.85rem; font-weight:600; min-height:18px;"></div>
     </div>
   </div>
 
-  <!-- 支払い -->
+  <!-- æ¯æã -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num">⑦</div>
-      <div class="section-title">支払い方法</div>
+      <div class="step-num">â¦</div>
+      <div class="section-title">æ¯æãæ¹æ³</div>
     </div>
     <div class="card">
       <div class="pay-grid">
-        <button class="pay-chip" data-method="現金">💴 現金</button>
-        <button class="pay-chip" data-method="クレジット">💳 クレジット</button>
-        <button class="pay-chip" data-method="電子マネー">📱 電子マネー</button>
-        <button class="pay-chip" data-method="QRコード">📲 QRコード</button>
-        <button class="pay-chip" data-method="交通系IC">🚃 交通系IC</button>
-        <button class="pay-chip" data-method="その他">📋 その他</button>
+        <button class="pay-chip" data-method="ç¾é">ð´ ç¾é</button>
+        <button class="pay-chip" data-method="ã¯ã¬ã¸ãã">ð³ ã¯ã¬ã¸ãã</button>
+        <button class="pay-chip" data-method="é»å­ããã¼">ð± é»å­ããã¼</button>
+        <button class="pay-chip" data-method="QRã³ã¼ã">ð² QRã³ã¼ã</button>
+        <button class="pay-chip" data-method="äº¤éç³»IC">ð äº¤éç³»IC</button>
+        <button class="pay-chip" data-method="ãã®ä»">ð ãã®ä»</button>
       </div>
-      <!-- その他の場合: 売上元を入力 -->
+      <!-- ãã®ä»ã®å ´å: å£²ä¸åãå¥å -->
       <div class="other-pay-wrap" id="otherPayWrap">
-        <div class="field-label">売上元・備考（じゃらん / グループ割 など）</div>
-        <input type="text" id="otherPayName" class="full-input" placeholder="例: じゃらん、グループ割">
+        <div class="field-label">å£²ä¸åã»åèï¼ãããã / ã°ã«ã¼ãå² ãªã©ï¼</div>
+        <input type="text" id="otherPayName" class="full-input" placeholder="ä¾: ãããããã°ã«ã¼ãå²">
       </div>
-      <!-- 支払い日（任意） -->
+      <!-- æ¯æãæ¥ï¼ä»»æï¼ -->
       <div class="pay-date-row">
-        <div class="field-label">支払い日 <span style="font-weight:400;color:var(--sub);">（後日入力など、今日以外の場合に変更）</span></div>
+        <div class="field-label">æ¯æãæ¥ <span style="font-weight:400;color:var(--sub);">ï¼å¾æ¥å¥åãªã©ãä»æ¥ä»¥å¤ã®å ´åã«å¤æ´ï¼</span></div>
         <input type="date" id="paymentDate" class="full-input" style="max-width:200px;">
       </div>
     </div>
   </div>
 
-  <!-- 合計・登録 -->
+  <!-- åè¨ã»ç»é² -->
   <div class="section">
     <div class="section-head">
-      <div class="step-num" style="background:var(--accent);">✓</div>
-      <div class="section-title">確認・登録</div>
+      <div class="step-num" style="background:var(--accent);">â</div>
+      <div class="section-title">ç¢ºèªã»ç»é²</div>
     </div>
     <div class="card">
-      <div class="total-display"><span>¥</span><span id="totalNum">0</span></div>
+      <div class="total-display"><span>Â¥</span><span id="totalNum">0</span></div>
       <div class="total-breakdown" id="totalBreakdown"></div>
       <button class="register-btn" id="registerBtn" disabled>
-        入店登録する
+        å¥åºç»é²ãã
         <div class="spinner"></div>
       </button>
       <div id="msg"></div>
-      <!-- 登録後削除バー（入力ミス用） -->
+      <!-- ç»é²å¾åé¤ãã¼ï¼å¥åãã¹ç¨ï¼ -->
       <div class="delete-entry-bar" id="deleteEntryBar">
-        <button class="delete-entry-btn" id="deleteEntryBtn">🗑 この登録を削除する（入力ミスの場合）</button>
+        <button class="delete-entry-btn" id="deleteEntryBtn">ð ãã®ç»é²ãåé¤ããï¼å¥åãã¹ã®å ´åï¼</button>
       </div>
     </div>
   </div>
@@ -479,16 +479,16 @@ nav a:hover { color: #fff; }
 <script>
 var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
-var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hours（料金表・レンタルはほぼ変わらない）
+var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hoursï¼æéè¡¨ã»ã¬ã³ã¿ã«ã¯ã»ã¼å¤ãããªãï¼
 var lastEntryRef = null;
-    var pendingShopItem = null; // 登録直後の削除用
+    var pendingShopItem = null; // ç»é²ç´å¾ã®åé¤ç¨
 var deleteTimer = null;
 
-// 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
-var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
+// æãã¹ã»æ¼æãã¹ã»åæ°å¸å©ç¨ ã¯ãå©ç¨ã®ç¨®é¡ãï¼Step B ã«è¡¨ç¤ºï¼
+var PASS_PLAN2 = ['æãã¹å©ç¨', 'æ¼æãã¹å©ç¨', 'åæ°å¸å©ç¨'];
 
-// 表示ラベルマッピング（「トライアル」→「初回体験」など）
-var LABEL_MAP = {'トライアル': '初回体験'};
+// è¡¨ç¤ºã©ãã«ãããã³ã°ï¼ããã©ã¤ã¢ã«ãâãååä½é¨ããªã©ï¼
+var LABEL_MAP = {'ãã©ã¤ã¢ã«': 'ååä½é¨'};
 
 function callAPI(action, params) {
   return fetch('/api/gas', {
@@ -511,7 +511,7 @@ function setCache(key, data) {
   try { sessionStorage.setItem(key, JSON.stringify({ts: Date.now(), data: data})); } catch(e){}
 }
 
-// 今日の日付をデフォルト設定
+// ä»æ¥ã®æ¥ä»ãããã©ã«ãè¨­å®
 (function(){
   var d = new Date();
   var y = d.getFullYear();
@@ -520,7 +520,7 @@ function setCache(key, data) {
   document.getElementById('paymentDate').value = y+'-'+m+'-'+day;
 })();
 
-// Store selection（デフォルト選択なし → 選択必須）
+// Store selectionï¼ããã©ã«ãé¸æãªã â é¸æå¿é ï¼
 document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
@@ -536,17 +536,17 @@ function getStore() {
   return sel ? sel.dataset.store : null;
 }
 
-// ── Init ──────────────────────────────────────────
+// ââ Init ââââââââââââââââââââââââââââââââââââââââââ
 function init() {
   var rs = document.getElementById('rentalSection');
   var cachedPlans = getCached('plans');
   var cachedRentals = getCached('rentals');
 
-  // キャッシュがあればすぐ表示
+  // ã­ã£ãã·ã¥ãããã°ããè¡¨ç¤º
   if (cachedPlans) { allPlans = cachedPlans; buildAttrDropdown(); }
   if (cachedRentals) { buildRentalSection(cachedRentals, rs); }
 
-  // キャッシュがないものだけ並列でAPI呼び出し
+  // ã­ã£ãã·ã¥ããªããã®ã ãä¸¦åã§APIå¼ã³åºã
   var promises = [];
   if (!cachedPlans) {
     promises.push(
@@ -555,7 +555,7 @@ function init() {
         setCache('plans', allPlans);
         buildAttrDropdown();
       }).catch(function(){
-        document.getElementById('attrWrap').innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+        document.getElementById('attrWrap').innerHTML = '<span style="color:red;font-size:.85rem">èª­ã¿è¾¼ã¿ã¨ã©ã¼</span>';
       })
     );
   }
@@ -566,29 +566,29 @@ function init() {
         setCache('rentals', rentals);
         buildRentalSection(rentals, rs);
       }).catch(function(){
-        rs.innerHTML = '<span style="color:red;font-size:.85rem">読み込みエラー</span>';
+        rs.innerHTML = '<span style="color:red;font-size:.85rem">èª­ã¿è¾¼ã¿ã¨ã©ã¼</span>';
       })
     );
   }
 }
 
-// ── GASデータ構逢:
-//   plan1 = 利用の種類コード（例: "2h", "2h小", "1day小", "月パス", "昼月パス", "回数券"）
-//   plan2 = 属性（例: "学生", "大人", "未就学児", "シニア"）
-//          または 利用区分（"月パス利用", "昼月パス利用", "回数券利用"）→ Step B に表示
-//   小学生エントリ: plan1 の末尾が "小"（例: "2h小", "1day小"）、plan2="学生"
-// ────────────────────────────────────────────────
+// ââ GASãã¼ã¿æ§é¢:
+//   plan1 = å©ç¨ã®ç¨®é¡ã³ã¼ãï¼ä¾: "2h", "2hå°", "1dayå°", "æãã¹", "æ¼æãã¹", "åæ°å¸"ï¼
+//   plan2 = å±æ§ï¼ä¾: "å­¦ç", "å¤§äºº", "æªå°±å­¦å", "ã·ãã¢"ï¼
+//          ã¾ãã¯ å©ç¨åºåï¼"æãã¹å©ç¨", "æ¼æãã¹å©ç¨", "åæ°å¸å©ç¨"ï¼â Step B ã«è¡¨ç¤º
+//   å°å­¦çã¨ã³ããª: plan1 ã®æ«å°¾ã "å°"ï¼ä¾: "2hå°", "1dayå°"ï¼ãplan2="å­¦ç"
+// ââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function isKoEntry(p) {
-  return p.plan1 && p.plan1.slice(-1) === '小';
+  return p.plan1 && p.plan1.slice(-1) === 'å°';
 }
 
 function getAttrOfEntry(p) {
-  if (isKoEntry(p)) return '小学生';
+  if (isKoEntry(p)) return 'å°å­¦ç';
   return p.plan2 || '';
 }
 
-// ラベルマップ適用（「トライアル」→「初回体験」など）
+// ã©ãã«ãããé©ç¨ï¼ããã©ã¤ã¢ã«ãâãååä½é¨ããªã©ï¼
 function getUsageLabel(p) {
   var t = p.plan1 || p.label;
   if (isKoEntry(p)) t = t.slice(0, -1);
@@ -596,7 +596,7 @@ function getUsageLabel(p) {
   return LABEL_MAP[t] || t;
 }
 
-// ── STEP A: 属性ドロップダウン ──────────────────────
+// ââ STEP A: å±æ§ãã­ãããã¦ã³ ââââââââââââââââââââââ
 function buildAttrDropdown() {
   var wrap = document.getElementById('attrWrap');
   wrap.innerHTML = '';
@@ -607,7 +607,7 @@ function buildAttrDropdown() {
     if (attr && attrs.indexOf(attr) < 0 && PASS_PLAN2.indexOf(attr) < 0) attrs.push(attr);
   });
 
-  var ORDER = ['未就学児','小学生','学生','大人','シニア'];
+  var ORDER = ['æªå°±å­¦å','å°å­¦ç','å­¦ç','å¤§äºº','ã·ãã¢'];
   attrs.sort(function(a, b) {
     var ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
     if (ai < 0) ai = 999; if (bi < 0) bi = 999;
@@ -615,14 +615,14 @@ function buildAttrDropdown() {
   });
 
   if (!attrs.length) {
-    wrap.innerHTML = '<span style="color:var(--sub);font-size:.85rem">プランがありません</span>';
+    wrap.innerHTML = '<span style="color:var(--sub);font-size:.85rem">ãã©ã³ãããã¾ãã</span>';
     return;
   }
 
   var sel = document.createElement('select');
   sel.id = 'attrSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- 属性を選択してください --</option>';
+  var opts = '<option value="">-- å±æ§ãé¸æãã¦ãã ãã --</option>';
   attrs.forEach(function(attr){
     opts += '<option value="' + escAttr(attr) + '">' + esc(attr) + '</option>';
   });
@@ -645,7 +645,7 @@ function buildAttrDropdown() {
   });
 }
 
-// ── STEP B: 利用の種類ドロップダウン ────────────────
+// ââ STEP B: å©ç¨ã®ç¨®é¡ãã­ãããã¦ã³ ââââââââââââââââ
 function buildPlanDropdown(attrName) {
   var wrap = document.getElementById('planWrap');
   wrap.innerHTML = '';
@@ -667,7 +667,7 @@ function buildPlanDropdown(attrName) {
   if (allOptions.length === 1) {
     var p = allOptions[0];
     planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
-    summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+    summaryEl.textContent = 'â  ' + esc(p.label) + 'ãÂ¥' + Number(p.amount).toLocaleString();
     summaryEl.style.display = 'block';
     updateTotal();
     return;
@@ -676,10 +676,10 @@ function buildPlanDropdown(attrName) {
   var sel = document.createElement('select');
   sel.id = 'planSelect';
   sel.className = 'plan-select';
-  var opts = '<option value="">-- 利用の種類を選択してください --</option>';
+  var opts = '<option value="">-- å©ç¨ã®ç¨®é¡ãé¸æãã¦ãã ãã --</option>';
 
   if (filtered.length) {
-    opts += '<optgroup label="通常利用">';
+    opts += '<optgroup label="éå¸¸å©ç¨">';
     filtered.forEach(function(p, i){
       opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
     });
@@ -687,7 +687,7 @@ function buildPlanDropdown(attrName) {
   }
 
   if (passEntries.length) {
-    opts += '<optgroup label="パス・回数券">';
+    opts += '<optgroup label="ãã¹ã»åæ°å¸">';
     passEntries.forEach(function(p, i){
       opts += '<option value="' + (filtered.length + i) + '">' + esc(getAttrOfEntry(p)) + '</option>';
     });
@@ -707,14 +707,14 @@ function buildPlanDropdown(attrName) {
       var p = allOptions[idx];
       planSel = {plan1: p.plan1, plan2: p.plan2, label: p.label, amount: Number(p.amount)};
       this.className = 'plan-select has-val';
-      summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
+      summaryEl.textContent = 'â  ' + esc(p.label) + 'ãÂ¥' + Number(p.amount).toLocaleString();
       summaryEl.style.display = 'block';
     }
     updateTotal();
   });
 }
 
-// ── 登録料 ────────────────────────────────────────
+// ââ ç»é²æ ââââââââââââââââââââââââââââââââââââââââ
 document.getElementById('regFeeCheck').addEventListener('change', function(){
   document.getElementById('regFeeDetails').style.display = this.checked ? 'block' : 'none';
   updateRegFee();
@@ -745,31 +745,31 @@ function updateRegFee() {
   var discAmt = discRate > 0 ? Math.floor(amt * discRate / 100) : 0;
   var netFee = Math.max(0, amt - discAmt);
   if (discAmt > 0) {
-    summary.textContent = '登録料: ¥' + netFee.toLocaleString() + '（¥' + amt.toLocaleString() + ' × ' + (100 - discRate) + '% 他店舗割引）';
+    summary.textContent = 'ç»é²æ: Â¥' + netFee.toLocaleString() + 'ï¼Â¥' + amt.toLocaleString() + ' Ã ' + (100 - discRate) + '% ä»åºèå²å¼ï¼';
   } else if (amt > 0) {
-    summary.textContent = '登録料: ¥' + netFee.toLocaleString();
+    summary.textContent = 'ç»é²æ: Â¥' + netFee.toLocaleString();
   } else {
     summary.textContent = '';
   }
   updateTotal();
 }
 
-// ── レンタルセクション ──────────────────────────────
+// ââ ã¬ã³ã¿ã«ã»ã¯ã·ã§ã³ ââââââââââââââââââââââââââââââ
 function buildRentalSection(rentals, rs) {
   rs.innerHTML = '';
   matOptions = [];
   matSel = null;
 
-  // 表示名の変換マップ
-  rentals.forEach(function(r){ if(r.name === '液チョー') r.name = 'チョーク'; });
+  // è¡¨ç¤ºåã®å¤æããã
+  rentals.forEach(function(r){ if(r.name === 'æ¶²ãã§ã¼') r.name = 'ãã§ã¼ã¯'; });
 
   if (!rentals.length) {
-    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">ãªã</span>';
     return;
   }
 
-  var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('マット') >= 0; });
-  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
+  var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('ããã') >= 0; });
+  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('ããã') < 0; });
   matOptions = matItems;
 
   if (matItems.length) {
@@ -778,12 +778,12 @@ function buildRentalSection(rentals, rs) {
     var headerDiv = document.createElement('div');
     headerDiv.className = 'rental-mat-header';
     headerDiv.innerHTML =
-      '<div class="rental-mat-name">🧘 クライミングマット</div>' +
-      '<div class="rental-mat-hint">種類・泊数を選択</div>';
+      '<div class="rental-mat-name">ð§ ã¯ã©ã¤ãã³ã°ããã</div>' +
+      '<div class="rental-mat-hint">ç¨®é¡ã»æ³æ°ãé¸æ</div>';
     matRow.appendChild(headerDiv);
-    var opts = '<option value="-1">なし</option>';
+    var opts = '<option value="-1">ãªã</option>';
     matItems.forEach(function(r, i){
-      opts += '<option value="' + i + '">' + esc(r.name) + '　¥' + Number(r.amount).toLocaleString() + '</option>';
+      opts += '<option value="' + i + '">' + esc(r.name) + 'ãÂ¥' + Number(r.amount).toLocaleString() + '</option>';
     });
     var matSel_el = document.createElement('select');
     matSel_el.id = 'matSelect';
@@ -803,7 +803,7 @@ function buildRentalSection(rentals, rs) {
     if (matItems.length) {
       var otherLabel = document.createElement('div');
       otherLabel.className = 'rental-other-label';
-      otherLabel.textContent = 'その他のレンタル';
+      otherLabel.textContent = 'ãã®ä»ã®ã¬ã³ã¿ã«';
       rs.appendChild(otherLabel);
     }
     var chipWrap = document.createElement('div');
@@ -811,7 +811,7 @@ function buildRentalSection(rentals, rs) {
     otherRentals.forEach(function(r){
       var btn = document.createElement('button');
       btn.className = 'rental-chip';
-      btn.textContent = r.name + '　¥' + Number(r.amount).toLocaleString();
+      btn.textContent = r.name + 'ãÂ¥' + Number(r.amount).toLocaleString();
       btn.addEventListener('click', function(){
         var idx = rentalSel.findIndex(function(x){ return x.name === r.name; });
         if (idx >= 0) { rentalSel.splice(idx, 1); btn.classList.remove('sel'); }
@@ -824,22 +824,22 @@ function buildRentalSection(rentals, rs) {
   }
 
   if (!matItems.length && !otherRentals.length) {
-    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
+    rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">ãªã</span>';
   }
 }
 
-// Payment（「その他」追加）
+// Paymentï¼ããã®ä»ãè¿½å ï¼
 document.querySelectorAll('.pay-chip').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.pay-chip').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
     paymentSel = btn.dataset.method;
-    document.getElementById('otherPayWrap').style.display = (paymentSel === 'その他') ? 'block' : 'none';
+    document.getElementById('otherPayWrap').style.display = (paymentSel === 'ãã®ä»') ? 'block' : 'none';
     updateRegisterBtn();
   });
 });
 
-// 合計計算（DOM更新なし・純計算）
+// åè¨è¨ç®ï¼DOMæ´æ°ãªãã»ç´è¨ç®ï¼
 function calcTotal() {
   var t = planSel ? planSel.amount : 0;
   t += getRegFee();
@@ -872,23 +872,23 @@ function updateTotal() {
   if (t < 0) t = 0;
   document.getElementById('totalNum').textContent = t.toLocaleString();
   var bd = '';
-  if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
-  if (regFee > 0) bd += (bd ? '　＋　' : '') + '登録料: ¥' + regFee.toLocaleString();
-  if (rentalTotal > 0) bd += (bd ? '　＋　' : '') + 'レンタル: ¥' + rentalTotal.toLocaleString();
+  if (planSel) bd += 'ãã©ã³: Â¥' + planSel.amount.toLocaleString();
+  if (regFee > 0) bd += (bd ? 'ãï¼ã' : '') + 'ç»é²æ: Â¥' + regFee.toLocaleString();
+  if (rentalTotal > 0) bd += (bd ? 'ãï¼ã' : '') + 'ã¬ã³ã¿ã«: Â¥' + rentalTotal.toLocaleString();
   if (merch > 0) {
     if (discount > 0) {
-      bd += (bd ? '　＋　' : '') + '商品: ¥' + netMerch.toLocaleString() + '（割引−¥' + discount.toLocaleString() + '）';
+      bd += (bd ? 'ãï¼ã' : '') + 'åå: Â¥' + netMerch.toLocaleString() + 'ï¼å²å¼âÂ¥' + discount.toLocaleString() + 'ï¼';
     } else {
-      bd += (bd ? '　＋　' : '') + '商品: ¥' + merch.toLocaleString();
+      bd += (bd ? 'ãï¼ã' : '') + 'åå: Â¥' + merch.toLocaleString();
     }
   }
-  if (adjust > 0) bd += (bd ? '　＋　' : '') + '調整: ¥' + adjust.toLocaleString();
-  if (adjust < 0) bd += (bd ? '　−　' : '') + '調整: −¥' + Math.abs(adjust).toLocaleString();
+  if (adjust > 0) bd += (bd ? 'ãï¼ã' : '') + 'èª¿æ´: Â¥' + adjust.toLocaleString();
+  if (adjust < 0) bd += (bd ? 'ãâã' : '') + 'èª¿æ´: âÂ¥' + Math.abs(adjust).toLocaleString();
   document.getElementById('totalBreakdown').textContent = bd;
   updateRegisterBtn();
 }
 
-// 登録ボタン有効化判定（プラン選択は任意・店舗選択は必須）
+// ç»é²ãã¿ã³æå¹åå¤å®ï¼ãã©ã³é¸æã¯ä»»æã»åºèé¸æã¯å¿é ï¼
 function updateRegisterBtn() {
   var store = getStore();
   if (!store) {
@@ -897,36 +897,36 @@ function updateRegisterBtn() {
   }
   var total = calcTotal();
   var isZeroYen = total === 0;
-  // 合計0円は支払い方法不要（回数券・無料利用など）
+  // åè¨0åã¯æ¯æãæ¹æ³ä¸è¦ï¼åæ°å¸ã»ç¡æå©ç¨ãªã©ï¼
   document.getElementById('registerBtn').disabled = !(paymentSel || isZeroYen);
 }
 
 // Member search
 document.getElementById('searchBtn').addEventListener('click', function(){
   var code = document.getElementById('memberCode').value.trim();
-  if (!code) { alert('会員番号を入力してください'); return; }
+  if (!code) { alert('ä¼å¡çªå·ãå¥åãã¦ãã ãã'); return; }
   var store = getStore();
   var badge = document.getElementById('memberBadge');
   badge.className = 'member-badge notfound';
-  badge.textContent = '検索中...';
+  badge.textContent = 'æ¤ç´¢ä¸­...';
   badge.style.display = 'block';
   callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
     var m = res.data;
     if (m && m.name) {
       badge.className = 'member-badge found';
-      badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
+      badge.textContent = 'â  ' + m.name + 'ãï¼ä¼å¡çªå·: ' + code + 'ï¼';
       document.getElementById('guestName').value = '';
     } else {
       badge.className = 'member-badge notfound';
-      badge.textContent = '会員番号 ' + code + ' は未登録です';
+      badge.textContent = 'ä¼å¡çªå· ' + code + ' ã¯æªç»é²ã§ã';
     }
-  }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+  }).catch(function(){ badge.textContent = 'ã¨ã©ã¼ãçºçãã¾ãã'; });
 });
 document.getElementById('memberCode').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
 });
 
-// Register（プラン選択任意・店舗選択必須）
+// Registerï¼ãã©ã³é¸æä»»æã»åºèé¸æå¿é ï¼
 document.getElementById('registerBtn').addEventListener('click', function(){
   var store = getStore();
   if (!store) {
@@ -935,16 +935,16 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   }
   var total = calcTotal();
   var isZeroYen = total === 0;
-  var effectivePayment = paymentSel || (isZeroYen ? '0円' : null);
+  var effectivePayment = paymentSel || (isZeroYen ? '0å' : null);
   if (!effectivePayment) return;
 
-  // 「その他」の場合は売上元名を含める
-  var otherPayName = (paymentSel === 'その他') ? (document.getElementById('otherPayName').value.trim()) : '';
-  var paymentLabel = (paymentSel === 'その他' && otherPayName) ? 'その他(' + otherPayName + ')' : effectivePayment;
+  // ããã®ä»ãã®å ´åã¯å£²ä¸ååãå«ãã
+  var otherPayName = (paymentSel === 'ãã®ä»') ? (document.getElementById('otherPayName').value.trim()) : '';
+  var paymentLabel = (paymentSel === 'ãã®ä»' && otherPayName) ? 'ãã®ä»(' + otherPayName + ')' : effectivePayment;
 
   var badge = document.getElementById('memberBadge');
-  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
-  var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
+  var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('â  ','').split('ãï¼')[0].trim() : '';
+  var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ã²ã¹ã';
   var rentalFee = 0, rentalNames = [];
   if (matSel) { rentalFee += Number(matSel.amount); rentalNames.push(matSel.name); }
   rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
@@ -955,7 +955,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   var regFee = getRegFee();
   var regFeeRaw = document.getElementById('regFeeCheck').checked ? (parseInt(document.getElementById('regFeeAmt').value) || 0) : 0;
   var otherStoreDisc = document.getElementById('otherStoreDisc').checked;
-  var regFeeNote = otherStoreDisc ? '他店舗割引適用' : '';
+  var regFeeNote = otherStoreDisc ? 'ä»åºèå²å¼é©ç¨' : '';
   var paymentDate = document.getElementById('paymentDate').value;
 
   var params = {
@@ -978,11 +978,11 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     total: total,
     payment: paymentLabel,
     paymentDate: paymentDate,
-    cash: effectivePayment === '現金' ? total : 0,
-    credit: effectivePayment === 'クレジット' ? total : 0,
-    emoney: effectivePayment === '電子マネー' ? total : 0,
-    qr: (effectivePayment === 'QRコード' || effectivePayment === 'その他') ? total : 0,
-    transit: effectivePayment === '交通系IC' ? total : 0,
+    cash: effectivePayment === 'ç¾é' ? total : 0,
+    credit: effectivePayment === 'ã¯ã¬ã¸ãã' ? total : 0,
+    emoney: effectivePayment === 'é»å­ããã¼' ? total : 0,
+    qr: (effectivePayment === 'QRã³ã¼ã' || effectivePayment === 'ãã®ä»') ? total : 0,
+    transit: effectivePayment === 'äº¤éç³»IC' ? total : 0,
     notes: otherPayName
   };
 
@@ -997,7 +997,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     btn.classList.remove('loading');
     if (res.ok && res.data && res.data.success) {
       msg.className = 'ok';
-      msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
+      msg.textContent = 'â å¥åºç»é²ãã¾ããï¼ ' + (res.data.entryTime || '');
             // Reduce inventory if product was selected from shop
             if (pendingShopItem) {
               callAPI('recordShopSale', {
@@ -1007,11 +1007,11 @@ document.getElementById('registerBtn').addEventListener('click', function(){
                 sheet: pendingShopItem.sheet, stockCol: pendingShopItem.stockCol
               }).then(function(){ pendingShopItem = null; }).catch(function(){});
             }
-      // 削除ボタンを3分間表示
+      // åé¤ãã¿ã³ã3åéè¡¨ç¤º
       lastEntryRef = {store: store, entryTime: res.data.entryTime || '', rowId: res.data.rowId || null};
       var delBar = document.getElementById('deleteEntryBar');
       var delBtn = document.getElementById('deleteEntryBtn');
-      delBtn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+      delBtn.textContent = 'ð ãã®ç»é²ãåé¤ããï¼å¥åãã¹ã®å ´åï¼';
       delBtn.disabled = false;
       delBar.style.display = 'block';
       if (deleteTimer) clearTimeout(deleteTimer);
@@ -1022,21 +1022,21 @@ document.getElementById('registerBtn').addEventListener('click', function(){
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
-      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
+      msg.textContent = 'ã¨ã©ã¼: ' + (res.data ? res.data.error : res.error || 'ä¸æ');
     }
   }).catch(function(e){
     btn.classList.remove('loading');
     msg.className = 'err';
-    msg.textContent = 'エラー: ' + e.message;
+    msg.textContent = 'ã¨ã©ã¼: ' + e.message;
   });
 });
 
-// 削除ボタン（登録後3分以内に入力ミスを削除）
+// åé¤ãã¿ã³ï¼ç»é²å¾3åä»¥åã«å¥åãã¹ãåé¤ï¼
 document.getElementById('deleteEntryBtn').addEventListener('click', function(){
-  if (!lastEntryRef) { alert('削除対象の登録情報が見つかりません'); return; }
-  if (!confirm('この入店登録を削除しますか？\\n店舗: ' + lastEntryRef.store + '\\n時間: ' + lastEntryRef.entryTime)) return;
+  if (!lastEntryRef) { alert('åé¤å¯¾è±¡ã®ç»é²æå ±ãè¦ã¤ããã¾ãã'); return; }
+  if (!confirm('ãã®å¥åºç»é²ãåé¤ãã¾ããï¼\\nåºè: ' + lastEntryRef.store + '\\næé: ' + lastEntryRef.entryTime)) return;
   var btn = document.getElementById('deleteEntryBtn');
-  btn.textContent = '削除中...';
+  btn.textContent = 'åé¤ä¸­...';
   btn.disabled = true;
   callAPI('deleteEntry', {store: lastEntryRef.store, entryTime: lastEntryRef.entryTime, rowId: lastEntryRef.rowId})
     .then(function(res){
@@ -1044,17 +1044,17 @@ document.getElementById('deleteEntryBtn').addEventListener('click', function(){
         document.getElementById('deleteEntryBar').style.display = 'none';
         var msg = document.getElementById('msg');
         msg.className = 'ok';
-        msg.textContent = '✓ 登録を削除しました';
+        msg.textContent = 'â ç»é²ãåé¤ãã¾ãã';
         lastEntryRef = null;
       } else {
-        btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+        btn.textContent = 'ð ãã®ç»é²ãåé¤ããï¼å¥åãã¹ã®å ´åï¼';
         btn.disabled = false;
-        alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));
+        alert('åé¤ã¨ã©ã¼: ' + (res.data ? res.data.error : res.error || 'ä¸æ'));
       }
     }).catch(function(e){
-      btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
+      btn.textContent = 'ð ãã®ç»é²ãåé¤ããï¼å¥åãã¹ã®å ´åï¼';
       btn.disabled = false;
-      alert('削除エラー: ' + e.message);
+      alert('åé¤ã¨ã©ã¼: ' + e.message);
     });
 });
 
@@ -1066,7 +1066,7 @@ function updateDiscountPreview() {
   var preview = document.getElementById('discountPreview');
   if (merch > 0 && discount > 0) {
     var net = Math.max(0, merch - discount);
-    preview.textContent = '商品割引徊: ¥' + net.toLocaleString() + '（−¥' + discount.toLocaleString() + (rate ? '　' + rate + '% OFF' : '') + '）';
+    preview.textContent = 'ååå²å¼å¾: Â¥' + net.toLocaleString() + 'ï¼âÂ¥' + discount.toLocaleString() + (rate ? 'ã' + rate + '% OFF' : '') + 'ï¼';
     preview.style.color = '#1a5276';
   } else {
     preview.textContent = '';
@@ -1100,15 +1100,15 @@ document.getElementById('discountAmt').addEventListener('input', function(){
   updateTotal();
 });
 
-// 調整金額リスナー
+// èª¿æ´éé¡ãªã¹ãã¼
 document.getElementById('adjustAmt').addEventListener('input', function(){
   var adj = parseInt(this.value) || 0;
   var preview = document.getElementById('adjustPreview');
   if (adj > 0) {
-    preview.textContent = '追加請求: ＋¥' + adj.toLocaleString();
+    preview.textContent = 'è¿½å è«æ±: ï¼Â¥' + adj.toLocaleString();
     preview.style.color = '#c62828';
   } else if (adj < 0) {
-    preview.textContent = '値引き: −¥' + Math.abs(adj).toLocaleString();
+    preview.textContent = 'å¤å¼ã: âÂ¥' + Math.abs(adj).toLocaleString();
     preview.style.color = '#2e7d32';
   } else {
     preview.textContent = '';
@@ -1137,13 +1137,13 @@ init();
     if (merch) document.getElementById('merchNote').value = merch;
     if (store) {
       var storeBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
-      if (sel) {
-        for (var i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value === store) { sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); break; }
-        }
+      if (storeBtn) storeBtn.click();
       }
     }
-    var merchEl = document.getElementById('merchAmt');
+    if (sheet && row) {
+          pendingShopItem = { sheet: sheet, row: parseInt(row), stockCol: parseInt(stockCol) || 0, store: store, name: merch, price: parseInt(merchAmt) || 0 };
+        }
+        var merchEl = document.getElementById('merchAmt');
     if (merchEl) merchEl.scrollIntoView({behavior:'smooth', block:'center'});
     document.getElementById('merchAmt').dispatchEvent(new Event('input'));
     window.history.replaceState({}, '', window.location.pathname);
