@@ -1132,6 +1132,9 @@ init();
   var merch = params.get('merch');
   var merchAmt = params.get('merchAmt');
   var store = params.get('store');
+  var sheet = params.get('sheet');
+  var row = params.get('row');
+  var stockCol = params.get('stockCol');
   if (merch || merchAmt) {
     if (merchAmt) document.getElementById('merchAmt').value = merchAmt;
     if (merch) document.getElementById('merchNote').value = merch;
