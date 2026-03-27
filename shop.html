@@ -81,6 +81,8 @@ tbody tr:last-child td { border-bottom: none; }
 .sell-btn { padding: 4px 12px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: opacity .15s; }
 .sell-btn:hover { opacity: .8; }
 .sell-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .select-btn { padding: 4px 12px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: opacity .15s; margin-left: 4px; }
+    .select-btn:hover { opacity: .8; }
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; z-index: 9000; background: rgba(26,26,26,.7); display: none; align-items: center; justify-content: center; }
@@ -409,7 +411,7 @@ function renderInventory(category) {
       + '<td class="num-cell"><span class="' + stockClass + '">' + stock + '</span></td>'
       + '<td class="num-cell">¥' + stockValue.toLocaleString() + '</td>'
       + '<td><button class="sell-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '"'
-      + (stock <= 0 ? ' disabled' : '') + '>販売</button></td>'
+      + (stock <= 0 ? ' disabled' : '') + '>販売</button> <button class="select-btn" data-cat="' + esc(category) + '" data-idx="' + idx + '">選択</button></td>'
       + '</tr>';
   });
   html += '</tbody></table></div>';
