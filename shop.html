@@ -20,6 +20,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--store-bg, var(--light-bg)); color: var(--text); }
+body.store-all     { --store-bg: #fff9c4; }
 body.store-hakata  { --store-bg: #f5f5f5; }
 body.store-omura   { --store-bg: #b3e5fc; }
 body.store-sasebo  { --store-bg: #c8e6c9; }
@@ -164,6 +165,7 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="filter-field">
           <div class="field-label">店舗</div>
           <select id="storeSelect" class="filter-input">
+            <option value="all">全店舗</option>
             <option value="hakata">博多店</option>
             <option value="omura">大村店</option>
             <option value="sasebo">佐世保店</option>
@@ -308,6 +310,40 @@ function loadInventory() {
   document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
   document.body.classList.add('store-' + currentStore);
 
+
+  if (currentStore === 'all') {
+    Promise.all([
+      callAPI('getInventory', {store:'hakata'}),
+      callAPI('getInventory', {store:'omura'}),
+      callAPI('getInventory', {store:'sasebo'})
+    ]).then(function(results){
+      var storeNames = ['hakata','omura','sasebo'];
+      var storeLabels = {hakata:'博多',omura:'大村',sasebo:'佐世保'};
+      var merged = {};
+      results.forEach(function(res, si){
+        if (!res.ok || !res.data) return;
+        var inv = (res.data && res.data.inventory) ? res.data.inventory : res.data;
+        Object.keys(inv).forEach(function(cat){
+          if (!merged[cat]) merged[cat] = [];
+          inv[cat].forEach(function(item){
+            merged[cat].push(Object.assign({}, item, {storeName: storeNames[si], storeLabel: storeLabels[storeNames[si]]}));
+          });
+        });
+      });
+      allInventory = merged;
+      var categories = Object.keys(allInventory);
+      if (categories.length === 0) { wrap.innerHTML = '<div class="empty-state">在庫データがありません</div>'; return; }
+      renderCategoryTabs(categories);
+      currentCategory = categories[0];
+      renderInventory(currentCategory);
+      renderSummary();
+      document.getElementById('catSection').style.display = 'block';
+      document.getElementById('summarySection').style.display = 'block';
+    }).catch(function(e){
+      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+    });
+    return;
+  }
   callAPI('getInventory', {store: currentStore}).then(function(res){
     if (!res.ok || !res.data) {
       var errMsg = (res.data && res.data.error) ? res.data.error : (res.error || 'データ取得エラー');
@@ -355,17 +391,19 @@ function renderInventory(category) {
     wrap.innerHTML = '<div class="empty-state">このカテゴリーの商品がありません</div>';
     return;
   }
-  var storeLabel = {hakata:'博多', omura:'大村', sasebo:'佐世保'}[currentStore] || currentStore;
-  var html = '<div class="table-wrap"><table><thead><tr>'
-    + '<th>商品名</th><th>サイズ</th><th class="num-cell">価格</th>'
+  var isAll = currentStore === 'all';
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  if (isAll) html += '<th>店舗</th>';
+  html += '<th>商品名</th><th>サイズ</th><th class="num-cell">価格</th>'
     + '<th class="num-cell">在庫数</th><th class="num-cell">在庫金額</th><th>操作</th>'
     + '</tr></thead><tbody>';
   items.forEach(function(item, idx){
     var stock = Number(item.stock || 0);
     var stockClass = stock === 0 ? 'stock-zero' : (stock <= 2 ? 'stock-low' : 'stock-ok');
     var stockValue = stock * Number(item.price || 0);
-    html += '<tr>'
-      + '<td style="font-weight:600;">' + esc(item.name) + '</td>'
+    html += '<tr>';
+    if (isAll) html += '<td>' + esc(item.storeLabel || '') + '</td>';
+    html += '<td style="font-weight:600;">' + esc(item.name) + '</td>'
       + '<td>' + esc(item.size || '-') + '</td>'
       + '<td class="num-cell">¥' + Number(item.price||0).toLocaleString() + '</td>'
       + '<td class="num-cell"><span class="' + stockClass + '">' + stock + '</span></td>'
@@ -407,7 +445,9 @@ function renderSummary() {
 // Sell Modal
 function openSellModal(category, idx) {
   var item = allInventory[category][idx];
-  document.getElementById('modalProduct').value = item.name;
+  var displayName = item.name;
+  if (item.storeLabel) displayName = '【' + item.storeLabel + '】' + item.name;
+  document.getElementById('modalProduct').value = displayName;
   document.getElementById('modalCategory').value = category;
   document.getElementById('modalSize').value = item.size || '-';
   document.getElementById('modalPrice').value = '¥' + Number(item.price||0).toLocaleString();
@@ -447,8 +487,9 @@ document.getElementById('modalConfirm').addEventListener('click', function(){
   msg.className = 'modal-msg';
   msg.style.display = 'none';
 
+  var sellStore = item.storeName || currentStore;
   callAPI('recordShopSale', {
-    store: currentStore,
+    store: sellStore,
     category: cat,
     productName: item.name,
     size: item.size || '',
@@ -456,19 +497,22 @@ document.getElementById('modalConfirm').addEventListener('click', function(){
     qty: qty,
     payment: payment,
     row: item.row,
-    sheet: item.sheet
+    sheet: item.sheet,
+    stockCol: item.stockCol || 0
   }).then(function(res){
     if (res.ok && res.data && (res.data.ok || res.data.success)) {
       msg.className = 'modal-msg ok';
-      msg.textContent = '✓ 売上を記録しました（' + qty + '点 ¥' + (qty * Number(item.price||0)).toLocaleString() + '）';
+      var totalAmt = qty * Number(item.price||0);
+      msg.innerHTML = '✓ 売上を記録しました（' + qty + '点 ¥' + totalAmt.toLocaleString() + '）'
+        + '<br><a href="index.html?merch=' + encodeURIComponent(item.name) + '&merchAmt=' + totalAmt + '&store=' + sellStore + '" '
+        + 'style="color:var(--accent);font-weight:600;font-size:.88rem;">→ 入店登録の商品購入に反映する</a>';
       // Update local data
       item.stock = Number(item.stock) - qty;
       // Re-render after short delay
       setTimeout(function(){
-        document.getElementById('sellModal').classList.remove('show');
         renderInventory(currentCategory);
         renderSummary();
-      }, 1200);
+      }, 1500);
     } else {
       var errDetail = (res.data && res.data.error) ? res.data.error : (res.error || '記録に失敗しました');
       msg.className = 'modal-msg err';
