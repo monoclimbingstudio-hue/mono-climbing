@@ -1141,12 +1141,11 @@ init();
     if (store) {
       var storeBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
       if (storeBtn) storeBtn.click();
-      }
     }
     if (sheet && row) {
-          pendingShopItem = { sheet: sheet, row: parseInt(row), stockCol: parseInt(stockCol) || 0, store: store, name: merch, price: parseInt(merchAmt) || 0 };
-        }
-        var merchEl = document.getElementById('merchAmt');
+      pendingShopItem = { sheet: sheet, row: parseInt(row), stockCol: parseInt(stockCol) || 0, store: store, name: merch, price: parseInt(merchAmt) || 0 };
+    }
+    var merchEl = document.getElementById('merchAmt');
     if (merchEl) merchEl.scrollIntoView({behavior:'smooth', block:'center'});
     document.getElementById('merchAmt').dispatchEvent(new Event('input'));
     window.history.replaceState({}, '', window.location.pathname);
