@@ -377,6 +377,7 @@ nav a:hover { color: #fff; }
       <div class="merch-input-row">
         <span class="yen-prefix">¥</span>
         <input type="number" id="merchAmt" class="full-input" placeholder="0" min="0" style="max-width:160px;">
+        <a href="shop.html" id="shopSelectBtn" style="padding:8px 14px;background:var(--dark);color:#fff;border-radius:8px;font-size:.82rem;font-weight:700;text-decoration:none;white-space:nowrap;">物販管理から選ぶ</a>
       </div>
       <div class="field-label" style="margin-top:10px;">商品メモ（任意）</div>
       <input type="text" id="merchNote" class="full-input" placeholder="商品名など">
@@ -1114,6 +1115,30 @@ function escAttr(s) {
 }
 
 init();
+
+// Handle URL params from shop.html (merchandise transfer)
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var merch = params.get('merch');
+  var merchAmt = params.get('merchAmt');
+  var store = params.get('store');
+  if (merch || merchAmt) {
+    if (merchAmt) document.getElementById('merchAmt').value = merchAmt;
+    if (merch) document.getElementById('merchNote').value = merch;
+    if (store) {
+      var sel = document.getElementById('storeSelect');
+      if (sel) {
+        for (var i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === store) { sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); break; }
+        }
+      }
+    }
+    var merchEl = document.getElementById('merchAmt');
+    if (merchEl) merchEl.scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('merchAmt').dispatchEvent(new Event('input'));
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+})();
 </script>
 </body>
 </html>
