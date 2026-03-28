@@ -337,10 +337,10 @@ document.getElementById('transferBtn').addEventListener('click', function(){
   btn.textContent = '転記中...';
   callAPI('transferSales', {date:dateVal, store:store}).then(function(res){
     btn.textContent = '売上を転記する';
-    if(res.ok && res.data && res.data.success){
+    if(res.ok && res.data && res.data.ok){
       msg.className = 'transfer-msg ok';
       msg.style.display = '';
-      msg.textContent = '✓ 転記しました（' + (res.data.rows || currentEntries.length) + '件 → 売上集計シート）';
+      msg.textContent = '✓ 転記しました（' + (res.data.sheet || '') + ' 行' + (res.data.row || '') + '）';
       btn.disabled = true; // 二重転記防止
     } else {
       // エラー詳細を表示（デバッグ用にレスポンズ全体を確認）
