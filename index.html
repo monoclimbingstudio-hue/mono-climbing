@@ -191,11 +191,6 @@ nav a:hover { color: #fff; }
 .discount-row > div { flex: 1; min-width: 130px; }
 #discountPreview { margin-top: 8px; font-size: 0.85rem; color: #1a5276; font-weight: 600; min-height: 18px; }
 
-/* ── Delete entry bar ── */
-.delete-entry-bar { margin-top: 10px; display: none; }
-.delete-entry-btn { width: 100%; padding: 11px; background: transparent; border: 2px solid #e53935; color: #e53935; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all .15s; }
-.delete-entry-btn:hover:not(:disabled) { background: #fdecea; }
-.delete-entry-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 </style>
 </head>
@@ -467,10 +462,6 @@ nav a:hover { color: #fff; }
         <div class="spinner"></div>
       </button>
       <div id="msg"></div>
-      <!-- 登録後削除バー（入力ミス用） -->
-      <div class="delete-entry-bar" id="deleteEntryBar">
-        <button class="delete-entry-btn" id="deleteEntryBtn">🗑 この登録を削除する（入力ミスの場合）</button>
-      </div>
     </div>
   </div>
 
@@ -480,9 +471,7 @@ nav a:hover { color: #fff; }
 var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hours（料金表・レンタルはほぼ変わらない）
-var lastEntryRef = null;
-var pendingShopItem = null; // 登録直後の削除用
-var deleteTimer = null;
+var pendingShopItem = null;
 
 // 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
 var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
@@ -1026,7 +1015,6 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   btn.classList.add('loading');
   msg.className = '';
   msg.style.display = 'none';
-  document.getElementById('deleteEntryBar').style.display = 'none';
 
   callAPI('registerEntry', {params: params}).then(function(res){
     btn.classList.remove('loading');
@@ -1043,18 +1031,6 @@ document.getElementById('registerBtn').addEventListener('click', function(){
               sheet: pendingShopItem.sheet, stockCol: pendingShopItem.stockCol
             }).then(function(){ pendingShopItem = null; }).catch(function(){});
           }
-      // 削除ボタンを3分間表示
-      lastEntryRef = {store: store, entryTime: res.data.entryTime || '', rowId: res.data.rowId || null};
-      var delBar = document.getElementById('deleteEntryBar');
-      var delBtn = document.getElementById('deleteEntryBtn');
-      delBtn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
-      delBtn.disabled = false;
-      delBar.style.display = 'block';
-      if (deleteTimer) clearTimeout(deleteTimer);
-      deleteTimer = setTimeout(function(){
-        delBar.style.display = 'none';
-        lastEntryRef = null;
-      }, 3 * 60 * 1000);
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
@@ -1069,33 +1045,6 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   });
 });
 
-// 削除ボタン（登録後3分以内に入力ミスを削除）
-document.getElementById('deleteEntryBtn').addEventListener('click', function(){
-  if (!lastEntryRef) { alert('削除対象の登録情報が見つかりません'); return; }
-  if (!confirm('この入店登録を削除しますか？\n店舗: ' + lastEntryRef.store + '\n時間: ' + lastEntryRef.entryTime)) return;
-  var btn = document.getElementById('deleteEntryBtn');
-  btn.textContent = '削除中...';
-  btn.disabled = true;
-  callAPI('deleteEntry', {store: lastEntryRef.store, entryTime: lastEntryRef.entryTime, rowId: lastEntryRef.rowId})
-    .then(function(res){
-      if (res.ok && res.data && res.data.success) {
-        document.getElementById('deleteEntryBar').style.display = 'none';
-        var msg = document.getElementById('msg');
-        msg.className = 'ok';
-        msg.style.display = '';
-        msg.textContent = '✓ 登録を削除しました';
-        lastEntryRef = null;
-      } else {
-        btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
-        btn.disabled = false;
-        alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));
-      }
-    }).catch(function(e){
-      btn.textContent = '🗑 この登録を削除する（入力ミスの場合）';
-      btn.disabled = false;
-      alert('削除エラー: ' + e.message);
-    });
-});
 
 // Merch & Discount listeners
 function updateDiscountPreview() {
