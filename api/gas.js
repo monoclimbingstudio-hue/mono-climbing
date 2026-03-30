@@ -1,7 +1,7 @@
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyV68c7kE8T1gYWAwCx9W6VUBc0OwgU32ODvnCIPg1p73Lqij-dQb9IoZ7ePvjl8Dvh/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzOvezI3qxbJBDEfwNdnFoLBHtuW8ejUNuyWQXOCLeE6DNvjOEVqxZ8dOxgmChw7zrw/exec';
 
   try {
     const response = await fetch(GAS_URL, {
