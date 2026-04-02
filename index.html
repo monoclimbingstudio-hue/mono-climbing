@@ -517,8 +517,24 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
     document.body.classList.add('store-' + btn.dataset.store);
     document.getElementById('storeRequiredMsg').style.display = 'none';
+        try { localStorage.setItem('mono_selected_store', btn.dataset.store); } catch(e){}
     updateRegisterBtn();
   });
+
+  // ④ 会員リストキャッシュ（店舗別、セッション中有効）
+  var _memberListCache = {};
+  function _getCachedMemberList(store) {
+    var key = 'members_' + store;
+    if (_memberListCache[key]) return Promise.resolve(_memberListCache[key]);
+    var cached = getCached(key);
+    if (cached) { _memberListCache[key] = cached; return Promise.resolve(cached); }
+    return callAPI('getMemberList', {store: store}).then(function(res){
+      var list = (res.data && Array.isArray(res.data)) ? res.data : [];
+      _memberListCache[key] = list;
+      setCache(key, list);
+      return list;
+    });
+  }
 });
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
@@ -914,8 +930,7 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       }
     }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
   } else {
-    callAPI('getMemberList', {store: store || 'hakata'}).then(function(res){
-      var list = (res.data && Array.isArray(res.data)) ? res.data : [];
+    _getCachedMemberList(store || 'hakata').then(function(list){
       var q = nameQuery.toLowerCase();
       var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
       if (matches.length === 0) {
@@ -1139,6 +1154,17 @@ init();
     window.history.replaceState({}, '', window.location.pathname);
   }
 })();
+
+  // ② 店舗選択をlocalStorageで復元
+  (function(){
+    try {
+      var saved = localStorage.getItem('mono_selected_store');
+      if (saved) {
+        var btn = document.querySelector('.store-tab[data-store="' + saved + '"]');
+        if (btn) btn.click();
+      }
+    } catch(e){}
+  })();
 </script>
 </body>
 </html>
