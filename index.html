@@ -766,7 +766,7 @@ function buildRentalSection(rentals, rs) {
   matSel = null;
 
   // 表示名の変換マップ
-  rentals.forEach(function(r){ if(r.name === '液チョー') r.name = 'チョーク'; });
+  rentals.forEach(function(r){ if(r.name === 'チョーク') r.name = 'チョーク'; });
 
   if (!rentals.length) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
