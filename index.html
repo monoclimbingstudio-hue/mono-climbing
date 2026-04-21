@@ -504,6 +504,7 @@ nav a:hover { color: #fff; }
 <script>
 var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
+var pamoSel = null; // ②Pamoレンタル: {days: N, amount: N*rate}
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hours（料金表・レンタルはほぼ変わらない）
 var pendingShopItems = []; // 複数物販対応
 var ENTRY_STATE_KEY = 'mono_entry_state_v2';
@@ -544,9 +545,68 @@ function setCache(key, data) {
   document.getElementById('paymentDate').value = y+'-'+m+'-'+day;
 })();
 
+// ④ 店舗在庫選択後のロック用ヘルパー
+function isStoreLockedByMerch() {
+  return !!(pendingShopItems && pendingShopItems.length > 0);
+}
+function getMerchLockedStore() {
+  // 全物販アイテムが同一店舗のときだけロック対象
+  if (!pendingShopItems || !pendingShopItems.length) return null;
+  var s0 = pendingShopItems[0].store;
+  for (var i = 1; i < pendingShopItems.length; i++) {
+    if (pendingShopItems[i].store !== s0) return null;
+  }
+  return s0 || null;
+}
+function applyStoreLockUI() {
+  var locked = getMerchLockedStore();
+  var tabs = document.querySelectorAll('.store-tab');
+  tabs.forEach(function(t){
+    if (locked && t.dataset.store !== locked) {
+      t.classList.add('locked-disabled');
+      t.setAttribute('disabled', 'disabled');
+      t.style.opacity = '0.35';
+      t.style.cursor = 'not-allowed';
+      t.title = '物販選択中のため店舗変更不可';
+    } else {
+      t.classList.remove('locked-disabled');
+      t.removeAttribute('disabled');
+      t.style.opacity = '';
+      t.style.cursor = '';
+      t.title = '';
+    }
+  });
+  var msg = document.getElementById('storeLockMsg');
+  if (!msg) {
+    var container = document.querySelector('.store-tabs');
+    if (container && container.parentNode) {
+      msg = document.createElement('div');
+      msg.id = 'storeLockMsg';
+      msg.style.cssText = 'margin-top:8px;font-size:0.8rem;color:#c62828;font-weight:600;display:none;';
+      container.parentNode.insertBefore(msg, container.nextSibling);
+    }
+  }
+  if (msg) {
+    if (locked) {
+      var labels = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'};
+      msg.innerHTML = '🔒 ' + (labels[locked] || locked) + ' の物販を選択中のため店舗を変更できません。変更するには物販選択をすべて削除してください。';
+      msg.style.display = 'block';
+    } else {
+      msg.style.display = 'none';
+    }
+  }
+}
+
 // Store selection（デフォルト選択なし → 選択必須）
 document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
+    // ④ 物販で他店舗在庫を選択中ならロック
+    var locked = getMerchLockedStore();
+    if (locked && btn.dataset.store !== locked) {
+      var labels = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'};
+      alert('🔒 ' + (labels[locked] || locked) + ' の物販を選択中のため、他店舗に変更できません。\n変更したい場合は、選択済み物販をすべて削除してください。');
+      return;
+    }
     var prevStore = getStore();
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
@@ -810,17 +870,22 @@ function buildRentalSection(rentals, rs) {
   rs.innerHTML = '';
   matOptions = [];
   matSel = null;
+  pamoSel = null;
 
-  // 表示名の変換マップ
-  rentals.forEach(function(r){ if(r.name === 'チョーク') r.name = 'チョーク'; });
+  // ① 液チョー → チョーク の名称統一（スプレッドシート側でも実施するが二重防御）
+  rentals.forEach(function(r){
+    if (r && r.name) r.name = String(r.name).replace(/液チョーク?/g, 'チョーク').replace(/液体チョーク?/g, 'チョーク');
+  });
 
-  // Pamoレンタル（1日330円）をフロントエンド側で追加（GAS側に無い場合のフォールバック）
-  var hasPamo = rentals.some(function(r){ return r.name && r.name.indexOf('Pamo') >= 0; });
-  if (!hasPamo) {
-    rentals.push({ name: 'Pamoレンタル（1日）', amount: 330 });
-  }
+  // ② Pamoレンタル単価（1日あたり）を決定
+  //    GASに "Pamoレンタル" があればその金額を使う、無ければデフォルト330円
+  var PAMO_RATE_DEFAULT = 330;
+  var pamoRentalFromData = rentals.find(function(r){ return r.name && r.name.indexOf('Pamo') >= 0; });
+  var pamoRate = pamoRentalFromData ? Number(pamoRentalFromData.amount) || PAMO_RATE_DEFAULT : PAMO_RATE_DEFAULT;
+  // Pamoはチップではなくドロップダウン表示にするため他レンタルから除外
+  rentals = rentals.filter(function(r){ return !(r.name && r.name.indexOf('Pamo') >= 0); });
 
-  if (!rentals.length) {
+  if (!rentals.length && !pamoRate) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
     return;
   }
@@ -880,7 +945,41 @@ function buildRentalSection(rentals, rs) {
     rs.appendChild(chipWrap);
   }
 
-  if (!matItems.length && !otherRentals.length) {
+  // ② Pamoレンタル（日数ドロップダウン）
+  if (pamoRate > 0) {
+    var pamoRow = document.createElement('div');
+    pamoRow.className = 'rental-mat-row';
+    pamoRow.style.marginTop = '10px';
+    var pamoHeader = document.createElement('div');
+    pamoHeader.className = 'rental-mat-header';
+    pamoHeader.innerHTML =
+      '<div class="rental-mat-name">🎒 Pamoレンタル</div>' +
+      '<div class="rental-mat-hint">日数を選択（¥' + Number(pamoRate).toLocaleString() + '／日）</div>';
+    pamoRow.appendChild(pamoHeader);
+    var pamoSelEl = document.createElement('select');
+    pamoSelEl.id = 'pamoSelect';
+    pamoSelEl.className = 'mat-select';
+    var pOpts = '<option value="0">なし</option>';
+    for (var d = 1; d <= 30; d++) {
+      pOpts += '<option value="' + d + '">' + d + '日　¥' + (pamoRate * d).toLocaleString() + '</option>';
+    }
+    pamoSelEl.innerHTML = pOpts;
+    pamoRow.appendChild(pamoSelEl);
+    rs.appendChild(pamoRow);
+    pamoSelEl.addEventListener('change', function(){
+      var days = parseInt(this.value, 10) || 0;
+      if (days > 0) {
+        pamoSel = { name: 'Pamoレンタル（' + days + '日）', days: days, amount: pamoRate * days };
+        this.className = 'mat-select has-val';
+      } else {
+        pamoSel = null;
+        this.className = 'mat-select';
+      }
+      updateTotal();
+    });
+  }
+
+  if (!matItems.length && !otherRentals.length && !(pamoRate > 0)) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
   }
 }
@@ -912,6 +1011,7 @@ function calcTotal() {
   t += getRegFee();
   var rentalTotal = 0;
   if (matSel) rentalTotal += Number(matSel.amount);
+  if (pamoSel) rentalTotal += Number(pamoSel.amount);
   rentalSel.forEach(function(r){ rentalTotal += r.amount; });
   t += rentalTotal;
   var merch = parseInt(document.getElementById('merchAmt').value) || 0;
@@ -928,6 +1028,7 @@ function updateTotal() {
   t += regFee;
   var rentalTotal = 0;
   if (matSel) rentalTotal += Number(matSel.amount);
+  if (pamoSel) rentalTotal += Number(pamoSel.amount);
   rentalSel.forEach(function(r){ rentalTotal += r.amount; });
   t += rentalTotal;
   var merch = parseInt(document.getElementById('merchAmt').value) || 0;
@@ -1075,6 +1176,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
   var rentalFee = 0, rentalNames = [];
   if (matSel) { rentalFee += Number(matSel.amount); rentalNames.push(matSel.name); }
+  if (pamoSel) { rentalFee += Number(pamoSel.amount); rentalNames.push(pamoSel.name); }
   rentalSel.forEach(function(r){ rentalFee += r.amount; rentalNames.push(r.name); });
   var merch = parseInt(document.getElementById('merchAmt').value) || 0;
   var discount = parseInt(document.getElementById('discountAmt').value) || 0;
@@ -1245,6 +1347,7 @@ function saveEntryState() {
       otherStoreDisc: document.getElementById('otherStoreDisc').checked,
       otherDiscRate: document.getElementById('otherDiscRate').value,
       matIdx: (document.getElementById('matSelect') || {}).value || '-1',
+      pamoDays: (document.getElementById('pamoSelect') || {}).value || '0',
       rentalSel: rentalSel,
       merchAmt: document.getElementById('merchAmt').value,
       merchNote: document.getElementById('merchNote').value,
@@ -1327,6 +1430,12 @@ function restoreEntryState() {
         matEl.value = state.matIdx;
         matEl.dispatchEvent(new Event('change'));
       }
+      // ② Pamo日数の復元
+      var pamoEl = document.getElementById('pamoSelect');
+      if (pamoEl && state.pamoDays && state.pamoDays !== '0') {
+        pamoEl.value = state.pamoDays;
+        pamoEl.dispatchEvent(new Event('change'));
+      }
       if (state.rentalSel && state.rentalSel.length) {
         state.rentalSel.forEach(function(r){
           chips.forEach(function(c){
@@ -1373,6 +1482,8 @@ function restoreEntryState() {
 // ⑭ 選択済み物販リストの表示（複数選択対応）
 function renderSelectedMerchList() {
   var el = document.getElementById('selectedMerchList');
+  // ④ 物販選択に応じて店舗タブをロック
+  try { applyStoreLockUI(); } catch(e){}
   if (!pendingShopItems.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   var STORE_LABEL = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'};
   var html = '<div style="font-weight:700;color:#1a237e;margin-bottom:6px;">📦 選択済み物販（' + pendingShopItems.length + '点）</div>';
@@ -1426,7 +1537,21 @@ function renderSelectedMerchList() {
       document.getElementById('merchNote').value = curNote ? (curNote + ', ' + merch) : merch;
     }
 
-    // ④ 店舗自動切替を廃止: 在庫元として記録するのみ、店舗選択は変更しない
+    // ④ 物販選択した店舗を自動的に入店登録の店舗にも反映（他店舗変更は後でロック）
+    if (store) {
+      var curStore = getStore();
+      if (!curStore || curStore !== store) {
+        var targetBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
+        if (targetBtn) {
+          // クリックをバイパスしてロック判定に触れずに切替
+          document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
+          targetBtn.classList.add('sel');
+          document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+          document.body.classList.add('store-' + store);
+          try { localStorage.setItem('mono_selected_store', store); } catch(e){}
+        }
+      }
+    }
     if (sheet && row) {
       pendingShopItems.push({
         sheet: sheet, row: parseInt(row),

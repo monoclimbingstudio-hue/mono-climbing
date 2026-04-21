@@ -420,55 +420,82 @@ document.getElementById('searchName').addEventListener('keydown', function(e){
 });
 
 // ── ADD MEMBER ───────────────────────────────────
+// ⑤⑥ 会員登録：事前重複チェック＋登録＋明確な重複エラー表示
 document.getElementById('addBtn').addEventListener('click', function(){
   if (!requireStore()) return;
   var code = document.getElementById('addCode').value.trim();
   var name = document.getElementById('addName').value.trim();
-  if (!code || !name) { alert('会員番号と氏名を両方入力してください'); return; }
-  var store = getStore();
+  var self = this;
   var msg = document.getElementById('msgAdd');
   msg.className = 'msg-box'; msg.style.display = 'none';
-  this.disabled = true; this.textContent = '登録中...';
-  var self = this;
-  // ⑨ 事前に重複チェック
+
+  // バリデーション
+  if (!code) { msg.className='msg-box err'; msg.textContent='会員番号を入力してください'; document.getElementById('addCode').focus(); return; }
+  if (!name) { msg.className='msg-box err'; msg.textContent='氏名を入力してください'; document.getElementById('addName').focus(); return; }
+
+  var store = getStore();
+  self.disabled = true; self.textContent = '登録中...';
+
+  function resetBtn(){ self.disabled = false; self.textContent = '会員を追加する'; }
+  function showDuplicate(existingName) {
+    msg.className = 'msg-box err';
+    var html = '⚠ 会員番号 <strong>' + esc(code) + '</strong> は' + getStoreLabel() + 'に既に';
+    if (existingName) html += '「<strong>' + esc(existingName) + '</strong>」として';
+    html += '登録されています。別の番号を使用してください。';
+    msg.innerHTML = html;
+    msg.style.display = 'block';
+    document.getElementById('addCode').focus();
+    document.getElementById('addCode').select();
+  }
+
+  // ⑥ 事前重複チェック（同じ店舗内のみ）
   callAPI('getMember', {code: code, store: store}).then(function(chk){
-    var existing = chk && chk.data;
+    // chk = { ok: true, data: {code,name,store} | null }
+    var existing = chk && chk.ok && chk.data;
     if (existing && existing.name) {
-      self.disabled = false; self.textContent = '会員を追加する';
-      msg.className = 'msg-box err';
-      msg.innerHTML = '⚠ 会員番号 <strong>' + esc(code) + '</strong> は既に「<strong>' + esc(existing.name) + '</strong>」として' + getStoreLabel() + 'に登録されています。別の番号を使用してください。';
-      document.getElementById('addCode').focus();
-      document.getElementById('addCode').select();
+      resetBtn();
+      showDuplicate(existing.name);
       return;
     }
-    callAPI('addMember', {code: code, name: name, store: store}).then(function(res){
-      self.disabled = false; self.textContent = '会員を追加する';
-      var errMsg = res.data ? res.data.error : (res.error || '');
-      if (res.ok && res.data && res.data.success) {
+    // 新規登録実行
+    return callAPI('addMember', {code: code, name: name, store: store}).then(function(res){
+      resetBtn();
+      var data = (res && res.data) || {};
+      var errMsg = data.error || (res && res.error) || '';
+      if (res && res.ok && data.success === true) {
+        // 成功
         msg.className = 'msg-box ok';
         msg.textContent = '✓ ' + getStoreLabel() + ' に登録しました（' + code + ' / ' + name + '）';
+        msg.style.display = 'block';
         document.getElementById('addCode').value = '';
         document.getElementById('addName').value = '';
+        // 会員一覧が既に表示されていれば更新
         if (membersLoaded) loadMembers();
-      } else if (errMsg && /(duplicate|重複|already|既に|登録済)/i.test(errMsg)) {
-        msg.className = 'msg-box err';
-        msg.innerHTML = '⚠ 会員番号 <strong>' + esc(code) + '</strong> は既に登録されています。別の番号を使用してください。';
-        document.getElementById('addCode').focus();
-        document.getElementById('addCode').select();
+        // キャッシュ不整合を避けるため allMembers にも即時追加
+        allMembers.push({code: String(code), name: name, joinDate: '', store: getStoreLabel()});
+      } else if (errMsg && /(duplicate|重複|already|既に|すでに|登録済|登録されて)/i.test(errMsg)) {
+        // ⑥ 重複エラー（バックエンド側で検出された場合）
+        showDuplicate('');
       } else {
         msg.className = 'msg-box err';
-        msg.textContent = 'エラー: ' + (errMsg || '不明');
+        msg.textContent = 'エラー: ' + (errMsg || '登録に失敗しました（応答: ' + JSON.stringify(res) + '）');
+        msg.style.display = 'block';
       }
-    }).catch(function(e){
-      self.disabled = false; self.textContent = '会員を追加する';
-      msg.className = 'msg-box err';
-      msg.textContent = 'エラー: ' + e.message;
     });
   }).catch(function(e){
-    self.disabled = false; self.textContent = '会員を追加する';
+    resetBtn();
     msg.className = 'msg-box err';
-    msg.textContent = 'エラー: ' + e.message;
+    msg.textContent = '通信エラー: ' + (e && e.message ? e.message : e);
+    msg.style.display = 'block';
   });
+});
+
+// ⑤ Enterキー: 氏名欄で Enter → 追加ボタンをクリック
+document.getElementById('addCode').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addName').focus(); }
+});
+document.getElementById('addName').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addBtn').click(); }
 });
 
 // ── LOAD MEMBERS ─────────────────
