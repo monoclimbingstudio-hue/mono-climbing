@@ -46,6 +46,7 @@ nav a:hover { color: #fff; }
 .store-tab[data-store="omura"].sel  { background: #2e7d32; border-color: #2e7d32; }
 .store-tab[data-store="sasebo"].sel { background: #e65100; border-color: #e65100; }
 .store-tab:hover:not(.sel) { border-color: #aaa; }
+.store-required-msg { margin-top: 8px; font-size: 0.8rem; color: var(--accent); font-weight: 600; display: none; }
 
 /* Store indicator badge */
 .store-badge {
@@ -141,7 +142,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 </style>
 </head>
-<body class="store-hakata">
+<body>
 
 <!-- Login Overlay -->
 <div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
@@ -211,10 +212,11 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <div class="store-tabs">
-        <button class="store-tab sel" data-store="hakata">博多店</button>
+        <button class="store-tab" data-store="hakata">博多店</button>
         <button class="store-tab" data-store="omura">大村店</button>
         <button class="store-tab" data-store="sasebo">佐世保店</button>
       </div>
+      <div class="store-required-msg" id="storeRequiredMsg">⚠ 店舗を選択してください</div>
     </div>
   </div>
 
@@ -300,18 +302,29 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
-  return sel ? sel.dataset.store : 'hakata';
+  return sel ? sel.dataset.store : null;
 }
 
 function getStoreLabel() {
-  return STORE_LABEL[getStore()] || getStore();
+  var s = getStore();
+  return STORE_LABEL[s] || s || '未選択';
 }
 
 function updateStoreBadges() {
-  var label = '📍 ' + getStoreLabel();
+  var s = getStore();
+  var label = s ? ('📍 ' + getStoreLabel()) : '📍 店舗未選択';
   document.getElementById('searchStoreBadge').textContent = label;
   document.getElementById('addStoreBadge').textContent = label;
   document.getElementById('listStoreBadge').textContent = label;
+}
+
+function requireStore() {
+  if (!getStore()) {
+    document.getElementById('storeRequiredMsg').style.display = 'block';
+    document.getElementById('storeRequiredMsg').scrollIntoView({behavior:'smooth', block:'center'});
+    return false;
+  }
+  return true;
 }
 
 // Store tabs
@@ -321,6 +334,8 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     btn.classList.add('sel');
     document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
     document.body.classList.add('store-' + btn.dataset.store);
+    document.getElementById('storeRequiredMsg').style.display = 'none';
+    try { localStorage.setItem('mono_selected_store', btn.dataset.store); } catch(e){}
     updateStoreBadges();
     var sr = document.getElementById('searchResult');
     sr.className = 'result-box'; sr.style.display = 'none';
@@ -332,8 +347,22 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
   });
 });
 
+// ⑧ localStorage から店舗を復元
+(function(){
+  try {
+    var saved = localStorage.getItem('mono_selected_store');
+    if (saved) {
+      var btn = document.querySelector('.store-tab[data-store="' + saved + '"]');
+      if (btn) btn.click();
+    } else {
+      updateStoreBadges();
+    }
+  } catch(e){ updateStoreBadges(); }
+})();
+
 // ── SEARCH (by code or name) ──────────────────────────────────────────
 document.getElementById('searchBtn').addEventListener('click', function(){
+  if (!requireStore()) return;
   var code = document.getElementById('searchCode').value.trim();
   var nameQuery = document.getElementById('searchName').value.trim();
   if (!code && !nameQuery) { alert('会員番号または名前を入力してください'); return; }
@@ -392,6 +421,7 @@ document.getElementById('searchName').addEventListener('keydown', function(e){
 
 // ── ADD MEMBER ───────────────────────────────────
 document.getElementById('addBtn').addEventListener('click', function(){
+  if (!requireStore()) return;
   var code = document.getElementById('addCode').value.trim();
   var name = document.getElementById('addName').value.trim();
   if (!code || !name) { alert('会員番号と氏名を両方入力してください'); return; }
@@ -400,28 +430,50 @@ document.getElementById('addBtn').addEventListener('click', function(){
   msg.className = 'msg-box'; msg.style.display = 'none';
   this.disabled = true; this.textContent = '登録中...';
   var self = this;
-  callAPI('addMember', {code: code, name: name, store: store}).then(function(res){
-    self.disabled = false; self.textContent = '会員を追加する';
-    if (res.ok && res.data && res.data.success) {
-      msg.className = 'msg-box ok';
-      msg.textContent = '✓ ' + getStoreLabel() + ' に登録しました（' + code + ' / ' + name + '）';
-      document.getElementById('addCode').value = '';
-      document.getElementById('addName').value = '';
-      if (membersLoaded) loadMembers();
-    } else {
+  // ⑨ 事前に重複チェック
+  callAPI('getMember', {code: code, store: store}).then(function(chk){
+    var existing = chk && chk.data;
+    if (existing && existing.name) {
+      self.disabled = false; self.textContent = '会員を追加する';
       msg.className = 'msg-box err';
-      msg.textContent = 'エラー: ' + (res.data ? res.data.error : res.error || '不明');
+      msg.innerHTML = '⚠ 会員番号 <strong>' + esc(code) + '</strong> は既に「<strong>' + esc(existing.name) + '</strong>」として' + getStoreLabel() + 'に登録されています。別の番号を使用してください。';
+      document.getElementById('addCode').focus();
+      document.getElementById('addCode').select();
+      return;
     }
+    callAPI('addMember', {code: code, name: name, store: store}).then(function(res){
+      self.disabled = false; self.textContent = '会員を追加する';
+      var errMsg = res.data ? res.data.error : (res.error || '');
+      if (res.ok && res.data && res.data.success) {
+        msg.className = 'msg-box ok';
+        msg.textContent = '✓ ' + getStoreLabel() + ' に登録しました（' + code + ' / ' + name + '）';
+        document.getElementById('addCode').value = '';
+        document.getElementById('addName').value = '';
+        if (membersLoaded) loadMembers();
+      } else if (errMsg && /(duplicate|重複|already|既に|登録済)/i.test(errMsg)) {
+        msg.className = 'msg-box err';
+        msg.innerHTML = '⚠ 会員番号 <strong>' + esc(code) + '</strong> は既に登録されています。別の番号を使用してください。';
+        document.getElementById('addCode').focus();
+        document.getElementById('addCode').select();
+      } else {
+        msg.className = 'msg-box err';
+        msg.textContent = 'エラー: ' + (errMsg || '不明');
+      }
+    }).catch(function(e){
+      self.disabled = false; self.textContent = '会員を追加する';
+      msg.className = 'msg-box err';
+      msg.textContent = 'エラー: ' + e.message;
+    });
   }).catch(function(e){
     self.disabled = false; self.textContent = '会員を追加する';
-    var msg2 = document.getElementById('msgAdd');
-    msg2.className = 'msg-box err';
-    msg2.textContent = 'エラー: ' + e.message;
+    msg.className = 'msg-box err';
+    msg.textContent = 'エラー: ' + e.message;
   });
 });
 
 // ── LOAD MEMBERS ─────────────────
 document.getElementById('loadListBtn').addEventListener('click', function(){
+  if (!requireStore()) return;
   loadMembers();
 });
 

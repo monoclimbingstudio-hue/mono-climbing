@@ -366,9 +366,11 @@ nav a:hover { color: #fff; }
     <div class="section-head">
       <div class="step-num">⑤</div>
       <div class="section-title">商品購入 <span style="font-size:.78rem;font-weight:400;color:var(--sub);">任意</span></div>
-    <a href="shop.html" style="font-size:0.82rem;color:var(--accent);text-decoration:none;font-weight:600;margin-left:auto;">物販管理へ →</a>
+    <a href="shop.html" id="goToShopLink" style="font-size:0.82rem;color:var(--accent);text-decoration:none;font-weight:600;margin-left:auto;">物販管理へ →</a>
       </div>
     <div class="card">
+      <!-- 選択済み物販リスト（複数選択可） -->
+      <div id="selectedMerchList" style="display:none; margin-bottom:12px; padding:10px 12px; background:#f0f4ff; border:1.5px solid #b3c3f3; border-radius:8px; font-size:0.85rem;"></div>
       <div class="field-label">購入金額</div>
       <div class="merch-input-row">
         <span class="yen-prefix">¥</span>
@@ -433,7 +435,39 @@ nav a:hover { color: #fff; }
         <button class="pay-chip" data-method="電子マネー">📱 電子マネー</button>
         <button class="pay-chip" data-method="QRコード">📲 QRコード</button>
         <button class="pay-chip" data-method="交通系IC">🚃 交通系IC</button>
+        <button class="pay-chip" data-method="LINE">💬 LINE</button>
         <button class="pay-chip" data-method="その他">📋 その他</button>
+      </div>
+      <!-- 電子マネー詳細 -->
+      <div class="other-pay-wrap" id="emoneyDetailWrap">
+        <div class="field-label">電子マネーの種類</div>
+        <select id="emoneyDetail" class="plan-select">
+          <option value="">-- 選択してください --</option>
+          <option value="Suica">Suica</option>
+          <option value="PASMO">PASMO</option>
+          <option value="nanaco">nanaco</option>
+          <option value="WAON">WAON</option>
+          <option value="楽天Edy">楽天Edy</option>
+          <option value="iD">iD</option>
+          <option value="QUICPay">QUICPay</option>
+          <option value="その他">その他</option>
+        </select>
+        <input type="text" id="emoneyDetailOther" class="full-input" placeholder="電子マネー名（その他の場合）" style="margin-top:8px;display:none;">
+      </div>
+      <!-- QRコード詳細 -->
+      <div class="other-pay-wrap" id="qrDetailWrap">
+        <div class="field-label">QRコード決済の種類</div>
+        <select id="qrDetail" class="plan-select">
+          <option value="">-- 選択してください --</option>
+          <option value="PayPay">PayPay</option>
+          <option value="d払い">d払い</option>
+          <option value="au PAY">au PAY</option>
+          <option value="楽天ペイ">楽天ペイ</option>
+          <option value="メルペイ">メルペイ</option>
+          <option value="LINE Pay">LINE Pay</option>
+          <option value="その他">その他</option>
+        </select>
+        <input type="text" id="qrDetailOther" class="full-input" placeholder="QR決済サービス名（その他の場合）" style="margin-top:8px;display:none;">
       </div>
       <!-- その他の場合: 売上元を入力 -->
       <div class="other-pay-wrap" id="otherPayWrap">
@@ -471,7 +505,8 @@ nav a:hover { color: #fff; }
 var allPlans = [], planSel = null, rentalSel = [], paymentSel = null;
 var matOptions = [], matSel = null;
 var CACHE_TTL = 4 * 60 * 60 * 1000; // 4hours（料金表・レンタルはほぼ変わらない）
-var pendingShopItem = null;
+var pendingShopItems = []; // 複数物販対応
+var ENTRY_STATE_KEY = 'mono_entry_state_v2';
 
 // 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
 var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
@@ -512,12 +547,23 @@ function setCache(key, data) {
 // Store selection（デフォルト選択なし → 選択必須）
 document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
+    var prevStore = getStore();
     document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
     document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
     document.body.classList.add('store-' + btn.dataset.store);
     document.getElementById('storeRequiredMsg').style.display = 'none';
         try { localStorage.setItem('mono_selected_store', btn.dataset.store); } catch(e){}
+    // ⑥ 店舗変更時は会員検索結果をクリア
+    if (prevStore && prevStore !== btn.dataset.store) {
+      var badge = document.getElementById('memberBadge');
+      if (badge && badge.className.indexOf('found') >= 0) {
+        badge.className = 'member-badge';
+        badge.textContent = '';
+        badge.style.display = 'none';
+        document.getElementById('memberCode').value = '';
+      }
+    }
     updateRegisterBtn();
   });
 
@@ -768,6 +814,12 @@ function buildRentalSection(rentals, rs) {
   // 表示名の変換マップ
   rentals.forEach(function(r){ if(r.name === 'チョーク') r.name = 'チョーク'; });
 
+  // Pamoレンタル（1日330円）をフロントエンド側で追加（GAS側に無い場合のフォールバック）
+  var hasPamo = rentals.some(function(r){ return r.name && r.name.indexOf('Pamo') >= 0; });
+  if (!hasPamo) {
+    rentals.push({ name: 'Pamoレンタル（1日）', amount: 330 });
+  }
+
   if (!rentals.length) {
     rs.innerHTML = '<span style="color:var(--sub);font-size:.85rem">なし</span>';
     return;
@@ -833,15 +885,25 @@ function buildRentalSection(rentals, rs) {
   }
 }
 
-// Payment（「その他」追加）
+// Payment（「その他」「電子マネー」「QRコード」追加）
 document.querySelectorAll('.pay-chip').forEach(function(btn){
   btn.addEventListener('click', function(){
     document.querySelectorAll('.pay-chip').forEach(function(b){ b.classList.remove('sel'); });
     btn.classList.add('sel');
     paymentSel = btn.dataset.method;
     document.getElementById('otherPayWrap').style.display = (paymentSel === 'その他') ? 'block' : 'none';
+    document.getElementById('emoneyDetailWrap').style.display = (paymentSel === '電子マネー') ? 'block' : 'none';
+    document.getElementById('qrDetailWrap').style.display = (paymentSel === 'QRコード') ? 'block' : 'none';
     updateRegisterBtn();
   });
+});
+
+// 電子マネー/QRの「その他」入力欄の表示制御
+document.getElementById('emoneyDetail').addEventListener('change', function(){
+  document.getElementById('emoneyDetailOther').style.display = (this.value === 'その他') ? 'block' : 'none';
+});
+document.getElementById('qrDetail').addEventListener('change', function(){
+  document.getElementById('qrDetailOther').style.display = (this.value === 'その他') ? 'block' : 'none';
 });
 
 // 合計計算（DOM更新なし・純計算）
@@ -906,19 +968,30 @@ function updateRegisterBtn() {
   document.getElementById('registerBtn').disabled = !(paymentSel || isZeroYen);
 }
 
-// Member search (by code or name)
+// Member search (by code or name) - ⑥ 店舗変更レースコンディション対策
 document.getElementById('searchBtn').addEventListener('click', function(){
   var code = document.getElementById('memberCode').value.trim();
   var nameQuery = document.getElementById('memberNameSearch').value.trim();
   if (!code && !nameQuery) { alert('会員番号または名前を入力してください'); return; }
   var store = getStore();
+  if (!store) { alert('先に店舗を選択してください'); return; }
   var badge = document.getElementById('memberBadge');
   badge.className = 'member-badge notfound';
   badge.textContent = '検索中...';
   badge.style.display = 'block';
+  // ⑥ 検索開始時の店舗を記録、完了時に変わっていたら破棄
+  var searchStore = store;
+  var storeStillMatches = function(){
+    return getStore() === searchStore;
+  };
 
   if (code) {
-    callAPI('getMember', {code: code, store: store || 'hakata'}).then(function(res){
+    callAPI('getMember', {code: code, store: searchStore}).then(function(res){
+      if (!storeStillMatches()) {
+        badge.className = 'member-badge notfound';
+        badge.textContent = '⚠ 検索中に店舗が変更されたため結果を破棄しました。再検索してください。';
+        return;
+      }
       var m = res.data;
       if (m && m.name) {
         badge.className = 'member-badge found';
@@ -930,7 +1003,12 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       }
     }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
   } else {
-    _getCachedMemberList(store || 'hakata').then(function(list){
+    _getCachedMemberList(searchStore).then(function(list){
+      if (!storeStillMatches()) {
+        badge.className = 'member-badge notfound';
+        badge.textContent = '⚠ 検索中に店舗が変更されたため結果を破棄しました。再検索してください。';
+        return;
+      }
       var q = nameQuery.toLowerCase();
       var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
       if (matches.length === 0) {
@@ -981,6 +1059,17 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   var otherPayName = (paymentSel === 'その他') ? (document.getElementById('otherPayName').value.trim()) : '';
   var paymentLabel = (paymentSel === 'その他' && otherPayName) ? 'その他(' + otherPayName + ')' : effectivePayment;
 
+  // 電子マネー/QRの詳細を付与
+  if (paymentSel === '電子マネー') {
+    var em = document.getElementById('emoneyDetail').value;
+    if (em === 'その他') em = document.getElementById('emoneyDetailOther').value.trim();
+    if (em) paymentLabel = '電子マネー(' + em + ')';
+  } else if (paymentSel === 'QRコード') {
+    var qr = document.getElementById('qrDetail').value;
+    if (qr === 'その他') qr = document.getElementById('qrDetailOther').value.trim();
+    if (qr) paymentLabel = 'QRコード(' + qr + ')';
+  }
+
   var badge = document.getElementById('memberBadge');
   var badgeName = (badge.className.indexOf('found') >= 0) ? badge.textContent.replace('✓  ','').split('　（')[0].trim() : '';
   var memberName = badgeName || document.getElementById('guestName').value.trim() || 'ゲスト';
@@ -1020,7 +1109,7 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     cash: effectivePayment === '現金' ? total : 0,
     credit: effectivePayment === 'クレジット' ? total : 0,
     emoney: effectivePayment === '電子マネー' ? total : 0,
-    qr: (effectivePayment === 'QRコード' || effectivePayment === 'その他') ? total : 0,
+    qr: (effectivePayment === 'QRコード' || effectivePayment === 'その他' || effectivePayment === 'LINE') ? total : 0,
     transit: effectivePayment === '交通系IC' ? total : 0,
     notes: otherPayName
   };
@@ -1037,15 +1126,20 @@ document.getElementById('registerBtn').addEventListener('click', function(){
       msg.className = 'ok';
       msg.style.display = '';
       msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
-          // Reduce inventory if product was selected from shop
-          if (pendingShopItem) {
-            callAPI('recordShopSale', {
-              store: pendingShopItem.store, category: pendingShopItem.sheet,
-              productName: pendingShopItem.name, size: '', price: pendingShopItem.price,
-              qty: 1, payment: paymentLabel, row: pendingShopItem.row,
-              sheet: pendingShopItem.sheet, stockCol: pendingShopItem.stockCol
-            }).then(function(){ pendingShopItem = null; }).catch(function(){});
+          // Reduce inventory for all selected products
+          if (pendingShopItems && pendingShopItems.length) {
+            pendingShopItems.forEach(function(it){
+              callAPI('recordShopSale', {
+                store: it.store, category: it.sheet,
+                productName: it.name, size: '', price: it.price,
+                qty: 1, payment: paymentLabel, row: it.row,
+                sheet: it.sheet, stockCol: it.stockCol
+              }).catch(function(){});
+            });
+            pendingShopItems = [];
           }
+          // 登録完了後は保存状態もクリア
+          try { sessionStorage.removeItem(ENTRY_STATE_KEY); } catch(e){}
       setTimeout(function(){ location.reload(); }, 2200);
     } else {
       msg.className = 'err';
@@ -1129,7 +1223,185 @@ function escAttr(s) {
 
 init();
 
-// Handle URL params from shop.html (merchandise transfer)
+// ── 入店フォーム状態の保存/復元 ──
+// ③ 物販管理へ移動時にフォーム状態を保存する
+function saveEntryState() {
+  try {
+    var state = {
+      store: getStore(),
+      memberCode: document.getElementById('memberCode').value,
+      memberNameSearch: document.getElementById('memberNameSearch').value,
+      memberBadge: {
+        className: document.getElementById('memberBadge').className,
+        textContent: document.getElementById('memberBadge').textContent,
+        innerHTML: document.getElementById('memberBadge').innerHTML
+      },
+      guestName: document.getElementById('guestName').value,
+      attrSelect: (document.getElementById('attrSelect') || {}).value || '',
+      planSelectValue: (document.getElementById('planSelect') || {}).value || '',
+      planSel: planSel,
+      regFeeCheck: document.getElementById('regFeeCheck').checked,
+      regFeeAmt: document.getElementById('regFeeAmt').value,
+      otherStoreDisc: document.getElementById('otherStoreDisc').checked,
+      otherDiscRate: document.getElementById('otherDiscRate').value,
+      matIdx: (document.getElementById('matSelect') || {}).value || '-1',
+      rentalSel: rentalSel,
+      merchAmt: document.getElementById('merchAmt').value,
+      merchNote: document.getElementById('merchNote').value,
+      discountRate: document.getElementById('discountRate').value,
+      discountAmt: document.getElementById('discountAmt').value,
+      adjustAmt: document.getElementById('adjustAmt').value,
+      adjustNote: document.getElementById('adjustNote').value,
+      paymentSel: paymentSel,
+      otherPayName: document.getElementById('otherPayName').value,
+      emoneyDetail: document.getElementById('emoneyDetail').value,
+      emoneyDetailOther: document.getElementById('emoneyDetailOther').value,
+      qrDetail: document.getElementById('qrDetail').value,
+      qrDetailOther: document.getElementById('qrDetailOther').value,
+      paymentDate: document.getElementById('paymentDate').value,
+      pendingShopItems: pendingShopItems
+    };
+    sessionStorage.setItem(ENTRY_STATE_KEY, JSON.stringify(state));
+  } catch(e) { console.error('saveEntryState', e); }
+}
+
+function restoreEntryState() {
+  try {
+    var s = sessionStorage.getItem(ENTRY_STATE_KEY);
+    if (!s) return false;
+    var state = JSON.parse(s);
+    sessionStorage.removeItem(ENTRY_STATE_KEY);
+    if (state.store) {
+      var sbtn = document.querySelector('.store-tab[data-store="' + state.store + '"]');
+      if (sbtn) sbtn.click();
+    }
+    if (state.memberCode) document.getElementById('memberCode').value = state.memberCode;
+    if (state.memberNameSearch) document.getElementById('memberNameSearch').value = state.memberNameSearch;
+    if (state.memberBadge && state.memberBadge.innerHTML) {
+      var b = document.getElementById('memberBadge');
+      b.className = state.memberBadge.className || '';
+      b.innerHTML = state.memberBadge.innerHTML;
+    }
+    if (state.guestName) document.getElementById('guestName').value = state.guestName;
+    // 料金表はロード非同期なのでsetTimeoutでリトライ
+    var tryRestorePlan = function(retry){
+      var attrEl = document.getElementById('attrSelect');
+      if (!attrEl && retry > 0) { setTimeout(function(){tryRestorePlan(retry-1);}, 150); return; }
+      if (attrEl && state.attrSelect) {
+        attrEl.value = state.attrSelect;
+        attrEl.dispatchEvent(new Event('change'));
+        setTimeout(function(){
+          var planEl = document.getElementById('planSelect');
+          if (planEl && state.planSelectValue) {
+            planEl.value = state.planSelectValue;
+            planEl.dispatchEvent(new Event('change'));
+          } else if (state.planSel) {
+            planSel = state.planSel;
+            updateTotal();
+          }
+        }, 200);
+      } else if (state.planSel) {
+        planSel = state.planSel;
+        updateTotal();
+      }
+    };
+    tryRestorePlan(10);
+
+    if (state.regFeeCheck) {
+      document.getElementById('regFeeCheck').checked = true;
+      document.getElementById('regFeeCheck').dispatchEvent(new Event('change'));
+      document.getElementById('regFeeAmt').value = state.regFeeAmt || 1100;
+      if (state.otherStoreDisc) {
+        document.getElementById('otherStoreDisc').checked = true;
+        document.getElementById('otherStoreDisc').dispatchEvent(new Event('change'));
+        document.getElementById('otherDiscRate').value = state.otherDiscRate || 10;
+      }
+      updateRegFee();
+    }
+    // レンタル: 遅延ロードの可能性
+    var tryRestoreRental = function(retry){
+      var matEl = document.getElementById('matSelect');
+      var chips = document.querySelectorAll('.rental-chip');
+      if (chips.length === 0 && !matEl && retry > 0) { setTimeout(function(){tryRestoreRental(retry-1);}, 150); return; }
+      if (matEl && state.matIdx !== '-1') {
+        matEl.value = state.matIdx;
+        matEl.dispatchEvent(new Event('change'));
+      }
+      if (state.rentalSel && state.rentalSel.length) {
+        state.rentalSel.forEach(function(r){
+          chips.forEach(function(c){
+            if (c.textContent.indexOf(r.name) >= 0 && !c.classList.contains('sel')) {
+              c.click();
+            }
+          });
+        });
+      }
+    };
+    tryRestoreRental(10);
+
+    if (state.merchAmt) document.getElementById('merchAmt').value = state.merchAmt;
+    if (state.merchNote) document.getElementById('merchNote').value = state.merchNote;
+    if (state.discountRate) document.getElementById('discountRate').value = state.discountRate;
+    if (state.discountAmt) document.getElementById('discountAmt').value = state.discountAmt;
+    if (state.adjustAmt) document.getElementById('adjustAmt').value = state.adjustAmt;
+    if (state.adjustNote) document.getElementById('adjustNote').value = state.adjustNote;
+    if (state.paymentSel) {
+      var payBtn = document.querySelector('.pay-chip[data-method="' + state.paymentSel + '"]');
+      if (payBtn) payBtn.click();
+    }
+    if (state.otherPayName) document.getElementById('otherPayName').value = state.otherPayName;
+    if (state.emoneyDetail) {
+      document.getElementById('emoneyDetail').value = state.emoneyDetail;
+      document.getElementById('emoneyDetail').dispatchEvent(new Event('change'));
+    }
+    if (state.emoneyDetailOther) document.getElementById('emoneyDetailOther').value = state.emoneyDetailOther;
+    if (state.qrDetail) {
+      document.getElementById('qrDetail').value = state.qrDetail;
+      document.getElementById('qrDetail').dispatchEvent(new Event('change'));
+    }
+    if (state.qrDetailOther) document.getElementById('qrDetailOther').value = state.qrDetailOther;
+    if (state.paymentDate) document.getElementById('paymentDate').value = state.paymentDate;
+    if (state.pendingShopItems && state.pendingShopItems.length) {
+      pendingShopItems = state.pendingShopItems;
+      renderSelectedMerchList();
+    }
+    setTimeout(function(){ updateTotal(); updateDiscountPreview(); }, 300);
+    return true;
+  } catch(e) { console.error('restoreEntryState', e); return false; }
+}
+
+// ⑭ 選択済み物販リストの表示（複数選択対応）
+function renderSelectedMerchList() {
+  var el = document.getElementById('selectedMerchList');
+  if (!pendingShopItems.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  var STORE_LABEL = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'};
+  var html = '<div style="font-weight:700;color:#1a237e;margin-bottom:6px;">📦 選択済み物販（' + pendingShopItems.length + '点）</div>';
+  pendingShopItems.forEach(function(it, i){
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #c0d0f0;">' +
+      '<span>' + esc(it.name) + ' ¥' + Number(it.price||0).toLocaleString() +
+      ' <span style="color:#777;font-size:0.82rem;">[在庫元: ' + esc(STORE_LABEL[it.store]||it.store||'-') + ']</span></span>' +
+      '<button type="button" data-i="' + i + '" class="merch-remove-btn" style="padding:2px 8px;border:1px solid #c62828;color:#c62828;background:#fff;border-radius:4px;font-size:0.78rem;cursor:pointer;">削除</button>' +
+      '</div>';
+  });
+  el.innerHTML = html;
+  el.style.display = 'block';
+  el.querySelectorAll('.merch-remove-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var i = parseInt(this.getAttribute('data-i'));
+      var removed = pendingShopItems.splice(i, 1)[0];
+      // 金額・メモも減算
+      var curAmt = parseInt(document.getElementById('merchAmt').value) || 0;
+      var newAmt = Math.max(0, curAmt - Number(removed.price||0));
+      document.getElementById('merchAmt').value = newAmt || '';
+      var notes = document.getElementById('merchNote').value.split(/,\s*/).filter(function(x){return x&&x!==removed.name;});
+      document.getElementById('merchNote').value = notes.join(', ');
+      renderSelectedMerchList();
+      updateTotal();
+    });
+  });
+}
+
+// Handle URL params from shop.html (merchandise transfer) - 複数選択対応
 (function(){
   var params = new URLSearchParams(window.location.search);
   var merch = params.get('merch');
@@ -1138,33 +1410,53 @@ init();
   var sheet = params.get('sheet');
   var row = params.get('row');
   var stockCol = params.get('stockCol');
+  var hasReturnState = !!sessionStorage.getItem(ENTRY_STATE_KEY);
+
+  // ③ 物販選択→戻ってきた時は先に状態復元
+  if (hasReturnState) restoreEntryState();
+
   if (merch || merchAmt) {
-    if (merchAmt) document.getElementById('merchAmt').value = merchAmt;
-    if (merch) document.getElementById('merchNote').value = merch;
-    if (store) {
-      var storeBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
-      if (storeBtn) storeBtn.click();
+    // ⑤ 既存の金額に加算する（複数選択対応）
+    var curAmt = parseInt(document.getElementById('merchAmt').value) || 0;
+    var newAmt = curAmt + (parseInt(merchAmt) || 0);
+    document.getElementById('merchAmt').value = newAmt;
+
+    var curNote = document.getElementById('merchNote').value;
+    if (merch) {
+      document.getElementById('merchNote').value = curNote ? (curNote + ', ' + merch) : merch;
     }
+
+    // ④ 店舗自動切替を廃止: 在庫元として記録するのみ、店舗選択は変更しない
     if (sheet && row) {
-      pendingShopItem = { sheet: sheet, row: parseInt(row), stockCol: parseInt(stockCol) || 0, store: store, name: merch, price: parseInt(merchAmt) || 0 };
+      pendingShopItems.push({
+        sheet: sheet, row: parseInt(row),
+        stockCol: parseInt(stockCol) || 0,
+        store: store, name: merch, price: parseInt(merchAmt) || 0
+      });
+      renderSelectedMerchList();
     }
     var merchEl = document.getElementById('merchAmt');
     if (merchEl) merchEl.scrollIntoView({behavior:'smooth', block:'center'});
     document.getElementById('merchAmt').dispatchEvent(new Event('input'));
     window.history.replaceState({}, '', window.location.pathname);
   }
-})();
 
-  // ② 店舗選択をlocalStorageで復元
-  (function(){
+  // ② 店舗選択: 状態復元がなかった場合のみlocalStorageで復元
+  if (!hasReturnState) {
     try {
       var saved = localStorage.getItem('mono_selected_store');
-      if (saved) {
+      if (saved && !getStore()) {
         var btn = document.querySelector('.store-tab[data-store="' + saved + '"]');
         if (btn) btn.click();
       }
     } catch(e){}
-  })();
+  }
+})();
+
+// ③ 物販管理へリンククリック時に状態を保存
+document.getElementById('goToShopLink').addEventListener('click', function(e){
+  saveEntryState();
+});
 </script>
 </body>
 </html>
