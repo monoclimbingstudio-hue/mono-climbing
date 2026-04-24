@@ -83,6 +83,37 @@ tbody tr:last-child td { border-bottom: none; }
 .sell-btn:disabled { opacity: .35; cursor: not-allowed; }
     .select-btn { padding: 4px 12px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: opacity .15s; margin-left: 4px; }
     .select-btn:hover { opacity: .8; }
+    .select-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Cart bar */
+.cart-bar { position: sticky; top: 48px; z-index: 90; background: #1a73e8; color: #fff; padding: 10px 14px; border-radius: 10px; margin: 0 0 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,.15); display: none; }
+.cart-bar.show { display: block; }
+.cart-bar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cart-bar-title { font-size: 0.9rem; font-weight: 700; }
+.cart-bar-actions { display: flex; gap: 8px; }
+.cart-bar-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.cart-back-btn { background: #fff; color: #1a73e8; }
+.cart-back-btn:hover { opacity: .9; }
+.cart-clear-btn { background: transparent; color: #fff; border: 1px solid #fff; }
+.cart-clear-btn:hover { background: rgba(255,255,255,.15); }
+.cart-list { margin-top: 10px; display: grid; gap: 6px; max-height: 180px; overflow-y: auto; }
+.cart-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(255,255,255,.15); border-radius: 6px; padding: 6px 10px; font-size: 0.82rem; }
+.cart-item-name { flex: 1; }
+.cart-item-qty { font-weight: 700; }
+.cart-item-del { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5); border-radius: 4px; padding: 2px 8px; font-size: 0.72rem; cursor: pointer; }
+.cart-item-del:hover { background: rgba(255,255,255,.2); }
+.cart-total-row { display: flex; justify-content: flex-end; gap: 12px; font-weight: 700; margin-top: 6px; font-size: 0.9rem; }
+
+/* Quantity modal */
+.qty-modal { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 340px; box-shadow: 0 8px 40px rgba(0,0,0,.4); color: var(--text); }
+.qty-modal h3 { font-size: 1rem; margin-bottom: 6px; color: var(--text); }
+.qty-item-name { font-size: 0.88rem; color: var(--sub); margin-bottom: 14px; }
+.qty-controls { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 18px; }
+.qty-btn { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--dark); background: #fff; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
+.qty-btn:hover { background: #f0f0f0; }
+.qty-btn:disabled { opacity: .3; cursor: not-allowed; }
+.qty-display { font-size: 1.8rem; font-weight: 800; min-width: 60px; text-align: center; }
+.qty-price-row { text-align: center; font-size: 0.85rem; color: var(--sub); margin-bottom: 14px; }
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; z-index: 9000; background: rgba(26,26,26,.7); display: none; align-items: center; justify-content: center; }
@@ -156,6 +187,18 @@ tbody tr:last-child td { border-bottom: none; }
 
 <div class="page">
 
+  <!-- カート（選択中の商品一覧） -->
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-bar-head">
+      <div class="cart-bar-title">🛒 選択中：<span id="cartCount">0</span>点 / ¥<span id="cartTotal">0</span></div>
+      <div class="cart-bar-actions">
+        <button class="cart-bar-btn cart-clear-btn" id="cartClearBtn">全削除</button>
+        <button class="cart-bar-btn cart-back-btn" id="cartBackBtn">入店登録へ戻る →</button>
+      </div>
+    </div>
+    <div class="cart-list" id="cartList"></div>
+  </div>
+
   <!-- 店舗選択 -->
   <div class="section">
     <div class="section-head">
@@ -228,17 +271,46 @@ tbody tr:last-child td { border-bottom: none; }
 
 </div>
 
+<!-- 個数選択モーダル -->
+<div class="modal-overlay" id="qtyOverlay">
+  <div class="qty-modal">
+    <h3>個数を選択</h3>
+    <div class="qty-item-name" id="qtyItemName"></div>
+    <div class="qty-controls">
+      <button class="qty-btn" id="qtyMinus">−</button>
+      <div class="qty-display" id="qtyDisplay">1</div>
+      <button class="qty-btn" id="qtyPlus">+</button>
+    </div>
+    <div class="qty-price-row">単価 ¥<span id="qtyUnitPrice">0</span> × <span id="qtyNum">1</span>個 ＝ <strong>¥<span id="qtySubtotal">0</span></strong></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="qtyCancel">キャンセル</button>
+      <button class="btn-confirm" id="qtyConfirm">カートに追加</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 var allInventory = {};
 var currentCategory = '';
 var currentStore = '';
+var CART_KEY = 'mono_shop_cart_v1';
+// カート: [{ key, sheet, row, stockCol, store, storeLabel, name, price, qty, stock }]
+var cart = [];
+try { cart = JSON.parse(sessionStorage.getItem(CART_KEY) || '[]') || []; } catch(e) { cart = []; }
 
 function callAPI(action, params) {
   return fetch('/api/gas', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(Object.assign({action:action}, params))
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    return r.text().then(function(t){
+      try { return JSON.parse(t); }
+      catch(e) {
+        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+      }
+    });
+  });
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -369,23 +441,136 @@ function renderInventory(category) {
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 
-      // Select button: navigate to index.html with product info
+      // Select button: open qty modal, then add to cart
     wrap.querySelectorAll('.select-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         var cat = this.getAttribute('data-cat');
         var idx = parseInt(this.getAttribute('data-idx'));
         var item = allInventory[cat][idx];
-        var sellStore = item.storeName || currentStore;
-        var p = 'merch=' + encodeURIComponent(item.name)
-          + '&merchAmt=' + (Number(item.price) || 0)
-          + '&store=' + sellStore
-          + '&sheet=' + encodeURIComponent(cat)
-          + '&row=' + (item.row || 0)
-          + '&stockCol=' + (item.stockCol || 0);
-        window.location.href = 'index.html?' + p;
+        if (Number(item.stock || 0) <= 0) {
+          alert('在庫が 0 のため選択できません。');
+          return;
+        }
+        openQtyModal(cat, idx, item);
       });
     });
 }
+
+// ── 個数選択モーダル ─────────────────────────────
+var _qtyCtx = null;
+function openQtyModal(cat, idx, item) {
+  var sellStore = item.storeName || currentStore;
+  var storeLabel = item.storeLabel || ({hakata:'博多',omura:'大村',sasebo:'佐世保'}[sellStore] || sellStore || '');
+  var key = sellStore + '|' + cat + '|' + (item.row || 0) + '|' + item.name;
+  // 既にカートにあれば残り在庫を考慮した初期値
+  var existing = cart.find(function(c){ return c.key === key; });
+  var alreadyQty = existing ? existing.qty : 0;
+  var maxQty = Math.max(1, Number(item.stock || 0) - alreadyQty);
+  if (maxQty <= 0) {
+    alert('この商品はすでに在庫数まで選択済みです。');
+    return;
+  }
+  _qtyCtx = {
+    cat: cat, idx: idx, item: item,
+    sellStore: sellStore, storeLabel: storeLabel,
+    key: key, qty: 1, maxQty: maxQty,
+    stock: Number(item.stock || 0)
+  };
+  document.getElementById('qtyItemName').textContent = item.name + (item.size && item.size !== '-' ? ' / ' + item.size : '') + '（在庫: ' + _qtyCtx.stock + '）';
+  document.getElementById('qtyUnitPrice').textContent = Number(item.price || 0).toLocaleString();
+  _updateQtyDisplay();
+  document.getElementById('qtyOverlay').classList.add('show');
+}
+function _updateQtyDisplay() {
+  if (!_qtyCtx) return;
+  document.getElementById('qtyDisplay').textContent = _qtyCtx.qty;
+  document.getElementById('qtyNum').textContent = _qtyCtx.qty;
+  document.getElementById('qtySubtotal').textContent = (Number(_qtyCtx.item.price || 0) * _qtyCtx.qty).toLocaleString();
+  document.getElementById('qtyMinus').disabled = _qtyCtx.qty <= 1;
+  document.getElementById('qtyPlus').disabled = _qtyCtx.qty >= _qtyCtx.maxQty;
+}
+document.getElementById('qtyMinus').addEventListener('click', function(){ if (_qtyCtx && _qtyCtx.qty > 1) { _qtyCtx.qty--; _updateQtyDisplay(); }});
+document.getElementById('qtyPlus').addEventListener('click', function(){ if (_qtyCtx && _qtyCtx.qty < _qtyCtx.maxQty) { _qtyCtx.qty++; _updateQtyDisplay(); }});
+document.getElementById('qtyCancel').addEventListener('click', function(){ document.getElementById('qtyOverlay').classList.remove('show'); _qtyCtx = null; });
+document.getElementById('qtyConfirm').addEventListener('click', function(){
+  if (!_qtyCtx) return;
+  var c = _qtyCtx;
+  var existing = cart.find(function(x){ return x.key === c.key; });
+  if (existing) {
+    existing.qty += c.qty;
+  } else {
+    cart.push({
+      key: c.key,
+      sheet: c.cat,
+      row: c.item.row || 0,
+      stockCol: c.item.stockCol || 0,
+      store: c.sellStore,
+      storeLabel: c.storeLabel,
+      name: c.item.name,
+      size: c.item.size || '',
+      price: Number(c.item.price || 0),
+      qty: c.qty
+    });
+  }
+  saveCart();
+  renderCart();
+  document.getElementById('qtyOverlay').classList.remove('show');
+  _qtyCtx = null;
+});
+
+// ── カート管理 ──────────────────────────────────
+function saveCart() {
+  try { sessionStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e){}
+}
+function renderCart() {
+  var bar = document.getElementById('cartBar');
+  var list = document.getElementById('cartList');
+  if (!cart.length) {
+    bar.classList.remove('show');
+    list.innerHTML = '';
+    return;
+  }
+  bar.classList.add('show');
+  var totalQty = 0, totalAmt = 0;
+  var html = '';
+  cart.forEach(function(c, i){
+    totalQty += c.qty;
+    totalAmt += c.price * c.qty;
+    var storeTag = c.storeLabel ? '[' + esc(c.storeLabel) + '] ' : '';
+    html += '<div class="cart-item">'
+      + '<span class="cart-item-name">' + storeTag + esc(c.name) + (c.size ? ' / ' + esc(c.size) : '') + '</span>'
+      + '<span class="cart-item-qty">× ' + c.qty + '</span>'
+      + '<span>¥' + (c.price * c.qty).toLocaleString() + '</span>'
+      + '<button class="cart-item-del" data-i="' + i + '">削除</button>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+  document.getElementById('cartCount').textContent = totalQty;
+  document.getElementById('cartTotal').textContent = totalAmt.toLocaleString();
+  list.querySelectorAll('.cart-item-del').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var i = parseInt(this.getAttribute('data-i'));
+      cart.splice(i, 1);
+      saveCart();
+      renderCart();
+    });
+  });
+}
+document.getElementById('cartClearBtn').addEventListener('click', function(){
+  if (!cart.length) return;
+  if (!confirm('カートを空にしますか？')) return;
+  cart = [];
+  saveCart();
+  renderCart();
+});
+document.getElementById('cartBackBtn').addEventListener('click', function(){
+  if (!cart.length) return;
+  // 入店登録画面に戻る → cart=1 でフラグ付与、index.html側で sessionStorage から読む
+  window.location.href = 'index.html?cart=1';
+});
+
+// 初期表示
+renderCart();
 
 function renderSummary() {
   var totalItems = 0, totalStock = 0, totalValue = 0, outOfStock = 0;
