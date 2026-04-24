@@ -295,7 +295,14 @@ function callAPI(action, params) {
   return fetch('/api/gas', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify(Object.assign({action: action}, params))
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    return r.text().then(function(t){
+      try { return JSON.parse(t); }
+      catch(e) {
+        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+      }
+    });
+  });
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
