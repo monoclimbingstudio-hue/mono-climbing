@@ -163,6 +163,37 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <!-- 期間指定 CSVエクスポート -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">CSV</span>
+      <div class="section-title">期間指定でCSVエクスポート</div>
+    </div>
+    <div class="card">
+      <div class="filter-bar">
+        <div class="filter-field">
+          <div class="field-label">開始日</div>
+          <input type="date" id="rangeFrom" class="filter-input">
+        </div>
+        <div class="filter-field">
+          <div class="field-label">終了日</div>
+          <input type="date" id="rangeTo" class="filter-input">
+        </div>
+        <div class="filter-field">
+          <div class="field-label">店舗</div>
+          <select id="rangeStore" class="filter-input">
+            <option value="">全店舗</option>
+            <option value="hakata">博多店</option>
+            <option value="omura">大村店</option>
+            <option value="sasebo">佐世保店</option>
+          </select>
+        </div>
+        <button class="load-btn" id="exportBtn" style="background:#1a73e8;">CSVをダウンロード</button>
+      </div>
+      <div id="exportMsg" style="margin-top:10px;font-size:.85rem;color:var(--sub);min-height:1.2em;"></div>
+    </div>
+  </div>
+
   <!-- サマリー -->
   <div class="section" id="summarySection" style="display:none;">
     <div class="section-head">
@@ -236,7 +267,14 @@ function callAPI(action, params) {
   return fetch('/api/gas', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify(Object.assign({action:action}, params))
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    return r.text().then(function(t){
+      try { return JSON.parse(t); }
+      catch(e) {
+        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+      }
+    });
+  });
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -303,6 +341,17 @@ function renderSalesTable(entries) {
     }
     var adjustCell = adjustParts.length ? adjustParts.join('<br>') : '-';
 
+    // ⑦ レンタル利用の内訳表示
+    var rentalFee = Number(e.rentalFee||0);
+    var rentalNote = e.rentalNote || e.rentalNames || '';
+    var rentalCell = '-';
+    if (rentalFee > 0 || rentalNote) {
+      var parts = [];
+      if (rentalNote) parts.push('<span style="color:var(--mid);font-size:.82rem;">' + esc(rentalNote) + '</span>');
+      if (rentalFee > 0) parts.push('¥' + rentalFee.toLocaleString());
+      rentalCell = parts.join('<br>');
+    }
+
     html += '<tr id="row-' + idx + '">'
       + '<td>' + esc(e.time||'-') + '</td>'
       + '<td>' + esc(storeLabel(e.store)) + '</td>'
@@ -310,7 +359,7 @@ function renderSalesTable(entries) {
       + '<td>' + esc(e.memberName||'ゲスト') + '</td>'
       + '<td>' + esc(e.planLabel||'-') + '</td>'
       + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
-      + '<td class="num-cell">' + (Number(e.rentalFee)>0 ? '¥'+Number(e.rentalFee).toLocaleString() : '-') + '</td>'
+      + '<td class="num-cell" style="white-space:normal;max-width:140px;">' + rentalCell + '</td>'
       + '<td>' + (e.merchNote ? esc(e.merchNote) + (Number(e.merchAmt)>0 ? ' ¥'+Number(e.merchAmt).toLocaleString() : '') : '-') + '</td>'
       + '<td style="white-space:normal;max-width:180px;font-size:.82rem;">' + adjustCell + '</td>'
       + '<td class="num-cell" style="font-weight:700;">¥' + Number(e.total||0).toLocaleString() + '</td>'
@@ -431,6 +480,130 @@ document.getElementById('storeFilter').addEventListener('change', function(){
   } else {
     document.body.classList.add('store-hakata');
   }
+});
+
+// ⑥ 期間指定 CSV エクスポート
+(function(){
+  // 初期値: 月初〜今日
+  var d = new Date();
+  var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  document.getElementById('rangeFrom').value = y + '-' + m + '-01';
+  document.getElementById('rangeTo').value = y + '-' + m + '-' + day;
+})();
+
+function _csvEscape(v) {
+  var s = (v === null || v === undefined) ? '' : String(v);
+  if (/[",\n\r]/.test(s)) {
+    s = '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function _downloadCSV(filename, rows) {
+  // BOM 付きで Excel が UTF-8 を正しく読むように
+  var bom = '\uFEFF';
+  var csv = rows.map(function(r){ return r.map(_csvEscape).join(','); }).join('\r\n');
+  var blob = new Blob([bom + csv], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+function _dateRangeDays(fromStr, toStr) {
+  var from = new Date(fromStr + 'T00:00:00');
+  var to   = new Date(toStr   + 'T00:00:00');
+  if (isNaN(from) || isNaN(to) || from > to) return null;
+  var days = [];
+  var cur = new Date(from);
+  while (cur <= to) {
+    var yy = cur.getFullYear();
+    var mm = String(cur.getMonth()+1).padStart(2,'0');
+    var dd = String(cur.getDate()).padStart(2,'0');
+    days.push(yy + '-' + mm + '-' + dd);
+    cur.setDate(cur.getDate()+1);
+  }
+  return days;
+}
+
+document.getElementById('exportBtn').addEventListener('click', function(){
+  var fromStr = document.getElementById('rangeFrom').value;
+  var toStr   = document.getElementById('rangeTo').value;
+  var store   = document.getElementById('rangeStore').value;
+  var msg     = document.getElementById('exportMsg');
+  msg.style.color = 'var(--sub)';
+  if (!fromStr || !toStr) { msg.textContent = '開始日と終了日を入力してください。'; return; }
+  var days = _dateRangeDays(fromStr, toStr);
+  if (!days) { msg.style.color = '#c62828'; msg.textContent = '開始日は終了日より前である必要があります。'; return; }
+  if (days.length > 92) { msg.style.color = '#c62828'; msg.textContent = '期間は最大92日までです（' + days.length + '日指定されました）。'; return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = '取得中...';
+  msg.textContent = days.length + '日分のデータを取得しています...';
+
+  // 1日ずつ取得（GASの getTodaySales を再利用）。最大同時 4 並列
+  var results = [];
+  var idx = 0;
+  function next() {
+    if (idx >= days.length) return Promise.resolve();
+    var batch = [];
+    while (batch.length < 4 && idx < days.length) {
+      (function(day){
+        batch.push(callAPI('getTodaySales', {date:day, store:store}).then(function(res){
+          var arr = Array.isArray(res.data) ? res.data : [];
+          arr.forEach(function(e){ e._date = day; });
+          results = results.concat(arr);
+        }).catch(function(){ /* skip failed day */ }));
+      })(days[idx++]);
+    }
+    return Promise.all(batch).then(next);
+  }
+
+  next().then(function(){
+    btn.disabled = false;
+    btn.textContent = 'CSVをダウンロード';
+    if (!results.length) {
+      msg.style.color = '#c62828';
+      msg.textContent = '対象期間のデータがありません。';
+      return;
+    }
+    // CSV 行組み立て
+    var header = ['日付','時間','店舗','会員番号','氏名','プラン','利用料','レンタル内訳','レンタル金額','物販内容','物販金額','調整金額','調整備考','合計','支払方法'];
+    var rows = [header];
+    results.forEach(function(e){
+      rows.push([
+        e._date,
+        e.time || '',
+        storeLabel(e.store),
+        e.memberCode || '',
+        e.memberName || 'ゲスト',
+        e.planLabel || '',
+        Number(e.usageFee || 0),
+        e.rentalNote || e.rentalNames || '',
+        Number(e.rentalFee || 0),
+        e.merchNote || '',
+        Number(e.merchAmt || 0),
+        Number(e.adjustAmount || e.adjustAmt || 0),
+        e.adjustNote || e.note || e.remark || '',
+        Number(e.total || 0),
+        e.payment || ''
+      ]);
+    });
+    var storeTag = store ? ('_' + store) : '';
+    var fn = 'sales_' + fromStr + '_to_' + toStr + storeTag + '.csv';
+    _downloadCSV(fn, rows);
+    msg.style.color = 'var(--success)';
+    msg.textContent = '✓ ' + results.length + '件をエクスポートしました: ' + fn;
+  }).catch(function(e){
+    btn.disabled = false;
+    btn.textContent = 'CSVをダウンロード';
+    msg.style.color = '#c62828';
+    msg.textContent = 'エラー: ' + e.message;
+  });
 });
 
 </script>
