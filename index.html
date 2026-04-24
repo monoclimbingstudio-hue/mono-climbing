@@ -520,7 +520,14 @@ function callAPI(action, params) {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify(Object.assign({action: action}, params))
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){
+    return r.text().then(function(t){
+      try { return JSON.parse(t); }
+      catch(e) {
+        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+      }
+    });
+  });
 }
 
 function getCached(key) {
@@ -597,6 +604,21 @@ function applyStoreLockUI() {
   }
 }
 
+// ④ 会員リストキャッシュ（店舗別、セッション中有効） — グローバルスコープ
+var _memberListCache = {};
+function _getCachedMemberList(store) {
+  var key = 'members_' + store;
+  if (_memberListCache[key]) return Promise.resolve(_memberListCache[key]);
+  var cached = getCached(key);
+  if (cached) { _memberListCache[key] = cached; return Promise.resolve(cached); }
+  return callAPI('getMemberList', {store: store}).then(function(res){
+    var list = (res.data && Array.isArray(res.data)) ? res.data : [];
+    _memberListCache[key] = list;
+    setCache(key, list);
+    return list;
+  });
+}
+
 // Store selection（デフォルト選択なし → 選択必須）
 document.querySelectorAll('.store-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
@@ -626,21 +648,6 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     }
     updateRegisterBtn();
   });
-
-  // ④ 会員リストキャッシュ（店舗別、セッション中有効）
-  var _memberListCache = {};
-  function _getCachedMemberList(store) {
-    var key = 'members_' + store;
-    if (_memberListCache[key]) return Promise.resolve(_memberListCache[key]);
-    var cached = getCached(key);
-    if (cached) { _memberListCache[key] = cached; return Promise.resolve(cached); }
-    return callAPI('getMemberList', {store: store}).then(function(res){
-      var list = (res.data && Array.isArray(res.data)) ? res.data : [];
-      _memberListCache[key] = list;
-      setCache(key, list);
-      return list;
-    });
-  }
 });
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
@@ -772,7 +779,8 @@ function buildPlanDropdown(attrName) {
     return PASS_PLAN2.indexOf(getAttrOfEntry(p)) >= 0;
   });
 
-  var allOptions = filtered.concat(passEntries);
+  // パス・回数券を上位に表示するため allOptions も passEntries → filtered の順にする
+  var allOptions = passEntries.concat(filtered);
   if (!allOptions.length) return;
 
   if (allOptions.length === 1) {
@@ -789,18 +797,18 @@ function buildPlanDropdown(attrName) {
   sel.className = 'plan-select';
   var opts = '<option value="">-- 利用の種類を選択してください --</option>';
 
-  if (filtered.length) {
-    opts += '<optgroup label="通常利用">';
-    filtered.forEach(function(p, i){
-      opts += '<option value="' + i + '">' + esc(getUsageLabel(p)) + '</option>';
+  if (passEntries.length) {
+    opts += '<optgroup label="パス・回数券">';
+    passEntries.forEach(function(p, i){
+      opts += '<option value="' + i + '">' + esc(getAttrOfEntry(p)) + '</option>';
     });
     opts += '</optgroup>';
   }
 
-  if (passEntries.length) {
-    opts += '<optgroup label="パス・回数券">';
-    passEntries.forEach(function(p, i){
-      opts += '<option value="' + (filtered.length + i) + '">' + esc(getAttrOfEntry(p)) + '</option>';
+  if (filtered.length) {
+    opts += '<optgroup label="通常利用">';
+    filtered.forEach(function(p, i){
+      opts += '<option value="' + (passEntries.length + i) + '">' + esc(getUsageLabel(p)) + '</option>';
     });
     opts += '</optgroup>';
   }
@@ -1188,6 +1196,16 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   var regFeeNote = otherStoreDisc ? '他店舗割引適用' : '';
   var paymentDate = document.getElementById('paymentDate').value;
 
+  // 物販内訳（数量対応） — バックエンドで在庫減算に利用
+  var shopItemsPayload = (pendingShopItems || []).map(function(it){
+    return {
+      sheet: it.sheet, row: Number(it.row) || 0,
+      stockCol: Number(it.stockCol) || 0,
+      store: it.store, name: it.name,
+      price: Number(it.price) || 0, qty: Number(it.qty) || 1
+    };
+  });
+
   var params = {
     store: store,
     memberCode: document.getElementById('memberCode').value.trim(),
@@ -1213,7 +1231,8 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     emoney: effectivePayment === '電子マネー' ? total : 0,
     qr: (effectivePayment === 'QRコード' || effectivePayment === 'その他' || effectivePayment === 'LINE') ? total : 0,
     transit: effectivePayment === '交通系IC' ? total : 0,
-    notes: otherPayName
+    notes: otherPayName,
+    shopItems: shopItemsPayload  // ④⑩ 物販内訳（数量付き）
   };
 
   var btn = document.getElementById('registerBtn');
@@ -1228,18 +1247,24 @@ document.getElementById('registerBtn').addEventListener('click', function(){
       msg.className = 'ok';
       msg.style.display = '';
       msg.textContent = '✓ 入店登録しました！ ' + (res.data.entryTime || '');
-          // Reduce inventory for all selected products
-          if (pendingShopItems && pendingShopItems.length) {
+          // Reduce inventory for all selected products（数量対応）
+          // 注：バックエンドが registerEntry で在庫減算を処理している場合は重複を避けるため data.inventoryHandled で判定
+          var invHandled = !!(res.data && res.data.inventoryHandled);
+          if (!invHandled && pendingShopItems && pendingShopItems.length) {
             pendingShopItems.forEach(function(it){
+              var q = Number(it.qty) || 1;
+              // qty パラメータを送る（GASが対応していれば1回でOK）
               callAPI('recordShopSale', {
                 store: it.store, category: it.sheet,
                 productName: it.name, size: '', price: it.price,
-                qty: 1, payment: paymentLabel, row: it.row,
-                sheet: it.sheet, stockCol: it.stockCol
+                qty: q, payment: paymentLabel, row: it.row,
+                sheet: it.sheet, stockCol: it.stockCol,
+                memberCode: params.memberCode,
+                memberName: params.memberName
               }).catch(function(){});
             });
-            pendingShopItems = [];
           }
+          pendingShopItems = [];
           // 登録完了後は保存状態もクリア
           try { sessionStorage.removeItem(ENTRY_STATE_KEY); } catch(e){}
       setTimeout(function(){ location.reload(); }, 2200);
@@ -1479,17 +1504,21 @@ function restoreEntryState() {
   } catch(e) { console.error('restoreEntryState', e); return false; }
 }
 
-// ⑭ 選択済み物販リストの表示（複数選択対応）
+// ⑭ 選択済み物販リストの表示（複数選択対応・数量対応）
 function renderSelectedMerchList() {
   var el = document.getElementById('selectedMerchList');
   // ④ 物販選択に応じて店舗タブをロック
   try { applyStoreLockUI(); } catch(e){}
   if (!pendingShopItems.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   var STORE_LABEL = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'};
-  var html = '<div style="font-weight:700;color:#1a237e;margin-bottom:6px;">📦 選択済み物販（' + pendingShopItems.length + '点）</div>';
+  var totalQty = pendingShopItems.reduce(function(s,it){ return s + (it.qty || 1); }, 0);
+  var html = '<div style="font-weight:700;color:#1a237e;margin-bottom:6px;">📦 選択済み物販（' + pendingShopItems.length + '種 / ' + totalQty + '点）</div>';
   pendingShopItems.forEach(function(it, i){
+    var qty = it.qty || 1;
+    var sub = Number(it.price||0) * qty;
+    var qtyTag = qty > 1 ? ' × ' + qty : '';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px dashed #c0d0f0;">' +
-      '<span>' + esc(it.name) + ' ¥' + Number(it.price||0).toLocaleString() +
+      '<span>' + esc(it.name) + qtyTag + ' ¥' + sub.toLocaleString() +
       ' <span style="color:#777;font-size:0.82rem;">[在庫元: ' + esc(STORE_LABEL[it.store]||it.store||'-') + ']</span></span>' +
       '<button type="button" data-i="' + i + '" class="merch-remove-btn" style="padding:2px 8px;border:1px solid #c62828;color:#c62828;background:#fff;border-radius:4px;font-size:0.78rem;cursor:pointer;">削除</button>' +
       '</div>';
@@ -1501,18 +1530,21 @@ function renderSelectedMerchList() {
       var i = parseInt(this.getAttribute('data-i'));
       var removed = pendingShopItems.splice(i, 1)[0];
       // 金額・メモも減算
+      var rq = removed.qty || 1;
       var curAmt = parseInt(document.getElementById('merchAmt').value) || 0;
-      var newAmt = Math.max(0, curAmt - Number(removed.price||0));
+      var newAmt = Math.max(0, curAmt - Number(removed.price||0) * rq);
       document.getElementById('merchAmt').value = newAmt || '';
-      var notes = document.getElementById('merchNote').value.split(/,\s*/).filter(function(x){return x&&x!==removed.name;});
-      document.getElementById('merchNote').value = notes.join(', ');
+      // merchNote を再構築
+      document.getElementById('merchNote').value = pendingShopItems.map(function(x){
+        return x.name + ((x.qty||1) > 1 ? ' x' + (x.qty||1) : '');
+      }).join(', ');
       renderSelectedMerchList();
       updateTotal();
     });
   });
 }
 
-// Handle URL params from shop.html (merchandise transfer) - 複数選択対応
+// Handle URL params from shop.html (merchandise transfer) - 複数選択・カート対応
 (function(){
   var params = new URLSearchParams(window.location.search);
   var merch = params.get('merch');
@@ -1521,13 +1553,68 @@ function renderSelectedMerchList() {
   var sheet = params.get('sheet');
   var row = params.get('row');
   var stockCol = params.get('stockCol');
+  var isCartReturn = params.get('cart') === '1';
   var hasReturnState = !!sessionStorage.getItem(ENTRY_STATE_KEY);
 
   // ③ 物販選択→戻ってきた時は先に状態復元
   if (hasReturnState) restoreEntryState();
 
-  if (merch || merchAmt) {
-    // ⑤ 既存の金額に加算する（複数選択対応）
+  // ① カートから戻ってきた場合: sessionStorage から複数物販をまとめて取り込む
+  if (isCartReturn) {
+    try {
+      var cart = JSON.parse(sessionStorage.getItem('mono_shop_cart_v1') || '[]') || [];
+      if (cart.length) {
+        // カート内の店舗統一チェック
+        var cartStore = cart[0].store;
+        var allSame = cart.every(function(c){ return c.store === cartStore; });
+        // 店舗タブを切替（カート内店舗に合わせる）
+        if (cartStore && allSame) {
+          document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
+          var tb = document.querySelector('.store-tab[data-store="' + cartStore + '"]');
+          if (tb) {
+            tb.classList.add('sel');
+            document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
+            document.body.classList.add('store-' + cartStore);
+            try { localStorage.setItem('mono_selected_store', cartStore); } catch(e){}
+          }
+          document.getElementById('storeRequiredMsg').style.display = 'none';
+        }
+
+        var totalAmt = 0;
+        cart.forEach(function(c){
+          var qty = Number(c.qty || 1);
+          var price = Number(c.price || 0);
+          totalAmt += price * qty;
+          pendingShopItems.push({
+            sheet: c.sheet,
+            row: parseInt(c.row) || 0,
+            stockCol: parseInt(c.stockCol) || 0,
+            store: c.store,
+            name: c.name,
+            price: price,
+            qty: qty
+          });
+        });
+        // 金額: 既存に加算
+        var curAmt = parseInt(document.getElementById('merchAmt').value) || 0;
+        document.getElementById('merchAmt').value = curAmt + totalAmt;
+        // メモ: 既存がなければカートから再構築、あればマージ
+        var noteParts = pendingShopItems.map(function(x){ return x.name + ((x.qty||1) > 1 ? ' x' + (x.qty||1) : ''); });
+        document.getElementById('merchNote').value = noteParts.join(', ');
+        renderSelectedMerchList();
+        updateRegisterBtn();
+        // カートはクリア（一度取り込んだら消す）
+        sessionStorage.removeItem('mono_shop_cart_v1');
+        var merchEl = document.getElementById('merchAmt');
+        if (merchEl) {
+          merchEl.scrollIntoView({behavior:'smooth', block:'center'});
+          merchEl.dispatchEvent(new Event('input'));
+        }
+      }
+    } catch(e) { console.error('cart import', e); }
+    window.history.replaceState({}, '', window.location.pathname);
+  } else if (merch || merchAmt) {
+    // レガシー：旧シングル商品URL（後方互換）
     var curAmt = parseInt(document.getElementById('merchAmt').value) || 0;
     var newAmt = curAmt + (parseInt(merchAmt) || 0);
     document.getElementById('merchAmt').value = newAmt;
@@ -1537,13 +1624,11 @@ function renderSelectedMerchList() {
       document.getElementById('merchNote').value = curNote ? (curNote + ', ' + merch) : merch;
     }
 
-    // ④ 物販選択した店舗を自動的に入店登録の店舗にも反映（他店舗変更は後でロック）
     if (store) {
-      var curStore = getStore();
-      if (!curStore || curStore !== store) {
+      var curStore2 = getStore();
+      if (!curStore2 || curStore2 !== store) {
         var targetBtn = document.querySelector('.store-tab[data-store="' + store + '"]');
         if (targetBtn) {
-          // クリックをバイパスしてロック判定に触れずに切替
           document.querySelectorAll('.store-tab').forEach(function(b){ b.classList.remove('sel'); });
           targetBtn.classList.add('sel');
           document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
@@ -1556,18 +1641,18 @@ function renderSelectedMerchList() {
       pendingShopItems.push({
         sheet: sheet, row: parseInt(row),
         stockCol: parseInt(stockCol) || 0,
-        store: store, name: merch, price: parseInt(merchAmt) || 0
+        store: store, name: merch, price: parseInt(merchAmt) || 0, qty: 1
       });
       renderSelectedMerchList();
     }
-    var merchEl = document.getElementById('merchAmt');
-    if (merchEl) merchEl.scrollIntoView({behavior:'smooth', block:'center'});
+    var merchEl2 = document.getElementById('merchAmt');
+    if (merchEl2) merchEl2.scrollIntoView({behavior:'smooth', block:'center'});
     document.getElementById('merchAmt').dispatchEvent(new Event('input'));
     window.history.replaceState({}, '', window.location.pathname);
   }
 
   // ② 店舗選択: 状態復元がなかった場合のみlocalStorageで復元
-  if (!hasReturnState) {
+  if (!hasReturnState && !isCartReturn) {
     try {
       var saved = localStorage.getItem('mono_selected_store');
       if (saved && !getStore()) {
