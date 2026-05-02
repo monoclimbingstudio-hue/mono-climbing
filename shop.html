@@ -457,6 +457,17 @@ function renderCategoryTabs(categories) {
 function renderInventory(category) {
   var wrap = document.getElementById('inventoryWrap');
   var items = allInventory[category];
+  // ⑬ 商品名(B列)が空のためにスプレッドシート集計行が「VEGA - ¥0 在庫数」のように表示されるバグの保険フィルタ
+  // 価格0かつサイズ「-」または空のものは商品マスタにない＝集計/ノイズ行とみなす
+  if (items && items.length) {
+    items = items.filter(function(it){
+      var price = Number(it.price || 0);
+      var size = String(it.size || '').trim();
+      if (price === 0 && (size === '' || size === '-')) return false;
+      return true;
+    });
+    allInventory[category] = items;
+  }
   if (!items || !items.length) {
     wrap.innerHTML = '<div class="empty-state">このカテゴリーの商品がありません</div>';
     return;
