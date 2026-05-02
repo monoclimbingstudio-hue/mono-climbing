@@ -315,8 +315,51 @@ function callAPI(action, params) {
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ⑫ カート内に異なる店舗在庫があると変更不可。同一店舗のみ。
+function _cartLockedStore() {
+  if (!cart || !cart.length) return null;
+  var s = cart[0].store;
+  for (var i = 1; i < cart.length; i++) {
+    if (cart[i].store !== s) return null;
+  }
+  return s || null;
+}
+function _applyStoreLockUI() {
+  var locked = _cartLockedStore();
+  var sel = document.getElementById('storeSelect');
+  if (!sel) return;
+  if (locked) {
+    // 在庫表示用 select は disabled にし、その店舗を強制
+    sel.value = locked;
+    sel.disabled = true;
+    sel.title = 'カート内の物販と同一店舗を表示中（カートを空にすると変更可）';
+    var msg = document.getElementById('storeLockMsg');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.id = 'storeLockMsg';
+      msg.style.cssText = 'margin-top:8px;font-size:.8rem;color:#c62828;font-weight:600;';
+      sel.parentNode && sel.parentNode.appendChild(msg);
+    }
+    var STORE_LABELS_LOCAL = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店', all:'全店舗'};
+    msg.innerHTML = '🔒 ' + (STORE_LABELS_LOCAL[locked] || locked) + ' のカートが選択中のため店舗を変更できません。変更するにはカートを空にしてください。';
+  } else {
+    sel.disabled = false;
+    sel.title = '';
+    var msg2 = document.getElementById('storeLockMsg');
+    if (msg2) msg2.remove();
+  }
+}
+
 // Store select → background color change
 document.getElementById('storeSelect').addEventListener('change', function(){
+  // ⑫ カート存在時はガード
+  var locked = _cartLockedStore();
+  if (locked && this.value !== locked) {
+    var STORE_LABELS_LOCAL = {hakata:'博多店', omura:'大村店', sasebo:'佐世保店', all:'全店舗'};
+    alert('🔒 ' + (STORE_LABELS_LOCAL[locked] || locked) + ' のカートが選択中のため店舗を変更できません。\n変更するには、カートを空にしてください。');
+    this.value = locked;
+    return;
+  }
   var store = this.value;
   document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
   if (store) {
@@ -555,6 +598,8 @@ function renderCart() {
       renderCart();
     });
   });
+  // ⑫ カート状態に応じて店舗 select を ロック/解除
+  try { _applyStoreLockUI(); } catch(e){}
 }
 document.getElementById('cartClearBtn').addEventListener('click', function(){
   if (!cart.length) return;

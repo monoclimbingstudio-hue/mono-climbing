@@ -213,6 +213,19 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="s-label">レンタル</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sRental">0</span></div>
       </div>
+      <!-- ⑦ 物販売上・調整金を追加 -->
+      <div class="summary-card">
+        <div class="s-label">物販売上</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sMerch">0</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">登録料</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sRegFee">0</span></div>
+      </div>
+      <div class="summary-card">
+        <div class="s-label">調整金</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="sAdjust">0</span></div>
+      </div>
       <div class="summary-card highlight">
         <div class="s-label">売上合計</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sTotal">0</span></div>
@@ -322,26 +335,28 @@ function renderSalesTable(entries) {
     wrap.innerHTML = '<div class="empty-state">この日付のデータがありません</div>';
     return;
   }
+  // ⑧ 列を細分化: 商品購入額 / 調整金 / 調整メモ / 備考 を独立表示
   var html = '<div class="table-wrap"><table><thead><tr>'
     + '<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
     + '<th>プラン</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
-    + '<th>商品</th><th>備考</th><th class="num-cell">合計</th><th>支払</th><th></th>'
+    + '<th class="num-cell">商品購入額</th><th>商品メモ</th>'
+    + '<th class="num-cell">調整金</th><th>調整メモ</th>'
+    + '<th>備考</th>'
+    + '<th class="num-cell">合計</th><th>支払</th><th></th>'
     + '</tr></thead><tbody>';
   entries.forEach(function(e, idx){
-    // ⑬ 調整金額と備考欄の表示
-    var adjustAmt = Number(e.adjustAmount || e.adjustAmt || 0);
-    var adjustNote = e.adjustNote || e.note || e.remark || '';
-    var adjustParts = [];
+    var adjustAmt = Number(e.adjustAmount || e.adjustment || e.adjustAmt || 0);
+    var adjustNote = e.adjustNote || '';
+    var entryNote = e.entryNote || e.notes || e.note || e.remark || '';
+
+    // 調整金セル
+    var adjustCell = '-';
     if (adjustAmt !== 0) {
       var sign = adjustAmt > 0 ? '+' : '−';
-      adjustParts.push('<span style="color:' + (adjustAmt > 0 ? '#2e7d32' : '#c62828') + ';font-weight:700;">' + sign + '¥' + Math.abs(adjustAmt).toLocaleString() + '</span>');
+      adjustCell = '<span style="color:' + (adjustAmt > 0 ? '#2e7d32' : '#c62828') + ';font-weight:700;">' + sign + '¥' + Math.abs(adjustAmt).toLocaleString() + '</span>';
     }
-    if (adjustNote) {
-      adjustParts.push('<span style="color:var(--mid);">' + esc(adjustNote) + '</span>');
-    }
-    var adjustCell = adjustParts.length ? adjustParts.join('<br>') : '-';
 
-    // ⑦ レンタル利用の内訳表示
+    // ⑦ レンタル内訳表示
     var rentalFee = Number(e.rentalFee||0);
     var rentalNote = e.rentalNote || e.rentalNames || '';
     var rentalCell = '-';
@@ -351,6 +366,8 @@ function renderSalesTable(entries) {
       if (rentalFee > 0) parts.push('¥' + rentalFee.toLocaleString());
       rentalCell = parts.join('<br>');
     }
+    var merchAmt = Number(e.merchAmt||0);
+    var merchAmtCell = merchAmt > 0 ? ('¥' + merchAmt.toLocaleString()) : '-';
 
     html += '<tr id="row-' + idx + '">'
       + '<td>' + esc(e.time||'-') + '</td>'
@@ -360,8 +377,11 @@ function renderSalesTable(entries) {
       + '<td>' + esc(e.planLabel||'-') + '</td>'
       + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
       + '<td class="num-cell" style="white-space:normal;max-width:140px;">' + rentalCell + '</td>'
-      + '<td>' + (e.merchNote ? esc(e.merchNote) + (Number(e.merchAmt)>0 ? ' ¥'+Number(e.merchAmt).toLocaleString() : '') : '-') + '</td>'
-      + '<td style="white-space:normal;max-width:180px;font-size:.82rem;">' + adjustCell + '</td>'
+      + '<td class="num-cell">' + merchAmtCell + '</td>'
+      + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (e.merchNote ? esc(e.merchNote) : '-') + '</td>'
+      + '<td class="num-cell" style="font-size:.82rem;">' + adjustCell + '</td>'
+      + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (adjustNote ? esc(adjustNote) : '-') + '</td>'
+      + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (entryNote ? esc(entryNote) : '-') + '</td>'
       + '<td class="num-cell" style="font-weight:700;">¥' + Number(e.total||0).toLocaleString() + '</td>'
       + '<td>' + payTag(e.payment) + '</td>'
       + '<td><button class="del-btn" data-idx="' + idx + '">削除</button></td>'
@@ -402,16 +422,22 @@ function renderSalesTable(entries) {
 }
 
 function renderSummary(entries) {
-  var usage=0, rental=0, total=0;
+  var usage=0, rental=0, merch=0, adjust=0, regFee=0, total=0;
   entries.forEach(function(e){
     usage  += Number(e.usageFee||0);
     rental += Number(e.rentalFee||0);
+    merch  += Number(e.merchAmt||0);
+    adjust += Number(e.adjustAmount || e.adjustment || e.adjustAmt || 0);
+    regFee += Number(e.regFee||0);
     total  += Number(e.total||0);
   });
-  document.getElementById('sCount').textContent  = entries.length;
-  document.getElementById('sUsage').textContent  = usage.toLocaleString();
-  document.getElementById('sRental').textContent = rental.toLocaleString();
-  document.getElementById('sTotal').textContent  = total.toLocaleString();
+  document.getElementById('sCount').textContent   = entries.length;
+  document.getElementById('sUsage').textContent   = usage.toLocaleString();
+  document.getElementById('sRental').textContent  = rental.toLocaleString();
+  var sm = document.getElementById('sMerch');   if (sm) sm.textContent  = merch.toLocaleString();
+  var sa = document.getElementById('sAdjust');  if (sa) sa.textContent  = adjust.toLocaleString();
+  var sr = document.getElementById('sRegFee');  if (sr) sr.textContent  = regFee.toLocaleString();
+  document.getElementById('sTotal').textContent   = total.toLocaleString();
 }
 
 function payTag(method) {
@@ -572,7 +598,8 @@ document.getElementById('exportBtn').addEventListener('click', function(){
       return;
     }
     // CSV 行組み立て
-    var header = ['日付','時間','店舗','会員番号','氏名','プラン','利用料','レンタル内訳','レンタル金額','物販内容','物販金額','調整金額','調整備考','合計','支払方法'];
+    // ⑪ 登録料を追加 / ⑩ レンタル内訳・調整金・調整備考を確実に出力
+    var header = ['日付','時間','店舗','会員番号','氏名','プラン','登録料','利用料','レンタル内訳','レンタル金額','物販内容','物販金額','調整金額','調整備考','備考','合計','支払方法'];
     var rows = [header];
     results.forEach(function(e){
       rows.push([
@@ -582,13 +609,15 @@ document.getElementById('exportBtn').addEventListener('click', function(){
         e.memberCode || '',
         e.memberName || 'ゲスト',
         e.planLabel || '',
+        Number(e.regFee || 0),
         Number(e.usageFee || 0),
         e.rentalNote || e.rentalNames || '',
         Number(e.rentalFee || 0),
         e.merchNote || '',
         Number(e.merchAmt || 0),
-        Number(e.adjustAmount || e.adjustAmt || 0),
-        e.adjustNote || e.note || e.remark || '',
+        Number(e.adjustAmount || e.adjustment || e.adjustAmt || 0),
+        e.adjustNote || '',
+        e.entryNote || e.notes || e.note || e.remark || '',
         Number(e.total || 0),
         e.payment || ''
       ]);
