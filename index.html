@@ -530,7 +530,10 @@ var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
 
 // 表示ラベルマッピング（「トライアル」→「初回体験」など）
 // ② レディーストライアル / 外国人利用トライアル も含めて部分置換で対応
-var LABEL_MAP = {'トライアル': '初回体験'};
+var LABEL_MAP = {
+  'トライアル': '初回体験',
+  '外国人利用トライアル': '外国人初回体験'
+};
 
 function callAPI(action, params) {
   return fetch('/api/gas', {
@@ -731,7 +734,10 @@ function getUsageLabel(p) {
   t = t || p.label;
   if (LABEL_MAP[t]) return LABEL_MAP[t];
   // 部分置換（例: レディーストライアル → レディース初回体験）
-  return String(t || '').replace(/トライアル/g, '初回体験');
+  // 「外国人利用トライアル」は LABEL_MAP で先に拾われるが、念のため fallback で「利用」を削除
+  return String(t || '')
+    .replace(/外国人利用トライアル/g, '外国人初回体験')
+    .replace(/トライアル/g, '初回体験');
 }
 
 // ── STEP A: 属性ドロップダウン ──────────────────────
