@@ -1,7 +1,8 @@
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzOvezI3qxbJBDEfwNdnFoLBHtuW8ejUNuyWQXOCLeE6DNvjOEVqxZ8dOxgmChw7zrw/exec';
+  // v68 fresh deploy (paymentDate / ADJUST_NOTE / inventory filter)
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPm_KFAIdj-qWTsZfto-oQd1sE6wM2z5k9D1j194IpzPDhFAdHrVjirNzfZo9BRru9/exec';
 
   try {
     const response = await fetch(GAS_URL, {
