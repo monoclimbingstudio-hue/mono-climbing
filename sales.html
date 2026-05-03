@@ -335,10 +335,10 @@ function renderSalesTable(entries) {
     wrap.innerHTML = '<div class="empty-state">この日付のデータがありません</div>';
     return;
   }
-  // ⑧ 列を細分化: 商品購入額 / 調整金 / 調整メモ / 備考 を独立表示
+  // ⑧ 列を細分化: 登録料 / 商品購入額 / 調整金 / 調整メモ / 備考 を独立表示
   var html = '<div class="table-wrap"><table><thead><tr>'
     + '<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
-    + '<th>プラン</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
+    + '<th>プラン</th><th class="num-cell">登録料</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
     + '<th class="num-cell">商品購入額</th><th>商品メモ</th>'
     + '<th class="num-cell">調整金</th><th>調整メモ</th>'
     + '<th>備考</th>'
@@ -369,12 +369,16 @@ function renderSalesTable(entries) {
     var merchAmt = Number(e.merchAmt||0);
     var merchAmtCell = merchAmt > 0 ? ('¥' + merchAmt.toLocaleString()) : '-';
 
+    var regFee = Number(e.regFee||0);
+    var regFeeCell = regFee > 0 ? ('¥' + regFee.toLocaleString()) : '-';
+
     html += '<tr id="row-' + idx + '">'
       + '<td>' + esc(e.time||'-') + '</td>'
       + '<td>' + esc(storeLabel(e.store)) + '</td>'
       + '<td style="font-family:monospace;font-weight:700;">' + esc(e.memberCode||'-') + '</td>'
       + '<td>' + esc(e.memberName||'ゲスト') + '</td>'
       + '<td>' + esc(e.planLabel||'-') + '</td>'
+      + '<td class="num-cell">' + regFeeCell + '</td>'
       + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
       + '<td class="num-cell" style="white-space:normal;max-width:140px;">' + rentalCell + '</td>'
       + '<td class="num-cell">' + merchAmtCell + '</td>'

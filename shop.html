@@ -457,13 +457,25 @@ function renderCategoryTabs(categories) {
 function renderInventory(category) {
   var wrap = document.getElementById('inventoryWrap');
   var items = allInventory[category];
-  // ⑬ 商品名(B列)が空のためにスプレッドシート集計行が「VEGA - ¥0 在庫数」のように表示されるバグの保険フィルタ
-  // 価格0かつサイズ「-」または空のものは商品マスタにない＝集計/ノイズ行とみなす
+  // ⑬ 商品名が空のためにスプレッドシート集計行が「VEGA - ¥0 在庫数」のように表示されるバグの保険フィルタ
+  // - 価格0かつサイズ「-」または空 → 集計/ノイズ行
+  // - 商品名が数値のみ or 記号のみ or 1文字以下 → ユーザーがテストで入れた数値などのノイズ
+  // - 商品名に「合計」「小計」「計」が含まれる → 集計行
   if (items && items.length) {
     items = items.filter(function(it){
       var price = Number(it.price || 0);
       var size = String(it.size || '').trim();
+      var name = String(it.name || '').trim();
+      // (a) 商品名なし → 除外
+      if (!name) return false;
+      // (b) 商品名が数値・記号・空白のみ → 除外
+      if (/^[\d\s\.,\-¥円\$%＆＋／]+$/.test(name)) return false;
+      // (c) 商品名に集計を示す語が含まれる → 除外
+      if (/合計|小計|計$|総計/.test(name)) return false;
+      // (d) 価格0かつサイズが空/「-」→ 除外（集計行・空行）
       if (price === 0 && (size === '' || size === '-')) return false;
+      // (e) 商品名が1文字でアルファベット/かな/漢字を含まない → 除外
+      if (name.length <= 1 && !/[A-Za-zぁ-んァ-ヶ一-龯]/.test(name)) return false;
       return true;
     });
     allInventory[category] = items;
