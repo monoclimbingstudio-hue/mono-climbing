@@ -521,8 +521,9 @@ var _multiSelectPending = false;
 // ⑤ 名前検索で会員確定後は会員番号フィールドをロック
 var _memberLocked = false;
 
-// 月パス・昼月パス・回数券利用 は「利用の種類」（Step B に表示）
-var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用'];
+// 月パス・昼月パス・回数券利用・スクール利用 は「利用の種類」（Step B に表示）
+// ④ スクール月謝3/5/6/7.5/9/14 は属性ではなく Step B で直接選択
+var PASS_PLAN2 = ['月パス利用', '昼月パス利用', '回数券利用', 'スクール利用'];
 
 // 表示ラベルマッピング（「トライアル」→「初回体験」など）
 // ② レディーストライアル / 外国人利用トライアル も含めて部分置換で対応
@@ -1042,6 +1043,7 @@ document.getElementById('qrDetail').addEventListener('change', function(){
 });
 
 // 合計計算（DOM更新なし・純計算）
+// ①マイナス金額対応: 合計が負になる場合もそのまま記録（PayPay→現金返金などのケース）
 function calcTotal() {
   var t = planSel ? planSel.amount : 0;
   t += getRegFee();
@@ -1055,7 +1057,7 @@ function calcTotal() {
   t += Math.max(0, merch - discount);
   var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
   t += adjust;
-  return Math.max(0, t);
+  return t; // ① マイナスもそのまま返す
 }
 
 function updateTotal() {
@@ -1073,7 +1075,7 @@ function updateTotal() {
   t += netMerch;
   var adjust = parseInt(document.getElementById('adjustAmt').value) || 0;
   t += adjust;
-  if (t < 0) t = 0;
+  // ① マイナス金額もそのまま表示（返金扱い）
   document.getElementById('totalNum').textContent = t.toLocaleString();
   var bd = '';
   if (planSel) bd += 'プラン: ¥' + planSel.amount.toLocaleString();
