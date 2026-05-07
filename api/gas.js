@@ -1,8 +1,8 @@
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // v68 fresh deploy (paymentDate / ADJUST_NOTE / inventory filter)
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxPm_KFAIdj-qWTsZfto-oQd1sE6wM2z5k9D1j194IpzPDhFAdHrVjirNzfZo9BRru9/exec';
+  // v69 fresh deploy (atomic shopItems inventory deduction with LockService)
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwLxy60S5J-Xd9JF8kKI9NuaiYDhldKaFMqNUFrLE4qlifOCvmDnzZsmgVDT9uNhdpA/exec';
 
   try {
     const response = await fetch(GAS_URL, {
