@@ -617,9 +617,19 @@ document.getElementById('exportBtn').addEventListener('click', function(){
     }
     // CSV 行組み立て
     // ⑪ 登録料を追加 / ⑩ レンタル内訳・調整金・調整備考を確実に出力
-    var header = ['日付','時間','店舗','会員番号','氏名','プラン','登録料','利用料','レンタル内訳','レンタル金額','物販内容','物販金額','調整金額','調整備考','備考','合計','支払方法'];
+    // ⑫ 売上サマリーと同様に「スクール」項目を独立計上
+    //    スクール月謝3/5/6/7.5/9/14 と スクール入会金 は「スクール」列、それ以外は「利用料」列
+    var header = ['日付','時間','店舗','会員番号','氏名','プラン','登録料','利用料','スクール','レンタル内訳','レンタル金額','物販内容','物販金額','調整金額','調整備考','備考','合計','支払方法'];
     var rows = [header];
     results.forEach(function(e){
+      var fee = Number(e.usageFee || 0);
+      var pl = String(e.planLabel || '');
+      var usageVal = 0, schoolVal = 0;
+      if (pl.indexOf('スクール月謝') === 0 || pl === 'スクール入会金') {
+        schoolVal = fee;
+      } else {
+        usageVal = fee;
+      }
       rows.push([
         e._date,
         e.time || '',
@@ -628,7 +638,8 @@ document.getElementById('exportBtn').addEventListener('click', function(){
         e.memberName || 'ゲスト',
         e.planLabel || '',
         Number(e.regFee || 0),
-        Number(e.usageFee || 0),
+        usageVal,
+        schoolVal,
         e.rentalNote || e.rentalNames || '',
         Number(e.rentalFee || 0),
         e.merchNote || '',
