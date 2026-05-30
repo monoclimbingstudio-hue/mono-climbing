@@ -1025,7 +1025,7 @@ function buildRentalSection(rentals, rs) {
     matQtyHeader.className = 'rental-mat-header';
     matQtyHeader.innerHTML =
       '<div class="rental-mat-name">🧘 クライミングマット</div>' +
-      '<div class="rental-mat-hint">枚数 × 日数 を入力</div>';
+      '<div class="rental-mat-hint">個数（枚数 × 日数）を入力</div>';
     matQtyRow.appendChild(matQtyHeader);
     var matQtyGrid = document.createElement('div');
     matQtyGrid.className = 'mat-qty-grid';
@@ -1035,10 +1035,10 @@ function buildRentalSection(rentals, rs) {
       var wrap = document.createElement('div');
       wrap.className = 'mat-qty-item';
       wrap.innerHTML =
-        '<div class="mat-qty-label"><span>' + esc(item.name) + '</span><span class="mat-qty-price">¥' + price.toLocaleString() + '／枚</span></div>' +
+        '<div class="mat-qty-label"><span>' + esc(item.name) + '</span><span class="mat-qty-price">¥' + price.toLocaleString() + '／個</span></div>' +
         '<div class="mat-qty-input-row">' +
           '<input type="number" id="' + idPrefix + 'Qty" inputmode="numeric" min="0" step="1" placeholder="0" class="mat-qty-input">' +
-          '<span class="mat-qty-unit">枚</span>' +
+          '<span class="mat-qty-unit">個</span>' +
         '</div>' +
         '<div class="mat-qty-subtotal" id="' + idPrefix + 'Sub"></div>';
       matQtyGrid.appendChild(wrap);
@@ -1053,7 +1053,7 @@ function buildRentalSection(rentals, rs) {
           // rentalSel から該当アイテムを除外
           rentalSel = rentalSel.filter(function(r){ return r.name !== item.name && !(r.name && r.name.indexOf(item.name + '×') === 0); });
           if (q > 0) {
-            var entry = { name: item.name + '×' + q + '枚', amount: price * q };
+            var entry = { name: item.name + '×' + q + '個', amount: price * q };
             rentalSel.push(entry);
             subEl.textContent = '小計 ¥' + entry.amount.toLocaleString();
             wrap.classList.add('has-val');
@@ -1690,8 +1690,8 @@ function restoreEntryState() {
       }
       if (state.rentalSel && state.rentalSel.length) {
         state.rentalSel.forEach(function(r){
-          // ⑭ Soill / MAD ROCK 枚数入力の復元 ("Soill×3枚" 形式から数量を抽出)
-          var matQtyMatch = (r.name || '').match(/^(Soill|MAD ROCK)×(\d+)枚$/);
+          // ⑭ Soill / MAD ROCK 個数入力の復元 ("Soill×3個" or 旧"Soill×3枚" 形式から数量を抽出)
+          var matQtyMatch = (r.name || '').match(/^(Soill|MAD ROCK)×(\d+)(?:個|枚)$/);
           if (matQtyMatch) {
             var key = matQtyMatch[1];
             var qty = parseInt(matQtyMatch[2], 10);
