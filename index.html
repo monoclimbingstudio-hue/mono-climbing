@@ -147,6 +147,21 @@ nav a:hover { color: #fff; }
 .mat-select:focus { border-color: var(--dark); }
 .mat-select.has-val { border-color: #1a5276; color: #1a5276; background: #eaf0f6; }
 
+/* ⑭ クライミングマット 枚数入力（Soill/MAD ROCK 直接入力） */
+.mat-qty-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:480px){ .mat-qty-grid { grid-template-columns: 1fr; } }
+.mat-qty-item { background: #fff; border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; transition: border .15s; }
+.mat-qty-item.has-val { border-color: #1a5276; background: #eaf0f6; }
+.mat-qty-label { font-size: 0.85rem; font-weight: 700; color: var(--text); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mat-qty-price { font-size: 0.72rem; font-weight: 600; color: var(--sub); }
+.mat-qty-input-row { display: flex; align-items: center; gap: 8px; }
+.mat-qty-input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 1.05rem; font-weight: 700; outline: none; transition: border .15s; text-align: right; -moz-appearance: textfield; }
+.mat-qty-input::-webkit-outer-spin-button, .mat-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mat-qty-input:focus { border-color: var(--dark); }
+.mat-qty-input.has-val { border-color: #1a5276; color: #1a5276; background: #eaf0f6; }
+.mat-qty-unit { font-size: 0.85rem; font-weight: 600; color: var(--sub); white-space: nowrap; }
+.mat-qty-subtotal { font-size: 0.78rem; color: var(--success); font-weight: 700; min-height: 14px; text-align: right; }
+
 /* Other rental chips */
 .rental-other-label { font-size: 0.78rem; color: var(--sub); font-weight: 600; letter-spacing:.04em; margin-bottom: 4px; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -959,8 +974,20 @@ function buildRentalSection(rentals, rs) {
     return;
   }
 
+  // ⑭ クライミングマット（Soill / MAD ROCK）枚数入力方式に変更
+  //   旧「マット×N（X日）」付ずとめプランを廃止し、Soill/MAD ROCK の枚数入力で qty × 単価
+  var SOILL_NAME = 'Soill';
+  var MADROCK_NAME = 'MAD ROCK';
+  var soillItem    = rentals.find(function(r){ return r.name === SOILL_NAME; });
+  var madrockItem  = rentals.find(function(r){ return r.name === MADROCK_NAME; });
+  // 旧マット項目（後方互換用）。Soill/MAD ROCK は枚数入力に分けるのでチップから除外
   var matItems = rentals.filter(function(r){ return r.name && r.name.indexOf('マット') >= 0; });
-  var otherRentals = rentals.filter(function(r){ return !r.name || r.name.indexOf('マット') < 0; });
+  var otherRentals = rentals.filter(function(r){
+    if (!r.name) return false;
+    if (r.name.indexOf('マット') >= 0) return false;
+    if (r.name === SOILL_NAME || r.name === MADROCK_NAME) return false;
+    return true;
+  });
   matOptions = matItems;
 
   if (matItems.length) {
@@ -988,6 +1015,64 @@ function buildRentalSection(rentals, rs) {
       this.className = 'mat-select' + (idx >= 0 ? ' has-val' : '');
       updateTotal();
     });
+  }
+
+  // ⑭ クライミングマット（Soill / MAD ROCK）枚数入力
+  if (soillItem || madrockItem) {
+    var matQtyRow = document.createElement('div');
+    matQtyRow.className = 'rental-mat-row';
+    var matQtyHeader = document.createElement('div');
+    matQtyHeader.className = 'rental-mat-header';
+    matQtyHeader.innerHTML =
+      '<div class="rental-mat-name">🧘 クライミングマット</div>' +
+      '<div class="rental-mat-hint">枚数 × 日数 を入力</div>';
+    matQtyRow.appendChild(matQtyHeader);
+    var matQtyGrid = document.createElement('div');
+    matQtyGrid.className = 'mat-qty-grid';
+
+    function buildMatQtyItem(item, idPrefix) {
+      var price = Number(item.amount) || 0;
+      var wrap = document.createElement('div');
+      wrap.className = 'mat-qty-item';
+      wrap.innerHTML =
+        '<div class="mat-qty-label"><span>' + esc(item.name) + '</span><span class="mat-qty-price">¥' + price.toLocaleString() + '／枚</span></div>' +
+        '<div class="mat-qty-input-row">' +
+          '<input type="number" id="' + idPrefix + 'Qty" inputmode="numeric" min="0" step="1" placeholder="0" class="mat-qty-input">' +
+          '<span class="mat-qty-unit">枚</span>' +
+        '</div>' +
+        '<div class="mat-qty-subtotal" id="' + idPrefix + 'Sub"></div>';
+      matQtyGrid.appendChild(wrap);
+      // input handler
+      setTimeout(function(){
+        var inp = document.getElementById(idPrefix + 'Qty');
+        var subEl = document.getElementById(idPrefix + 'Sub');
+        if (!inp) return;
+        inp.addEventListener('input', function(){
+          var q = parseInt(this.value, 10);
+          if (isNaN(q) || q < 0) q = 0;
+          // rentalSel から該当アイテムを除外
+          rentalSel = rentalSel.filter(function(r){ return r.name !== item.name && !(r.name && r.name.indexOf(item.name + '×') === 0); });
+          if (q > 0) {
+            var entry = { name: item.name + '×' + q + '枚', amount: price * q };
+            rentalSel.push(entry);
+            subEl.textContent = '小計 ¥' + entry.amount.toLocaleString();
+            wrap.classList.add('has-val');
+            inp.classList.add('has-val');
+          } else {
+            subEl.textContent = '';
+            wrap.classList.remove('has-val');
+            inp.classList.remove('has-val');
+          }
+          updateTotal();
+        });
+      }, 0);
+    }
+
+    if (soillItem)   buildMatQtyItem(soillItem, 'soill');
+    if (madrockItem) buildMatQtyItem(madrockItem, 'madrock');
+
+    matQtyRow.appendChild(matQtyGrid);
+    rs.appendChild(matQtyRow);
   }
 
   if (otherRentals.length) {
@@ -1605,6 +1690,19 @@ function restoreEntryState() {
       }
       if (state.rentalSel && state.rentalSel.length) {
         state.rentalSel.forEach(function(r){
+          // ⑭ Soill / MAD ROCK 枚数入力の復元 ("Soill×3枚" 形式から数量を抽出)
+          var matQtyMatch = (r.name || '').match(/^(Soill|MAD ROCK)×(\d+)枚$/);
+          if (matQtyMatch) {
+            var key = matQtyMatch[1];
+            var qty = parseInt(matQtyMatch[2], 10);
+            var inputId = (key === 'Soill') ? 'soillQty' : 'madrockQty';
+            var inpEl = document.getElementById(inputId);
+            if (inpEl && qty > 0) {
+              inpEl.value = String(qty);
+              inpEl.dispatchEvent(new Event('input'));
+            }
+            return;
+          }
           chips.forEach(function(c){
             if (c.textContent.indexOf(r.name) >= 0 && !c.classList.contains('sel')) {
               c.click();
