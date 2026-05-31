@@ -1099,7 +1099,7 @@ function buildRentalSection(rentals, rs) {
     rs.appendChild(chipWrap);
   }
 
-  // ② Pamoレンタル（日数ドロップダウン）
+  // ⑮ Pamoブラシ（個数手入力 × 単価）—— Soill / MAD ROCK と同形式
   if (pamoRate > 0) {
     var pamoRow = document.createElement('div');
     pamoRow.className = 'rental-mat-row';
@@ -1107,30 +1107,45 @@ function buildRentalSection(rentals, rs) {
     var pamoHeader = document.createElement('div');
     pamoHeader.className = 'rental-mat-header';
     pamoHeader.innerHTML =
-      '<div class="rental-mat-name">🎒 Pamoレンタル</div>' +
-      '<div class="rental-mat-hint">日数を選択（¥' + Number(pamoRate).toLocaleString() + '／日）</div>';
+      '<div class="rental-mat-name">🎒 Pamoブラシ</div>' +
+      '<div class="rental-mat-hint">個数（本数 × 日数）を入力</div>';
     pamoRow.appendChild(pamoHeader);
-    var pamoSelEl = document.createElement('select');
-    pamoSelEl.id = 'pamoSelect';
-    pamoSelEl.className = 'mat-select';
-    var pOpts = '<option value="0">なし</option>';
-    for (var d = 1; d <= 30; d++) {
-      pOpts += '<option value="' + d + '">' + d + '日　¥' + (pamoRate * d).toLocaleString() + '</option>';
-    }
-    pamoSelEl.innerHTML = pOpts;
-    pamoRow.appendChild(pamoSelEl);
+    var pamoGrid = document.createElement('div');
+    pamoGrid.className = 'mat-qty-grid';
+    pamoGrid.style.gridTemplateColumns = '1fr';
+    var pamoItemWrap = document.createElement('div');
+    pamoItemWrap.className = 'mat-qty-item';
+    pamoItemWrap.innerHTML =
+      '<div class="mat-qty-label"><span>Pamoブラシ</span><span class="mat-qty-price">¥' + Number(pamoRate).toLocaleString() + '／個</span></div>' +
+      '<div class="mat-qty-input-row">' +
+        '<input type="number" id="pamoQty" inputmode="numeric" min="0" step="1" placeholder="0" class="mat-qty-input">' +
+        '<span class="mat-qty-unit">個</span>' +
+      '</div>' +
+      '<div class="mat-qty-subtotal" id="pamoSub"></div>';
+    pamoGrid.appendChild(pamoItemWrap);
+    pamoRow.appendChild(pamoGrid);
     rs.appendChild(pamoRow);
-    pamoSelEl.addEventListener('change', function(){
-      var days = parseInt(this.value, 10) || 0;
-      if (days > 0) {
-        pamoSel = { name: 'Pamoレンタル（' + days + '日）', days: days, amount: pamoRate * days };
-        this.className = 'mat-select has-val';
-      } else {
-        pamoSel = null;
-        this.className = 'mat-select';
-      }
-      updateTotal();
-    });
+    setTimeout(function(){
+      var pInp = document.getElementById('pamoQty');
+      var pSub = document.getElementById('pamoSub');
+      if (!pInp) return;
+      pInp.addEventListener('input', function(){
+        var q = parseInt(this.value, 10);
+        if (isNaN(q) || q < 0) q = 0;
+        if (q > 0) {
+          pamoSel = { name: 'Pamoブラシ×' + q + '個', days: q, amount: pamoRate * q };
+          pSub.textContent = '小計 ¥' + pamoSel.amount.toLocaleString();
+          pamoItemWrap.classList.add('has-val');
+          pInp.classList.add('has-val');
+        } else {
+          pamoSel = null;
+          pSub.textContent = '';
+          pamoItemWrap.classList.remove('has-val');
+          pInp.classList.remove('has-val');
+        }
+        updateTotal();
+      });
+    }, 0);
   }
 
   if (!matItems.length && !otherRentals.length && !(pamoRate > 0)) {
@@ -1598,7 +1613,7 @@ function saveEntryState() {
       otherStoreDisc: document.getElementById('otherStoreDisc').checked,
       otherDiscRate: document.getElementById('otherDiscRate').value,
       matIdx: (document.getElementById('matSelect') || {}).value || '-1',
-      pamoDays: (document.getElementById('pamoSelect') || {}).value || '0',
+      pamoDays: (document.getElementById('pamoQty') || document.getElementById('pamoSelect') || {}).value || '0',
       rentalSel: rentalSel,
       merchAmt: document.getElementById('merchAmt').value,
       merchNote: document.getElementById('merchNote').value,
@@ -1682,11 +1697,15 @@ function restoreEntryState() {
         matEl.value = state.matIdx;
         matEl.dispatchEvent(new Event('change'));
       }
-      // ② Pamo日数の復元
-      var pamoEl = document.getElementById('pamoSelect');
-      if (pamoEl && state.pamoDays && state.pamoDays !== '0') {
-        pamoEl.value = state.pamoDays;
-        pamoEl.dispatchEvent(new Event('change'));
+      // ⑮ Pamoブラシ個数の復元（新: pamoQty / 旧: pamoSelect 両対応）
+      var pamoInpEl = document.getElementById('pamoQty');
+      var pamoSelOld = document.getElementById('pamoSelect');
+      if (pamoInpEl && state.pamoDays && state.pamoDays !== '0') {
+        pamoInpEl.value = state.pamoDays;
+        pamoInpEl.dispatchEvent(new Event('input'));
+      } else if (pamoSelOld && state.pamoDays && state.pamoDays !== '0') {
+        pamoSelOld.value = state.pamoDays;
+        pamoSelOld.dispatchEvent(new Event('change'));
       }
       if (state.rentalSel && state.rentalSel.length) {
         state.rentalSel.forEach(function(r){
