@@ -30,7 +30,8 @@ nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85r
 nav a.active { color: #fff; border-bottom-color: var(--accent); }
 nav a:hover { color: #fff; }
 
-.page { max-width: 680px; margin: 0 auto; padding: 16px 14px 60px; }
+/* ⑰ デスクトップ利用想定で横幅拡張（旧 680px） */
+.page { max-width: 1280px; margin: 0 auto; padding: 20px 24px 60px; }
 .section { margin-bottom: 14px; }
 .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--dark); color: #fff; font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -271,6 +272,7 @@ tbody tr:last-child td { border-bottom: none; }
       <div id="listToolbar" style="display:none;">
         <div class="list-toolbar">
           <input type="text" id="listFilter" class="filter-input" placeholder="🔍  番号または氏名で絞り込み...">
+          <button class="reload-btn" id="sortToggleBtn" title="会員番号で並び替え">会員番号 ↑</button>
           <button class="reload-btn" id="reloadBtn">↻ 再読込</button>
         </div>
       </div>
@@ -520,6 +522,7 @@ function loadMembers(){
 
   callAPI('getMemberList', {store: getStore()}).then(function(res){
     allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
+    sortMembersInPlace(allMembers, memberSortDir);
     membersLoaded = true;
     document.getElementById('listToolbar').style.display = 'block';
     renderMemberTable(allMembers);
@@ -527,6 +530,50 @@ function loadMembers(){
     wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
   });
 }
+
+// ⑬+⑯ 会員番号 昇順/降順 切替
+//   会員番号は文字列保存だが、可能なら数値として比較。先頭ゼロ等の表記揺れにも対応するため
+//   pure-numeric は数値比較、それ以外は localeCompare(numeric:true) でナチュラル順
+var memberSortDir = 'asc'; // 'asc' | 'desc'
+function sortMembersInPlace(list, dir) {
+  var mul = (dir === 'desc') ? -1 : 1;
+  list.sort(function(a, b){
+    var ac = String(a.code || ''), bc = String(b.code || '');
+    var an = Number(ac), bn = Number(bc);
+    var aIsNum = ac !== '' && !isNaN(an);
+    var bIsNum = bc !== '' && !isNaN(bn);
+    if (aIsNum && bIsNum) return mul * (an - bn);
+    if (aIsNum) return mul * -1;
+    if (bIsNum) return mul * 1;
+    return mul * ac.localeCompare(bc, undefined, { numeric: true, sensitivity: 'base' });
+  });
+}
+(function setupSortToggle(){
+  var btn = document.getElementById('sortToggleBtn');
+  if (!btn) return;
+  function refreshBtnLabel(){
+    btn.textContent = '会員番号 ' + (memberSortDir === 'asc' ? '↑' : '↓');
+    btn.title = '会員番号 ' + (memberSortDir === 'asc' ? '昇順' : '降順') + '（クリックで切替）';
+  }
+  refreshBtnLabel();
+  btn.addEventListener('click', function(){
+    memberSortDir = (memberSortDir === 'asc') ? 'desc' : 'asc';
+    refreshBtnLabel();
+    if (membersLoaded && allMembers.length) {
+      sortMembersInPlace(allMembers, memberSortDir);
+      // フィルタ適用中なら再フィルタ、未適用なら全件再表示
+      var q = (document.getElementById('listFilter').value || '').trim().toLowerCase();
+      if (q) {
+        var filtered = allMembers.filter(function(m){
+          return String(m.code).toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q);
+        });
+        renderMemberTable(filtered);
+      } else {
+        renderMemberTable(allMembers);
+      }
+    }
+  });
+})();
 
 function renderMemberTable(members){
   var wrap = document.getElementById('memberTableWrap');
