@@ -260,7 +260,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <p style="font-size:.88rem;color:var(--sub);margin-bottom:12px;">表示中のデータを「売上集計」シートに書き出します。</p>
-      <p class="warn-note">⚠ 同じ日付のデータを再転記すると重複します。</p>
+      <p class="warn-note">⚠ 同じ日付を再転記する場合は、上書き確認のダイアログが表示されます（二重計上を防止）。</p>
       <div style="margin-top:14px;">
         <button class="transfer-btn" id="transferBtn">売上を転記する</button>
       </div>
@@ -475,28 +475,39 @@ function storeLabel(s){
 }
 
 // Transfer
-document.getElementById('transferBtn').addEventListener('click', function(){
-  if(!currentEntries.length){ alert('転記するデータがありません'); return; }
+// ① 重複防止: GAS 側が「既に転記済み(alreadyTransferred)」を返したら確認ダイアログを出し、
+//    ユーザーが了承した場合のみ force:true で上書き転記する。
+function doTransfer(force){
   var dateVal = document.getElementById('dateInput').value;
   var store = document.getElementById('storeFilter').value;
   var msg = document.getElementById('transferMsg');
-  var btn = this;
+  var btn = document.getElementById('transferBtn');
   msg.className = 'transfer-msg';
   msg.style.display = 'none';
   btn.disabled = true;
   btn.textContent = '転記中...';
-  callAPI('transferSales', {date:dateVal, store:store}).then(function(res){
+  callAPI('transferSales', {date:dateVal, store:store, force: !!force}).then(function(res){
     btn.textContent = '売上を転記する';
-    if(res.ok && res.data && res.data.ok){
+    var d = res.data || {};
+    if(res.ok && d.ok){
       msg.className = 'transfer-msg ok';
       msg.style.display = '';
-      msg.textContent = '✓ 転記しました（' + (res.data.sheet || '') + ' 行' + (res.data.row || '') + '）';
+      msg.textContent = '✓ 転記しました（' + (d.sheet || '') + ' 行' + (d.row || '') + '）';
       btn.disabled = true; // 二重転記防止
+    } else if (d.alreadyTransferred) {
+      // ① 既に転記済み: 上書き確認
+      btn.disabled = false;
+      var label = (d.sheet ? d.sheet + ' ' : '') + (dateVal || '') + ' の集計';
+      if (confirm('⚠ ' + label + 'は既に転記済みです。\n再転記すると、その日の集計を最新データで上書きします。\n\n上書きして転記しますか？')) {
+        doTransfer(true);
+      } else {
+        msg.className = 'transfer-msg';
+        msg.style.display = 'none';
+      }
     } else {
-      // エラー詳細を表示（デバッグ用にレスポンズ全体を確認）
       var errDetail = '';
-      if (res.data && res.data.error) {
-        errDetail = res.data.error;
+      if (d && d.error) {
+        errDetail = d.error;
       } else if (res.error) {
         errDetail = res.error;
       } else {
@@ -514,6 +525,10 @@ document.getElementById('transferBtn').addEventListener('click', function(){
     msg.style.display = '';
     msg.textContent = 'エラー: ' + e.message;
   });
+}
+document.getElementById('transferBtn').addEventListener('click', function(){
+  if(!currentEntries.length){ alert('転記するデータがありません'); return; }
+  doTransfer(false);
 });
 
 // Store filter → background color change
