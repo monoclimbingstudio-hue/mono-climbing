@@ -224,6 +224,11 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="s-label">物販売上</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sMerch">0</span></div>
       </div>
+      <!-- ④ 物販値引き合計 -->
+      <div class="summary-card">
+        <div class="s-label">物販値引き</div>
+        <div class="s-value" style="color:#c62828;"><span class="s-unit">−¥</span><span id="sMerchDisc">0</span></div>
+      </div>
       <div class="summary-card">
         <div class="s-label">登録料</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="sRegFee">0</span></div>
@@ -345,7 +350,7 @@ function renderSalesTable(entries) {
   var html = '<div class="table-wrap"><table><thead><tr>'
     + '<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
     + '<th>プラン</th><th class="num-cell">登録料</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
-    + '<th class="num-cell">商品購入額</th><th>商品メモ</th>'
+    + '<th class="num-cell">商品購入額</th><th class="num-cell">物販値引</th><th>商品メモ</th>'
     + '<th class="num-cell">調整金</th><th>調整メモ</th>'
     + '<th>備考</th>'
     + '<th class="num-cell">合計</th><th>支払</th><th></th>'
@@ -375,6 +380,10 @@ function renderSalesTable(entries) {
     var merchAmt = Number(e.merchAmt||0);
     var merchAmtCell = merchAmt > 0 ? ('¥' + merchAmt.toLocaleString()) : '-';
 
+    // ④ 物販値引き額の表示
+    var merchDisc = Number(e.merchDiscount||0);
+    var merchDiscCell = merchDisc > 0 ? ('<span style="color:#c62828;font-weight:700;">−¥' + merchDisc.toLocaleString() + '</span>') : '-';
+
     var regFee = Number(e.regFee||0);
     var regFeeCell = regFee > 0 ? ('¥' + regFee.toLocaleString()) : '-';
 
@@ -383,11 +392,12 @@ function renderSalesTable(entries) {
       + '<td>' + esc(storeLabel(e.store)) + '</td>'
       + '<td style="font-family:monospace;font-weight:700;">' + esc(e.memberCode||'-') + '</td>'
       + '<td>' + esc(e.memberName||'ゲスト') + '</td>'
-      + '<td>' + esc(e.planLabel||'-') + '</td>'
+      + '<td>' + esc(planDisp(e.planLabel)||'-') + '</td>'
       + '<td class="num-cell">' + regFeeCell + '</td>'
       + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
       + '<td class="num-cell" style="white-space:normal;max-width:140px;">' + rentalCell + '</td>'
       + '<td class="num-cell">' + merchAmtCell + '</td>'
+      + '<td class="num-cell" style="font-size:.82rem;">' + merchDiscCell + '</td>'
       + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (e.merchNote ? esc(e.merchNote) : '-') + '</td>'
       + '<td class="num-cell" style="font-size:.82rem;">' + adjustCell + '</td>'
       + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (adjustNote ? esc(adjustNote) : '-') + '</td>'
@@ -432,7 +442,7 @@ function renderSalesTable(entries) {
 }
 
 function renderSummary(entries) {
-  var usage=0, school=0, rental=0, merch=0, adjust=0, regFee=0, total=0;
+  var usage=0, school=0, rental=0, merch=0, merchDisc=0, adjust=0, regFee=0, total=0;
   entries.forEach(function(e){
     var fee = Number(e.usageFee||0);
     var pl = String(e.planLabel || '');
@@ -445,6 +455,7 @@ function renderSummary(entries) {
     }
     rental += Number(e.rentalFee||0);
     merch  += Number(e.merchAmt||0);
+    merchDisc += Number(e.merchDiscount||0);
     adjust += Number(e.adjustAmount || e.adjustment || e.adjustAmt || 0);
     regFee += Number(e.regFee||0);
     total  += Number(e.total||0);
@@ -453,6 +464,7 @@ function renderSummary(entries) {
   document.getElementById('sUsage').textContent   = usage.toLocaleString();
   document.getElementById('sRental').textContent  = rental.toLocaleString();
   var sm = document.getElementById('sMerch');   if (sm) sm.textContent  = merch.toLocaleString();
+  var smd = document.getElementById('sMerchDisc'); if (smd) smd.textContent = merchDisc.toLocaleString();
   var sa = document.getElementById('sAdjust');  if (sa) sa.textContent  = adjust.toLocaleString();
   var sr = document.getElementById('sRegFee');  if (sr) sr.textContent  = regFee.toLocaleString();
   var ss = document.getElementById('sSchool'); if (ss) ss.textContent  = school.toLocaleString();
@@ -473,6 +485,9 @@ function payTag(method) {
 function storeLabel(s){
   return {hakata:'博多店', omura:'大村店', sasebo:'佐世保店'}[s] || s || '-';
 }
+
+// ① 月パス表記統一: 「月パス新規」→「月パスLINE決済」（大人・学生・小学生・シニア）
+function planDisp(s){ return String(s||'').replace('月パス新規','月パスLINE決済'); }
 
 // Transfer
 // ① 重複防止: GAS 側が「既に転記済み(alreadyTransferred)」を返したら確認ダイアログを出し、
@@ -652,7 +667,7 @@ document.getElementById('exportBtn').addEventListener('click', function(){
         storeLabel(e.store),
         e.memberCode || '',
         e.memberName || 'ゲスト',
-        e.planLabel || '',
+        planDisp(e.planLabel) || '',
         Number(e.regFee || 0),
         usageVal,
         schoolVal,
