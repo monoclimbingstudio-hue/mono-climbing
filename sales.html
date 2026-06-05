@@ -277,6 +277,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 <script>
 var currentEntries = [];
+var isDeleting = false; // ④ 削除処理中フラグ（連続削除の競合防止）
 
 // Init date
 (function(){
@@ -349,11 +350,12 @@ function renderSalesTable(entries) {
   // ⑧ 列を細分化: 登録料 / 商品購入額 / 調整金 / 調整メモ / 備考 を独立表示
   var html = '<div class="table-wrap"><table><thead><tr>'
     + '<th>時間</th><th>店舗</th><th>会員番号</th><th>氏名</th>'
-    + '<th>プラン</th><th class="num-cell">登録料</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
+    + '<th>プラン</th><th class="num-cell">合計</th><th>支払</th>'
+    + '<th class="num-cell">登録料</th><th class="num-cell">利用料</th><th class="num-cell">レンタル</th>'
     + '<th class="num-cell">商品購入額</th><th class="num-cell">物販値引</th><th>商品メモ</th>'
     + '<th class="num-cell">調整金</th><th>調整メモ</th>'
     + '<th>備考</th>'
-    + '<th class="num-cell">合計</th><th>支払</th><th></th>'
+    + '<th></th>'
     + '</tr></thead><tbody>';
   entries.forEach(function(e, idx){
     var adjustAmt = Number(e.adjustAmount || e.adjustment || e.adjustAmt || 0);
@@ -393,6 +395,8 @@ function renderSalesTable(entries) {
       + '<td style="font-family:monospace;font-weight:700;">' + esc(e.memberCode||'-') + '</td>'
       + '<td>' + esc(e.memberName||'ゲスト') + '</td>'
       + '<td>' + esc(planDisp(e.planLabel)||'-') + '</td>'
+      + '<td class="num-cell" style="font-weight:700;">¥' + Number(e.total||0).toLocaleString() + '</td>'
+      + '<td>' + payTag(e.payment) + '</td>'
       + '<td class="num-cell">' + regFeeCell + '</td>'
       + '<td class="num-cell">¥' + Number(e.usageFee||0).toLocaleString() + '</td>'
       + '<td class="num-cell" style="white-space:normal;max-width:140px;">' + rentalCell + '</td>'
@@ -402,50 +406,73 @@ function renderSalesTable(entries) {
       + '<td class="num-cell" style="font-size:.82rem;">' + adjustCell + '</td>'
       + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (adjustNote ? esc(adjustNote) : '-') + '</td>'
       + '<td style="white-space:normal;max-width:140px;font-size:.82rem;">' + (entryNote ? esc(entryNote) : '-') + '</td>'
-      + '<td class="num-cell" style="font-weight:700;">¥' + Number(e.total||0).toLocaleString() + '</td>'
-      + '<td>' + payTag(e.payment) + '</td>'
       + '<td><button class="del-btn" data-idx="' + idx + '">削除</button></td>'
       + '</tr>';
   });
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
-  // 削除ボタンのイベント設定
+  // ④ 削除ボタンのイベント設定（連続削除の競合対策）
+  //   - 一度に1件のみ実行（isDeletingで多重実行を防止）
+  //   - 配列インデックスではなく entry 参照で対象を特定（splice によるズレ防止）
+  //   - 完了後にテーブル全体を再描画して data-idx を再構築
+  function reenableDelBtns(){
+    wrap.querySelectorAll('.del-btn').forEach(function(b){ b.disabled = false; b.textContent = '削除'; });
+  }
   wrap.querySelectorAll('.del-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
+      if (isDeleting) return; // 進行中は無視
       var i = Number(this.getAttribute('data-idx'));
       var entry = currentEntries[i];
       if (!entry) return;
       var label = (entry.time||'-') + ' ' + (entry.memberName||'ゲスト');
       if (!confirm('この入店登録を削除しますか？\n' + label)) return;
-      var delBtn = this;
-      delBtn.textContent = '...';
-      delBtn.disabled = true;
+      isDeleting = true;
+      // 全削除ボタンを一時的に無効化（連打防止）
+      wrap.querySelectorAll('.del-btn').forEach(function(b){ b.disabled = true; });
+      this.textContent = '...';
       callAPI('deleteEntry', {store: entry.store, entryTime: entry.entryTime || entry.time, rowId: entry.rowId || null})
         .then(function(res){
           if (res.ok && res.data && res.data.success) {
-            var row = document.getElementById('row-' + i);
-            if (row) row.style.display = 'none';
-            currentEntries.splice(i, 1);
+            var pos = currentEntries.indexOf(entry); // 参照で位置特定
+            if (pos >= 0) currentEntries.splice(pos, 1);
+            renderSalesTable(currentEntries); // 再描画で data-idx を再構築
             renderSummary(currentEntries);
           } else {
-            delBtn.textContent = '削除';
-            delBtn.disabled = false;
             alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));
+            reenableDelBtns();
           }
         }).catch(function(e){
-          delBtn.textContent = '削除';
-          delBtn.disabled = false;
           alert('削除エラー: ' + e.message);
+          reenableDelBtns();
+        }).then(function(){
+          isDeleting = false; // 成否に関わらずロック解除
         });
     });
   });
 }
 
+// ⑤ 来客数にカウントしない「購入系」プラン判定
+//   スクール月謝3/5/6/7.5/9/14・スクール入会金・月パスLINE決済(=ラベル「月パス新規」)・
+//   月パス店頭決済・平昼月パスLINE決済・平昼月パス店頭決済・回数券購入・半年会員
+function isPurchasePlan(pl){
+  pl = String(pl || '');
+  if (pl.indexOf('スクール月謝') === 0) return true;
+  if (pl.indexOf('スクール入会金') === 0) return true;
+  if (pl.indexOf('月パス新規') >= 0) return true;      // 月パスLINE決済（ラベルは「月パス新規」）
+  if (pl.indexOf('月パス店頭決済') >= 0) return true;  // 月パス店頭決済 / 平昼月パス店頭決済
+  if (pl.indexOf('月パスLINE決済') >= 0) return true;  // 平昼月パスLINE決済
+  if (pl.indexOf('回数券購入') >= 0) return true;
+  if (pl.indexOf('半年会員') >= 0) return true;
+  return false;
+}
+
 function renderSummary(entries) {
   var usage=0, school=0, rental=0, merch=0, merchDisc=0, adjust=0, regFee=0, total=0;
+  var visitCount=0;
   entries.forEach(function(e){
     var fee = Number(e.usageFee||0);
     var pl = String(e.planLabel || '');
+    if (!isPurchasePlan(pl)) visitCount++;
     // ⑦ スクール月謝3/5/6/7.5/9/14 と スクール入会金 は「スクール」に計上
     //    スクール日以外利用 / スクール月パス はそのまま「利用料」
     if (pl.indexOf('スクール月謝') === 0 || pl === 'スクール入会金') {
@@ -460,7 +487,7 @@ function renderSummary(entries) {
     regFee += Number(e.regFee||0);
     total  += Number(e.total||0);
   });
-  document.getElementById('sCount').textContent   = entries.length;
+  document.getElementById('sCount').textContent   = visitCount;
   document.getElementById('sUsage').textContent   = usage.toLocaleString();
   document.getElementById('sRental').textContent  = rental.toLocaleString();
   var sm = document.getElementById('sMerch');   if (sm) sm.textContent  = merch.toLocaleString();

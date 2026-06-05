@@ -811,14 +811,22 @@ function buildPlanDropdown(attrName) {
   summaryEl.style.display = 'none';
   planSel = null;
 
+  // ①「スクール月パス」は「月パス利用」に含まれるため通常利用から除外
+  // ③「Bスクール日利用(スクール日利用)」は上部「パス・回数券・スクール」へ移すため通常利用から除外
+  var isHiddenNormal = function(p){
+    if (!p.plan1) return false;
+    if (p.plan1.indexOf('スクール月パス') === 0) return true;
+    if (p.plan1.indexOf('Bスクール日利用') === 0) return true;
+    return false;
+  };
   var filtered = allPlans.filter(function(p){
-    return getAttrOfEntry(p) === attrName;
+    return getAttrOfEntry(p) === attrName && !isHiddenNormal(p);
   });
 
-  // ⑥ 学生属性のとき「スクール日以外利用」「スクール月パス」(plan2='') も追加
+  // 学生属性のとき「スクール日以外利用」(plan2='') も追加（①スクール月パスは削除）
   if (attrName === '学生') {
     var schoolExtras = allPlans.filter(function(p){
-      return (p.plan1 === 'スクール日以外利用' || p.plan1 === 'スクール月パス') && (!p.plan2 || p.plan2 === '');
+      return p.plan1 === 'スクール日以外利用' && (!p.plan2 || p.plan2 === '');
     });
     schoolExtras.forEach(function(p){
       if (filtered.indexOf(p) < 0) filtered.push(p);
@@ -828,6 +836,12 @@ function buildPlanDropdown(attrName) {
   var passEntries = allPlans.filter(function(p){
     return PASS_PLAN2.indexOf(getAttrOfEntry(p)) >= 0;
   });
+
+  // ③「スクール日利用」(Bスクール日利用) を上部グループへ。選択中の属性に一致するもののみ表示
+  var schoolDayEntries = allPlans.filter(function(p){
+    return p.plan1 && p.plan1.indexOf('Bスクール日利用') === 0 && getAttrOfEntry(p) === attrName;
+  });
+  passEntries = passEntries.concat(schoolDayEntries);
 
   // パス・回数券を上位に表示するため allOptions も passEntries → filtered の順にする
   var allOptions = passEntries.concat(filtered);
@@ -858,11 +872,15 @@ function buildPlanDropdown(attrName) {
       else passOthersIdx.push(i);
     });
     if (passOthersIdx.length) {
-      opts += '<optgroup label="パス・回数券">';
+      // ③ カテゴリ名を「パス・回数券・スクール」に変更
+      opts += '<optgroup label="パス・回数券・スクール">';
       passOthersIdx.forEach(function(i){
         var p = passEntries[i];
         // ③ plan1 (具体名) を表示。月パス利用等は plan1==plan2 で問題なし
-        opts += '<option value="' + i + '">' + esc(p.plan1 || getAttrOfEntry(p)) + '</option>';
+        // ②「Bスクール日利用」系は「スクール日利用」と表示
+        var nm = p.plan1 || getAttrOfEntry(p);
+        if (nm.indexOf('Bスクール日利用') === 0) nm = 'スクール日利用';
+        opts += '<option value="' + i + '">' + esc(nm) + '</option>';
       });
       opts += '</optgroup>';
     }
