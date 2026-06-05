@@ -488,7 +488,7 @@ function renderInventory(category) {
   var isAll = currentStore === 'all';
   var html = '<div class="table-wrap"><table><thead><tr>';
   if (isAll) html += '<th>店舗</th>';
-  html += '<th>商品名</th><th>サイズ</th><th class="num-cell">価格</th>'
+  html += '<th>ブランド</th><th>商品名</th><th>サイズ</th><th class="num-cell">価格</th>'
     + '<th class="num-cell">在庫数</th><th class="num-cell">在庫金額</th><th>操作</th>'
     + '</tr></thead><tbody>';
   items.forEach(function(item, idx){
@@ -497,7 +497,8 @@ function renderInventory(category) {
     var stockValue = stock * Number(item.price || 0);
     html += '<tr>';
     if (isAll) html += '<td>' + esc(item.storeLabel || '') + '</td>';
-    html += '<td style="font-weight:600;">' + esc(item.name) + '</td>'
+    html += '<td style="color:var(--sub);font-size:.85rem;">' + esc(item.brand || '-') + '</td>'
+      + '<td style="font-weight:600;">' + esc(item.name) + '</td>'
       + '<td>' + esc(item.size || '-') + '</td>'
       + '<td class="num-cell">¥' + Number(item.price||0).toLocaleString() + '</td>'
       + '<td class="num-cell"><span class="' + stockClass + '">' + stock + '</span></td>'
