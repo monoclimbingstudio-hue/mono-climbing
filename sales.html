@@ -265,6 +265,10 @@ tbody tr:last-child td { border-bottom: none; }
         <div class="s-label">OS</div>
         <div class="s-value"><span class="s-unit">¥</span><span id="payOs">0</span></div>
       </div>
+      <div class="summary-card">
+        <div class="s-label">その他</div>
+        <div class="s-value"><span class="s-unit">¥</span><span id="payOther">0</span></div>
+      </div>
     </div>
   </div>
 
@@ -495,19 +499,20 @@ function isPurchasePlan(pl){
 function payCategory(pm){
   pm = String(pm || '');
   if (pm === '現金') return 'cash';
+  if (pm === 'OS') return 'os';
   if (pm === 'LINE') return 'line';
   if (pm.indexOf('QRコード(PayPay') === 0 || pm === 'PayPay') return 'paypay';
   if (pm === 'クレジット') return 'stera';
   if (pm.indexOf('電子マネー') === 0) return 'stera';
   if (pm === '交通系IC') return 'stera';
   if (pm.indexOf('QRコード') === 0) return 'stera'; // PayPay以外のQR
-  return ''; // その他/0円 等は5区分外
+  return 'other'; // その他/0円/未分類（内訳が売上合計と一致するようカウント）
 }
 
 function renderSummary(entries) {
   var usage=0, school=0, rental=0, merch=0, merchDisc=0, adjust=0, regFee=0, total=0;
   var visitCount=0;
-  var payCash=0, payPaypay=0, payStera=0, payLine=0, payOs=0; // 決済方法別内訳
+  var payCash=0, payPaypay=0, payStera=0, payLine=0, payOs=0, payOther=0; // 決済方法別内訳
   entries.forEach(function(e){
     var fee = Number(e.usageFee||0);
     var pl = String(e.planLabel || '');
@@ -532,6 +537,8 @@ function renderSummary(entries) {
     else if (_pc === 'paypay') payPaypay += _t;
     else if (_pc === 'stera') payStera += _t;
     else if (_pc === 'line') payLine += _t;
+    else if (_pc === 'os') payOs += _t;
+    else payOther += _t;
   });
   document.getElementById('sCount').textContent   = visitCount;
   document.getElementById('sUsage').textContent   = usage.toLocaleString();
@@ -549,6 +556,7 @@ function renderSummary(entries) {
   if ((_pe=document.getElementById('payStera')))  _pe.textContent = payStera.toLocaleString();
   if ((_pe=document.getElementById('payLine')))   _pe.textContent = payLine.toLocaleString();
   if ((_pe=document.getElementById('payOs')))     _pe.textContent = payOs.toLocaleString();
+  if ((_pe=document.getElementById('payOther')))  _pe.textContent = payOther.toLocaleString();
 }
 
 function payTag(method) {
