@@ -1449,6 +1449,14 @@ document.getElementById('registerBtn').addEventListener('click', function(){
   var regFeeRaw = document.getElementById('regFeeCheck').checked ? (parseInt(document.getElementById('regFeeAmt').value) || 0) : 0;
   var otherStoreDisc = document.getElementById('otherStoreDisc').checked;
   var regFeeNote = otherStoreDisc ? '他店舗割引適用' : '';
+  // 他店舗割引: 登録料を満額で記録し、割引分を調整金(→転記時その他値引)へ振り分ける（手動調整金と同じ扱い）
+  var regDiscAmt = (otherStoreDisc && regFeeRaw > regFee) ? (regFeeRaw - regFee) : 0;
+  var regFeeStored = regDiscAmt > 0 ? regFeeRaw : regFee;
+  var adjustStored = adjust - regDiscAmt;
+  var adjustNoteVal = document.getElementById('adjustNote').value.trim();
+  if (regDiscAmt > 0) {
+    adjustNoteVal = (adjustNoteVal ? adjustNoteVal + ' / ' : '') + '他店舗割引(登録料 −¥' + regDiscAmt.toLocaleString() + ')';
+  }
   var paymentDate = document.getElementById('paymentDate').value;
 
   // 物販内訳（数量対応） — バックエンドで在庫減算に利用
@@ -1467,9 +1475,10 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     store: store,
     memberCode: document.getElementById('memberCode').value.trim(),
     memberName: memberName,
-    regFee: regFee,
+    regFee: regFeeStored,
     regFeeRaw: regFeeRaw,
     regFeeNote: regFeeNote,
+    regDiscount: regDiscAmt,
     plan1: planSel ? planSel.plan1 : '',
     plan2: planSel ? planSel.plan2 : '',
     planLabel: planSel ? planSel.label : '',
@@ -1479,8 +1488,8 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     merchNote: document.getElementById('merchNote').value.trim(),
     rentalNote: rentalNames.join(','),
     rentalFee: rentalFee,
-    adjustment: adjust,
-    adjustNote: document.getElementById('adjustNote').value.trim(),
+    adjustment: adjustStored,
+    adjustNote: adjustNoteVal,
     total: total,
     payment: paymentLabel,
     paymentDate: paymentDate,
