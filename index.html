@@ -322,6 +322,11 @@ nav a:hover { color: #fff; }
     </div>
   </div>
 
+  <!-- ① ページ下部へ移動ボタン -->
+  <div style="margin:2px 0 14px;">
+    <button type="button" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});" style="width:100%;background:#eef2f7;color:#1a5276;border:1.5px solid var(--border,#d0d7de);border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;">▼ ページ下部へ移動する</button>
+  </div>
+
   <!-- 登録料 -->
   <div class="section">
     <div class="section-head">
@@ -519,6 +524,11 @@ nav a:hover { color: #fff; }
       </button>
       <div id="msg"></div>
     </div>
+  </div>
+
+  <!-- ② ページ上部へ移動ボタン -->
+  <div style="margin:2px 0 20px;">
+    <button type="button" onclick="window.scrollTo({top:0,behavior:'smooth'});" style="width:100%;background:#eef2f7;color:#1a5276;border:1.5px solid var(--border,#d0d7de);border-radius:10px;padding:11px;font-size:.9rem;font-weight:700;cursor:pointer;">▲ ページ上部へ移動する</button>
   </div>
 
 </div><!-- /page -->
