@@ -558,19 +558,46 @@ var LABEL_MAP = {
   '月パス新規': '月パスLINE決済'
 };
 
+// GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあり、その場合
+// フロントに GAS_HTML_RESPONSE 等が返る（＝「応答がJSONではありません」エラー）。
+// 手動でやり直すと成功する現象なので、一時的エラーのみ自動でリトライする。
+// ★二重登録の危険がある書込み系(registerEntry/recordShopSale)は SAFE_RETRY に
+//   入れない。読取系のみ再試行対象にする。
+var SAFE_RETRY = { getMemberList:1, getPriceList:1, getRentalList:1, getMember:1 };
+function _isTransientErr(res){
+  if(!res) return true; // 応答なし
+  if(res.ok === false){
+    if(res.alreadyTransferred || (res.data && res.data.alreadyTransferred)) return false;
+    var e = String(res.error || '');
+    if(e==='GAS_HTML_RESPONSE'||e==='GAS_BAD_JSON'||e==='応答JSONパース失敗'||e==='network') return true;
+    if(/timeout|timed out|fetch|network|50[234]/i.test(e)) return true;
+  }
+  return false;
+}
 function callAPI(action, params) {
-  return fetch('/api/gas', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(Object.assign({action: action}, params))
-  }).then(function(r){
-    return r.text().then(function(t){
-      try { return JSON.parse(t); }
-      catch(e) {
-        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+  var maxTry = SAFE_RETRY[action] ? 3 : 1;
+  function attempt(n){
+    return fetch('/api/gas', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(Object.assign({action: action}, params))
+    }).then(function(r){
+      return r.text().then(function(t){
+        try { return JSON.parse(t); }
+        catch(e) {
+          return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+        }
+      });
+    }).catch(function(err){
+      return { ok:false, error:'network', data:{ error:'通信エラー: ' + String((err&&err.message)||err) } };
+    }).then(function(res){
+      if(n < maxTry && _isTransientErr(res)){
+        return new Promise(function(rs){ setTimeout(rs, 700*n); }).then(function(){ return attempt(n+1); });
       }
+      return res;
     });
-  });
+  }
+  return attempt(1);
 }
 
 function getCached(key) {
