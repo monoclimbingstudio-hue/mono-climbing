@@ -348,6 +348,10 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     var sr = document.getElementById('searchResult');
     sr.className = 'result-box'; sr.style.display = 'none';
     document.getElementById('searchCode').value = '';
+    document.getElementById('searchName').value = '';
+    // ④ 店舗切替時は名前検索のキャッシュ(allMembers)を破棄し、次の検索で新店舗を再取得させる
+    //    （旧: 前店舗の検索結果が残り、切替後もそれを参照していた）
+    allMembers = [];
     if (membersLoaded) {
       document.getElementById('listFilter').value = '';
       loadMembers();
@@ -396,7 +400,8 @@ document.getElementById('searchBtn').addEventListener('click', function(){
   } else {
     var searchFn = function(list) {
       var q = nameQuery.toLowerCase();
-      var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
+      // ③ 会員名が数値等の非文字列でも落ちないよう String() でコアース（博多店の名前検索エラー対策）
+      var matches = list.filter(function(m){ return String(m.name == null ? '' : m.name).toLowerCase().indexOf(q) !== -1; });
       if (matches.length === 0) {
         result.className = 'result-box notfound';
         result.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
@@ -564,7 +569,7 @@ function sortMembersInPlace(list, dir) {
       var q = (document.getElementById('listFilter').value || '').trim().toLowerCase();
       if (q) {
         var filtered = allMembers.filter(function(m){
-          return String(m.code).toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q);
+          return String(m.code).toLowerCase().includes(q) || String(m.name||'').toLowerCase().includes(q);
         });
         renderMemberTable(filtered);
       } else {
@@ -678,7 +683,7 @@ document.getElementById('listFilter').addEventListener('input', function(){
   var q = this.value.trim().toLowerCase();
   if (!q) { renderMemberTable(allMembers); return; }
   var filtered = allMembers.filter(function(m){
-    return String(m.code).toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q);
+    return String(m.code).toLowerCase().includes(q) || String(m.name||'').toLowerCase().includes(q);
   });
   renderMemberTable(filtered);
 });

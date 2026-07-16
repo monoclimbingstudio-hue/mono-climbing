@@ -300,6 +300,11 @@ nav a:hover { color: #fff; }
     </div>
     <div class="card">
 
+      <!-- ② レディースデイ告知（店舗ごとに表示曜日が異なる／該当日のみ表示） -->
+      <div id="ladiesDayBanner" style="display:none;margin:0 0 12px;padding:10px 12px;border:1.5px solid #e57373;border-radius:8px;background:#fdecea;color:#c62828;font-weight:700;font-size:.92rem;text-align:center;">
+        💗 本日はレディースディです
+      </div>
+
       <!-- STEP A: お客様の属性（区分②） -->
       <div class="plan-step-label">
         <div class="step-badge">A</div>
@@ -716,12 +721,25 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
         document.getElementById('memberCode').value = '';
       }
     }
+    updateLadiesDay(); // ② 店舗変更でレディースデイ表示を更新
     updateRegisterBtn();
   });
 });
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
   return sel ? sel.dataset.store : null;
+}
+
+// ② レディースデイ告知: 店舗ごとに表示曜日が異なる（博多=水/大村=金/佐世保=火）。
+//    選択店舗と本日の曜日が一致する日のみ利用プラン欄に赤字表示する。
+// getDay(): 日0 月1 火2 水3 木4 金5 土6
+var LADIES_DAY = { hakata: 3, omura: 5, sasebo: 2 };
+function updateLadiesDay() {
+  var banner = document.getElementById('ladiesDayBanner');
+  if (!banner) return;
+  var store = getStore();
+  var today = new Date().getDay();
+  banner.style.display = (store && LADIES_DAY[store] === today) ? 'block' : 'none';
 }
 
 // ── Init ──────────────────────────────────────────
@@ -1390,7 +1408,8 @@ document.getElementById('searchBtn').addEventListener('click', function(){
         return;
       }
       var q = nameQuery.toLowerCase();
-      var matches = list.filter(function(m){ return m.name && m.name.toLowerCase().indexOf(q) !== -1; });
+      // ③ 会員名が数値等の非文字列でも落ちないよう String() でコアース（博多店の名前検索エラー対策）
+      var matches = list.filter(function(m){ return String(m.name == null ? '' : m.name).toLowerCase().indexOf(q) !== -1; });
       if (matches.length === 0) {
         badge.className = 'member-badge notfound';
         badge.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
@@ -1656,6 +1675,7 @@ function escAttr(s) {
 }
 
 init();
+updateLadiesDay(); // ② 初期表示（店舗未選択時は非表示）
 
 // ── 入店フォーム状態の保存/復元 ──
 // ③ 物販管理へ移動時にフォーム状態を保存する
