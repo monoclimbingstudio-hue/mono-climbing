@@ -291,6 +291,48 @@ tbody tr:last-child td { border-bottom: none; }
 <script>
 var allMembers = [];
 var membersLoaded = false;
+
+// ⚡ 速度改善: 会員リストのキャッシュ（入店登録ページと同じ sessionStorage キーを共有）。
+//    ページを行き来しても再取得せず、名前検索が待たされない。会員の追加/変更/削除時は破棄する。
+var MEM_CACHE_TTL = 4 * 60 * 60 * 1000; // 4時間
+function memCacheKey(store){ return 'members_' + store; }
+function getMemCache(store){
+  try {
+    var s = sessionStorage.getItem(memCacheKey(store));
+    if (!s) return null;
+    var d = JSON.parse(s);
+    if (Date.now() - d.ts > MEM_CACHE_TTL) { sessionStorage.removeItem(memCacheKey(store)); return null; }
+    return d.data;
+  } catch(e) { return null; }
+}
+function setMemCache(store, list){
+  try { sessionStorage.setItem(memCacheKey(store), JSON.stringify({ts: Date.now(), data: list})); } catch(e){}
+}
+function clearMemCache(store){
+  try {
+    if (store) sessionStorage.removeItem(memCacheKey(store));
+    else ['hakata','omura','sasebo'].forEach(function(s){ sessionStorage.removeItem(memCacheKey(s)); });
+  } catch(e){}
+}
+// 会員リストを取得（キャッシュ優先）
+function fetchMemberList(store){
+  var cached = getMemCache(store);
+  if (cached) return Promise.resolve(cached);
+  return callAPI('getMemberList', {store: store}).then(function(res){
+    var list = (res.data && Array.isArray(res.data)) ? res.data : [];
+    if (list.length) setMemCache(store, list);
+    return list;
+  });
+}
+// バックグラウンド先読み（画面はブロックしない・失敗は無視）
+var _prefetching = {};
+function prefetchMembers(store){
+  if(!store || _prefetching[store] || getMemCache(store)) return;
+  _prefetching[store] = true;
+  setTimeout(function(){
+    fetchMemberList(store).then(function(){}, function(){});
+  }, 50);
+}
 var STORE_LABEL = {hakata: '博多店', omura: '大村店', sasebo: '佐世保店'};
 
 function callAPI(action, params) {
@@ -357,6 +399,7 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
       document.getElementById('listFilter').value = '';
       loadMembers();
     }
+    prefetchMembers(btn.dataset.store); // ⚡ 会員リストを裏で先読み
   });
 });
 
@@ -416,12 +459,13 @@ document.getElementById('searchBtn').addEventListener('click', function(){
     if (allMembers && allMembers.length > 0) {
       searchFn(allMembers);
     } else {
-      callAPI('getMemberList', {store: getStore()}).then(function(res){
-        allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
+      // ⚡ キャッシュがあれば即時、無ければ取得してキャッシュ
+      fetchMemberList(getStore()).then(function(list){
+        allMembers = list;
         searchFn(allMembers);
       }).catch(function(e){
         result.className = 'result-box notfound';
-        result.textContent = 'エラー: ' + e.message;
+        result.textContent = 'エラー: ' + (e && e.message ? e.message : '読み込みに失敗しました');
       });
     }
   }
@@ -483,10 +527,13 @@ document.getElementById('addBtn').addEventListener('click', function(){
         msg.style.display = 'block';
         document.getElementById('addCode').value = '';
         document.getElementById('addName').value = '';
-        // 会員一覧が既に表示されていれば更新
-        if (membersLoaded) loadMembers();
+        // ⚡ 会員リストのキャッシュを破棄（登録内容を必ず最新で取り直す）
+        clearMemCache(store);
         // キャッシュ不整合を避けるため allMembers にも即時追加
         allMembers.push({code: String(code), name: name, joinDate: '', store: getStoreLabel()});
+        setMemCache(store, allMembers);
+        // 会員一覧が既に表示されていれば更新
+        if (membersLoaded) loadMembers();
       } else if (errMsg && /(duplicate|重複|already|既に|すでに|登録済|登録されて)/i.test(errMsg)) {
         // ⑥ 重複エラー（バックエンド側で検出された場合）
         showDuplicate('');
@@ -525,14 +572,14 @@ function loadMembers(){
   wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>読み込み中...</div>';
   document.getElementById('listToolbar').style.display = 'none';
 
-  callAPI('getMemberList', {store: getStore()}).then(function(res){
-    allMembers = (res.data && Array.isArray(res.data)) ? res.data : [];
+  fetchMemberList(getStore()).then(function(res){
+    allMembers = Array.isArray(res) ? res.slice() : [];
     sortMembersInPlace(allMembers, memberSortDir);
     membersLoaded = true;
     document.getElementById('listToolbar').style.display = 'block';
     renderMemberTable(allMembers);
   }).catch(function(e){
-    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e && e.message ? e.message : '読み込みに失敗しました') + '</div>';
   });
 }
 
@@ -653,6 +700,8 @@ document.getElementById('editSaveBtn').addEventListener('click', function(){
     saveBtn.disabled = false; saveBtn.textContent = '上書き保存する';
     if (res.ok && res.data && res.data.success) {
       document.getElementById('editModal').classList.remove('open');
+      clearMemCache(getStore()); // ⚡ 氏名変更を反映するためキャッシュ破棄
+      allMembers = [];
       if (membersLoaded) loadMembers();
     } else {
       msgEl.className = 'modal-msg err';
@@ -670,6 +719,8 @@ function deleteMember(code, name) {
   if (!confirm('会員番号 ' + code + '「' + name + '」を削除しますか？\nこの操作は取り消せません。')) return;
   callAPI('deleteMember', {code: code, store: getStore()}).then(function(res){
     if (res.ok && res.data && res.data.success) {
+      clearMemCache(getStore()); // ⚡ 削除を反映するためキャッシュ破棄
+      allMembers = [];
       if (membersLoaded) loadMembers();
     } else {
       alert('削除エラー: ' + (res.data ? res.data.error : res.error || '不明'));

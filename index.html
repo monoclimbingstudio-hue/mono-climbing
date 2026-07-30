@@ -724,8 +724,20 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
     }
     updateLadiesDay(); // ② 店舗変更でレディースデイ表示を更新
     updateRegisterBtn();
+    prefetchMembers(btn.dataset.store); // ⚡ 会員リストを裏で先読み（名前検索を待たせない）
   });
 });
+
+// ⚡ 速度改善: 会員リストをバックグラウンドで先読みしてキャッシュに入れておく。
+//    画面表示はブロックせず、失敗しても無視（実際の検索時に再取得される）。
+var _prefetching = {};
+function prefetchMembers(store){
+  if(!store || _prefetching[store]) return;
+  _prefetching[store] = true;
+  setTimeout(function(){
+    try { _getCachedMemberList(store).catch(function(){}); } catch(e){}
+  }, 50);
+}
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
   return sel ? sel.dataset.store : null;
