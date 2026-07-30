@@ -296,12 +296,16 @@ var membersLoaded = false;
 //    ページを行き来しても再取得せず、名前検索が待たされない。会員の追加/変更/削除時は破棄する。
 var MEM_CACHE_TTL = 4 * 60 * 60 * 1000; // 4時間
 function memCacheKey(store){ return 'members_' + store; }
+// ⚠ 空リスト([])は「キャッシュなし」として扱い、必ず取り直す。
+//   （GASエラー時に空リストが保存されると「会員が見つかりません」が続く不具合になるため）
+function _isUsableList(v){ return Array.isArray(v) && v.length > 0; }
 function getMemCache(store){
   try {
     var s = sessionStorage.getItem(memCacheKey(store));
     if (!s) return null;
     var d = JSON.parse(s);
     if (Date.now() - d.ts > MEM_CACHE_TTL) { sessionStorage.removeItem(memCacheKey(store)); return null; }
+    if (!_isUsableList(d.data)) { sessionStorage.removeItem(memCacheKey(store)); return null; } // 壊れた空キャッシュは破棄
     return d.data;
   } catch(e) { return null; }
 }
@@ -317,10 +321,11 @@ function clearMemCache(store){
 // 会員リストを取得（キャッシュ優先）
 function fetchMemberList(store){
   var cached = getMemCache(store);
-  if (cached) return Promise.resolve(cached);
+  if (_isUsableList(cached)) return Promise.resolve(cached);
   return callAPI('getMemberList', {store: store}).then(function(res){
     var list = (res.data && Array.isArray(res.data)) ? res.data : [];
-    if (list.length) setMemCache(store, list);
+    if (_isUsableList(list)) setMemCache(store, list);
+    else clearMemCache(store);   // 取得失敗時は空をキャッシュせず破棄
     return list;
   });
 }
@@ -462,6 +467,11 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       // ⚡ キャッシュがあれば即時、無ければ取得してキャッシュ
       fetchMemberList(getStore()).then(function(list){
         allMembers = list;
+        if (!list.length) {   // 読み込み失敗を「該当なし」と誤表示しない
+          result.className = 'result-box notfound';
+          result.textContent = '会員リストを読み込めませんでした。もう一度「検索」を押してください。';
+          return;
+        }
         searchFn(allMembers);
       }).catch(function(e){
         result.className = 'result-box notfound';

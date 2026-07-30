@@ -682,15 +682,25 @@ function applyStoreLockUI() {
 
 // ④ 会員リストキャッシュ（店舗別、セッション中有効） — グローバルスコープ
 var _memberListCache = {};
+// ⚠ 重要: 空リスト([])は絶対にキャッシュしない。
+//   GASがタイムアウト/エラーを返した時に [] を4時間キャッシュしてしまうと、
+//   このページと会員管理ページ（同じキーを共有）で「会員が見つかりません」が続く不具合になる。
+function _isUsableList(v){ return Array.isArray(v) && v.length > 0; }
 function _getCachedMemberList(store) {
   var key = 'members_' + store;
-  if (_memberListCache[key]) return Promise.resolve(_memberListCache[key]);
+  if (_isUsableList(_memberListCache[key])) return Promise.resolve(_memberListCache[key]);
   var cached = getCached(key);
-  if (cached) { _memberListCache[key] = cached; return Promise.resolve(cached); }
+  if (_isUsableList(cached)) { _memberListCache[key] = cached; return Promise.resolve(cached); }
+  if (cached) { try { sessionStorage.removeItem(key); } catch(e){} } // 壊れた空キャッシュは破棄
   return callAPI('getMemberList', {store: store}).then(function(res){
     var list = (res.data && Array.isArray(res.data)) ? res.data : [];
-    _memberListCache[key] = list;
-    setCache(key, list);
+    if (_isUsableList(list)) {   // 取得できた時だけキャッシュ
+      _memberListCache[key] = list;
+      setCache(key, list);
+    } else {
+      delete _memberListCache[key];
+      try { sessionStorage.removeItem(key); } catch(e){}
+    }
     return list;
   });
 }
