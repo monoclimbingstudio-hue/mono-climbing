@@ -170,6 +170,11 @@ tbody tr:last-child td { border-bottom: none; }
 .buy-plan { background:#e8f5e9; color:#2e7d32; }
 .buy-reg { background:#ede7f6; color:#4527a0; }
 .num-cell { text-align:right; font-variant-numeric:tabular-nums; }
+/* 来店履歴の「購入内容」セル */
+.hist-body td.buy-cell { white-space:normal; min-width:230px; font-size:0.82rem; }
+.buy-line { display:block; padding:1px 0; }
+.hist-body tbody tr.has-buy td { background:#fffdf5; }
+.hist-body tbody tr.has-buy:hover td { background:#fff8e6; }
 
 .dot-loader { display: flex; gap: 4px; }
 .dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
@@ -930,15 +935,26 @@ function renderHistory(){
   if(!entries.length){ body.innerHTML = '<div class="empty-state">この会員の来店記録はまだありません</div>'; return; }
   var html;
   if(histState.tab === 'visit'){
-    html = '<table><thead><tr><th>日付</th><th>入店</th><th>利用プラン</th><th class="num-cell">利用料</th><th>レンタル</th><th class="num-cell">物販</th><th class="num-cell">合計</th><th>支払方法</th></tr></thead><tbody>' +
+    // 来店履歴に購入内容（物販・プラン購入・登録料）も表示する
+    html = '<table><thead><tr><th>日付</th><th>入店</th><th>利用プラン</th><th class="num-cell">利用料</th><th>レンタル</th><th>購入内容（物販・プラン・登録料）</th><th class="num-cell">合計</th><th>支払方法</th></tr></thead><tbody>' +
       entries.map(function(e){
-        return '<tr>' +
+        var items = purchaseItems(e);
+        var buyCell = items.length
+          ? items.map(function(it){
+              var nm = (it.kind === 'プラン') ? '' : (' ' + esc(it.name));   // プラン名は左の「利用プラン」列と重複するので省略
+              return '<span class="buy-line"><span class="buy-tag ' + it.cls + '">' + esc(it.kind) + '</span>' + nm +
+                     ' <strong>' + yen(it.amount) + '</strong>' +
+                     (it.discount ? ' <span style="color:#c62828;font-size:.76rem;">(値引 −' + yen(it.discount) + ')</span>' : '') +
+                     '</span>';
+            }).join('')
+          : '<span style="color:var(--sub);">—</span>';
+        return '<tr class="' + (items.length ? 'has-buy' : '') + '">' +
           '<td>' + esc(e.date) + '</td>' +
           '<td style="color:var(--sub);">' + esc(e.entryTime||'') + '</td>' +
           '<td>' + esc(e.planLabel||'') + '</td>' +
           '<td class="num-cell">' + (e.usageFee ? yen(e.usageFee) : '—') + '</td>' +
           '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.rentalNote||'') + (e.rentalFee ? '（' + yen(e.rentalFee) + '）' : '') + '</td>' +
-          '<td class="num-cell">' + (e.merchAmt ? yen(e.merchAmt) : '—') + '</td>' +
+          '<td class="buy-cell">' + buyCell + '</td>' +
           '<td class="num-cell" style="font-weight:700;">' + yen(e.total) + '</td>' +
           '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.payment||'') + '</td>' +
         '</tr>';
