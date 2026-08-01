@@ -175,6 +175,11 @@ tbody tr:last-child td { border-bottom: none; }
 .buy-line { display:block; padding:1px 0; }
 .hist-body tbody tr.has-buy td { background:#fffdf5; }
 .hist-body tbody tr.has-buy:hover td { background:#fff8e6; }
+/* 調整（値引・追加）セル */
+.hist-body td.adj-cell { white-space:normal; min-width:120px; font-size:0.8rem; }
+.adj-minus { display:inline-block; background:#fdecea; color:#c62828; border-radius:4px; padding:2px 8px; font-weight:700; }
+.adj-plus  { display:inline-block; background:#e8f5e9; color:#2e7d32; border-radius:4px; padding:2px 8px; font-weight:700; }
+.adj-note  { display:block; color:var(--sub); font-size:0.76rem; margin-top:2px; }
 
 .dot-loader { display: flex; gap: 4px; }
 .dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
@@ -921,6 +926,19 @@ function isPlanPurchase(pl){
   if(/利用$/.test(pl)) return false; // 月パス利用・回数券利用などは「購入」ではない
   return /月パス|回数券|半年|スクール月謝|スクール入会金/.test(pl);
 }
+// その他調整（値引き・追加）のセル。マイナス＝値引き、プラス＝追加。備考(adjustNote)も表示。
+function adjCell(e){
+  var adj = Number(e.adjustment) || 0;
+  var note = String(e.adjustNote || '').trim();
+  if(!adj && !note) return '<span style="color:var(--sub);">—</span>';
+  var html = '';
+  if(adj){
+    html += '<span class="' + (adj < 0 ? 'adj-minus' : 'adj-plus') + '">' +
+            (adj < 0 ? '値引 −' : '追加 ＋') + yen(Math.abs(adj)) + '</span>';
+  }
+  if(note) html += '<span class="adj-note">' + esc(note) + '</span>';
+  return html;
+}
 function purchaseItems(e){
   var items = [];
   if(e.regFee > 0) items.push({date:e.date, kind:'登録料', cls:'buy-reg', name:'登録料', amount:e.regFee, payment:e.payment});
@@ -936,7 +954,7 @@ function renderHistory(){
   var html;
   if(histState.tab === 'visit'){
     // 来店履歴に購入内容（物販・プラン購入・登録料）も表示する
-    html = '<table><thead><tr><th>日付</th><th>入店</th><th>利用プラン</th><th class="num-cell">利用料</th><th>レンタル</th><th>購入内容（物販・プラン・登録料）</th><th class="num-cell">合計</th><th>支払方法</th></tr></thead><tbody>' +
+    html = '<table><thead><tr><th>日付</th><th>入店</th><th>利用プラン</th><th class="num-cell">利用料</th><th>レンタル</th><th>購入内容（物販・プラン・登録料）</th><th>調整（値引・追加）</th><th class="num-cell">合計</th><th>支払方法</th></tr></thead><tbody>' +
       entries.map(function(e){
         var items = purchaseItems(e);
         var buyCell = items.length
@@ -955,6 +973,7 @@ function renderHistory(){
           '<td class="num-cell">' + (e.usageFee ? yen(e.usageFee) : '—') + '</td>' +
           '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.rentalNote||'') + (e.rentalFee ? '（' + yen(e.rentalFee) + '）' : '') + '</td>' +
           '<td class="buy-cell">' + buyCell + '</td>' +
+          '<td class="adj-cell">' + adjCell(e) + '</td>' +
           '<td class="num-cell" style="font-weight:700;">' + yen(e.total) + '</td>' +
           '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.payment||'') + '</td>' +
         '</tr>';
