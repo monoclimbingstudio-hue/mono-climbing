@@ -134,6 +134,43 @@ tbody tr:last-child td { border-bottom: none; }
 .modal-msg.err { color: #c62828; }
 .modal-msg.ok { color: var(--success); }
 
+/* 履歴モーダル */
+.row-hist-btn { border-color: #1a73e8; color: #1a73e8; background: #fff; }
+.row-hist-btn:hover { background: #e8f0fe; }
+#historyModal { position: fixed; inset: 0; z-index: 600; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 20px; }
+#historyModal.open { display: flex; }
+.hist-box { background:#fff; border-radius:14px; width:100%; max-width:1000px; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.35); overflow:hidden; }
+.hist-head { padding:18px 22px 12px; border-bottom:1px solid var(--border); }
+.hist-title { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.hist-name { font-size:1.1rem; font-weight:800; color:var(--dark); }
+.hist-code { font-size:0.85rem; color:var(--sub); font-weight:600; }
+.hist-store { font-size:0.78rem; background:#eef2f7; color:#1a5276; border-radius:100px; padding:3px 10px; font-weight:700; }
+.hist-close { margin-left:auto; background:none; border:none; font-size:1.4rem; line-height:1; color:var(--sub); cursor:pointer; padding:0 4px; }
+.hist-close:hover { color:var(--dark); }
+.hist-summary { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; }
+.hs-item { background:#f7f9fc; border:1px solid var(--border); border-radius:8px; padding:8px 12px; min-width:110px; }
+.hs-label { font-size:0.72rem; color:var(--sub); font-weight:600; }
+.hs-value { font-size:1rem; font-weight:800; color:var(--dark); font-variant-numeric:tabular-nums; }
+.hist-plans { margin-top:10px; font-size:0.8rem; color:var(--sub); }
+.hist-plans .pl-tag { display:inline-block; background:#eef2f7; color:#1a5276; border-radius:4px; padding:2px 8px; margin:2px 4px 2px 0; font-weight:600; }
+.hist-tabs { display:flex; gap:8px; padding:12px 22px 0; }
+.hist-tab { padding:9px 16px; border:none; background:none; font-size:0.9rem; font-weight:700; color:var(--sub); cursor:pointer; border-bottom:3px solid transparent; }
+.hist-tab.sel { color:var(--dark); border-bottom-color:var(--accent); }
+.hist-body { padding:12px 22px 20px; overflow:auto; flex:1; }
+.hist-body table { width:100%; border-collapse:collapse; font-size:0.84rem; min-width:680px; }
+.hist-body thead th { position:sticky; top:0; background:#f5f5f5; padding:8px 10px; text-align:left; border-bottom:2px solid var(--border); font-size:0.75rem; color:var(--mid); font-weight:700; white-space:nowrap; }
+.hist-body tbody td { padding:8px 10px; border-bottom:1px solid #f0f0f0; white-space:nowrap; }
+.hist-body tbody tr:hover td { background:#fafafa; }
+.hist-more { text-align:center; margin-top:14px; }
+.hist-more button { padding:10px 22px; border:1.5px solid var(--border); border-radius:8px; background:#fff; color:var(--mid); font-size:0.86rem; font-weight:700; cursor:pointer; }
+.hist-more button:hover { border-color:var(--dark); color:var(--dark); }
+.hist-more button:disabled { opacity:.5; cursor:not-allowed; }
+.buy-tag { display:inline-block; border-radius:4px; padding:2px 8px; font-size:0.74rem; font-weight:700; }
+.buy-merch { background:#fff3e0; color:#e65100; }
+.buy-plan { background:#e8f5e9; color:#2e7d32; }
+.buy-reg { background:#ede7f6; color:#4527a0; }
+.num-cell { text-align:right; font-variant-numeric:tabular-nums; }
+
 .dot-loader { display: flex; gap: 4px; }
 .dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
 .dot-loader span:nth-child(2) { animation-delay: .15s; }
@@ -191,6 +228,29 @@ tbody tr:last-child td { border-bottom: none; }
       <button class="modal-cancel-btn" id="editCancelBtn">キャンセル</button>
     </div>
     <div class="modal-msg" id="editModalMsg"></div>
+  </div>
+</div>
+
+<!-- 会員ごとの来店・購入履歴 -->
+<div id="historyModal">
+  <div class="hist-box">
+    <div class="hist-head">
+      <div class="hist-title">
+        <span class="hist-name" id="histName">—</span>
+        <span class="hist-code" id="histCode"></span>
+        <span class="hist-store" id="histStore"></span>
+        <button class="hist-close" id="histCloseBtn" title="閉じる">×</button>
+      </div>
+      <div class="hist-summary" id="histSummary"></div>
+      <div class="hist-plans" id="histPlans"></div>
+    </div>
+    <div class="hist-tabs">
+      <button class="hist-tab sel" data-tab="visit">来店履歴</button>
+      <button class="hist-tab" data-tab="buy">購入履歴</button>
+    </div>
+    <div class="hist-body" id="histBody">
+      <div class="empty-state">読み込み中...</div>
+    </div>
   </div>
 </div>
 
@@ -340,21 +400,45 @@ function prefetchMembers(store){
 }
 var STORE_LABEL = {hakata: '博多店', omura: '大村店', sasebo: '佐世保店'};
 
+// GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあるため、
+// 読み取り系のみ自動リトライする（会員の追加/変更/削除は二重実行防止のため対象外）。
+var SAFE_RETRY = { getMemberList:1, getMember:1, getMemberHistory:1 };
+function _isTransientErr(res){
+  if(!res) return true;
+  if(res.ok === false){
+    var e = String(res.error || '');
+    if(e==='GAS_HTML_RESPONSE'||e==='GAS_BAD_JSON'||e==='応答JSONパース失敗'||e==='network') return true;
+    if(/timeout|timed out|fetch|network|50[234]/i.test(e)) return true;
+  }
+  return false;
+}
 function callAPI(action, params) {
-  return fetch('/api/gas', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(Object.assign({action: action}, params))
-  }).then(function(r){
-    return r.text().then(function(t){
-      try { return JSON.parse(t); }
-      catch(e) {
-        return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+  var maxTry = SAFE_RETRY[action] ? 3 : 1;
+  function attempt(n){
+    return fetch('/api/gas', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(Object.assign({action: action}, params))
+    }).then(function(r){
+      return r.text().then(function(t){
+        try { return JSON.parse(t); }
+        catch(e) {
+          return { ok:false, error:'応答JSONパース失敗', data:{ error:'サーバー応答を解釈できませんでした。時間をおいて再実行してください。', raw:(t||'').slice(0,200) } };
+        }
+      });
+    }).catch(function(err){
+      return { ok:false, error:'network', data:{ error:'通信エラー: ' + String((err&&err.message)||err) } };
+    }).then(function(res){
+      if(n < maxTry && _isTransientErr(res)){
+        return new Promise(function(rs){ setTimeout(rs, 700*n); }).then(function(){ return attempt(n+1); });
       }
+      return res;
     });
-  });
+  }
+  return attempt(1);
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function yen(n){ return '¥' + (Number(n)||0).toLocaleString(); }
 
 function getStore() {
   var sel = document.querySelector('.store-tab.sel');
@@ -437,7 +521,11 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       var m = res.data;
       if (m && m.name) {
         result.className = 'result-box found';
-        result.innerHTML = '✓&nbsp; <strong>' + esc(m.name) + '</strong>　（会員番号: ' + esc(code) + '）';
+        result.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<span>✓&nbsp; <strong>' + esc(m.name) + '</strong>　（会員番号: ' + esc(code) + '）</span>' +
+          '<button class="row-hist-btn hist-open" data-code="' + esc(code) + '" data-name="' + esc(m.name) + '">履歴を見る</button>' +
+          '</div>';
+        bindHistButtons(result);
       } else {
         result.className = 'result-box notfound';
         result.textContent = getStoreLabel() + ' に会員番号 ' + code + ' は未登録です';
@@ -457,8 +545,12 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       } else {
         result.className = 'result-box found';
         result.innerHTML = matches.slice(0, 15).map(function(m){
-          return '<div style="padding:3px 0;">✓ <strong>' + esc(m.name) + '</strong>（' + esc(m.code) + '）</div>';
+          return '<div style="padding:4px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<span>✓ <strong>' + esc(m.name) + '</strong>（' + esc(m.code) + '）</span>' +
+            '<button class="row-hist-btn hist-open" data-code="' + esc(String(m.code)) + '" data-name="' + esc(m.name) + '">履歴</button>' +
+            '</div>';
         }).join('') + (matches.length > 15 ? '<div style="color:var(--sub);font-size:.82rem;">他 ' + (matches.length - 15) + ' 件</div>' : '');
+        bindHistButtons(result);
       }
     };
     if (allMembers && allMembers.length > 0) {
@@ -654,6 +746,7 @@ function renderMemberTable(members){
       '<td>' + name + '</td>' +
       '<td style="color:var(--sub);font-size:.82rem;">' + esc(m.joinDate || '') + '</td>' +
       '<td><div class="row-actions">' +
+        '<button class="row-hist-btn" data-code="' + code + '" data-name="' + name + '">履歴</button>' +
         '<button class="row-edit-btn" data-code="' + code + '" data-name="' + name + '">編集</button>' +
         '<button class="row-del-btn" data-code="' + code + '" data-name="' + name + '">削除</button>' +
       '</div></td>' +
@@ -661,6 +754,12 @@ function renderMemberTable(members){
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.row-hist-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      openHistoryModal(this.dataset.code, this.dataset.name);
+    });
+  });
 
   wrap.querySelectorAll('.row-edit-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -738,6 +837,143 @@ function deleteMember(code, name) {
   }).catch(function(e){
     alert('削除エラー: ' + e.message);
   });
+}
+
+// ── 会員ごとの来店・購入履歴 ──────────────────────────────
+// 検索結果内の「履歴」ボタンにハンドラを付ける
+function bindHistButtons(container){
+  container.querySelectorAll('.hist-open').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      openHistoryModal(this.dataset.code, this.dataset.name);
+    });
+  });
+}
+
+var histState ={ code:'', name:'', store:'', entries:[], offset:0, limit:50, hasMore:false, tab:'visit', summary:null, loading:false };
+
+function openHistoryModal(code, name){
+  histState = { code:String(code), name:name||'', store:getStore(), entries:[], offset:0, limit:50, hasMore:false, tab:'visit', summary:null, loading:false };
+  document.getElementById('histName').textContent = name || '(氏名なし)';
+  document.getElementById('histCode').textContent = '会員番号 ' + code;
+  document.getElementById('histStore').textContent = getStoreLabel();
+  document.getElementById('histSummary').innerHTML = '';
+  document.getElementById('histPlans').innerHTML = '';
+  document.querySelectorAll('.hist-tab').forEach(function(t){ t.classList.toggle('sel', t.dataset.tab==='visit'); });
+  document.getElementById('histBody').innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:24px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>履歴を読み込み中...</div>';
+  document.getElementById('historyModal').classList.add('open');
+  loadHistory(false);
+}
+function closeHistoryModal(){ document.getElementById('historyModal').classList.remove('open'); }
+document.getElementById('histCloseBtn').addEventListener('click', closeHistoryModal);
+document.getElementById('historyModal').addEventListener('click', function(e){ if(e.target===this) closeHistoryModal(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeHistoryModal(); });
+document.querySelectorAll('.hist-tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    histState.tab = t.dataset.tab;
+    document.querySelectorAll('.hist-tab').forEach(function(x){ x.classList.toggle('sel', x===t); });
+    renderHistory();
+  });
+});
+
+function loadHistory(append){
+  if(histState.loading) return;
+  histState.loading = true;
+  callAPI('getMemberHistory', { store: histState.store, code: histState.code, limit: histState.limit, offset: histState.offset })
+  .then(function(res){
+    histState.loading = false;
+    if(!res.ok || !res.data){
+      var em = (res.data && res.data.error) ? res.data.error : (res.error || '履歴を読み込めませんでした');
+      document.getElementById('histBody').innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(em) + '</div>';
+      return;
+    }
+    var d = res.data;
+    histState.summary = d;
+    histState.hasMore = !!d.hasMore;
+    histState.entries = append ? histState.entries.concat(d.entries||[]) : (d.entries||[]);
+    histState.offset = histState.entries.length;
+    if(d.name && !histState.name){ histState.name = d.name; document.getElementById('histName').textContent = d.name; }
+    renderSummary(d);
+    renderHistory();
+  });
+}
+
+function renderSummary(d){
+  document.getElementById('histSummary').innerHTML =
+    '<div class="hs-item"><div class="hs-label">来店記録</div><div class="hs-value">' + (d.totalRecords||0) + ' 回</div></div>' +
+    '<div class="hs-item"><div class="hs-label">初回来店</div><div class="hs-value" style="font-size:.9rem;">' + esc(d.firstDate||'—') + '</div></div>' +
+    '<div class="hs-item"><div class="hs-label">最終来店</div><div class="hs-value" style="font-size:.9rem;">' + esc(d.lastDate||'—') + '</div></div>' +
+    '<div class="hs-item"><div class="hs-label">累計お支払い</div><div class="hs-value">' + yen(d.sumTotal) + '</div></div>' +
+    '<div class="hs-item"><div class="hs-label">うち物販</div><div class="hs-value">' + yen(d.sumMerch) + '</div></div>';
+  var plans = d.topPlans || [];
+  document.getElementById('histPlans').innerHTML = plans.length
+    ? 'よく使うプラン： ' + plans.map(function(p){ return '<span class="pl-tag">' + esc(p.label) + ' ' + p.count + '回</span>'; }).join('')
+    : '';
+}
+
+function isPlanPurchase(pl){
+  pl = String(pl||'');
+  if(!pl) return false;
+  if(/利用$/.test(pl)) return false; // 月パス利用・回数券利用などは「購入」ではない
+  return /月パス|回数券|半年|スクール月謝|スクール入会金/.test(pl);
+}
+function purchaseItems(e){
+  var items = [];
+  if(e.regFee > 0) items.push({date:e.date, kind:'登録料', cls:'buy-reg', name:'登録料', amount:e.regFee, payment:e.payment});
+  if(isPlanPurchase(e.planLabel)) items.push({date:e.date, kind:'プラン', cls:'buy-plan', name:e.planLabel, amount:e.usageFee, payment:e.payment});
+  if(e.merchAmt > 0) items.push({date:e.date, kind:'物販', cls:'buy-merch', name:(e.merchNote||'物販'), amount:e.merchAmt, payment:e.payment, discount:e.merchDiscount});
+  return items;
+}
+
+function renderHistory(){
+  var body = document.getElementById('histBody');
+  var entries = histState.entries || [];
+  if(!entries.length){ body.innerHTML = '<div class="empty-state">この会員の来店記録はまだありません</div>'; return; }
+  var html;
+  if(histState.tab === 'visit'){
+    html = '<table><thead><tr><th>日付</th><th>入店</th><th>利用プラン</th><th class="num-cell">利用料</th><th>レンタル</th><th class="num-cell">物販</th><th class="num-cell">合計</th><th>支払方法</th></tr></thead><tbody>' +
+      entries.map(function(e){
+        return '<tr>' +
+          '<td>' + esc(e.date) + '</td>' +
+          '<td style="color:var(--sub);">' + esc(e.entryTime||'') + '</td>' +
+          '<td>' + esc(e.planLabel||'') + '</td>' +
+          '<td class="num-cell">' + (e.usageFee ? yen(e.usageFee) : '—') + '</td>' +
+          '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.rentalNote||'') + (e.rentalFee ? '（' + yen(e.rentalFee) + '）' : '') + '</td>' +
+          '<td class="num-cell">' + (e.merchAmt ? yen(e.merchAmt) : '—') + '</td>' +
+          '<td class="num-cell" style="font-weight:700;">' + yen(e.total) + '</td>' +
+          '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.payment||'') + '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>';
+  } else {
+    var items = [];
+    entries.forEach(function(e){ items = items.concat(purchaseItems(e)); });
+    if(!items.length){
+      html = '<div class="empty-state">表示中の期間に購入の記録はありません（物販・月パス・回数券・登録料など）</div>';
+    } else {
+      html = '<table><thead><tr><th>日付</th><th>種別</th><th>内容</th><th class="num-cell">金額</th><th>支払方法</th></tr></thead><tbody>' +
+        items.map(function(it){
+          return '<tr>' +
+            '<td>' + esc(it.date) + '</td>' +
+            '<td><span class="buy-tag ' + it.cls + '">' + esc(it.kind) + '</span></td>' +
+            '<td>' + esc(it.name) + (it.discount ? ' <span style="color:#c62828;font-size:.78rem;">（値引 −' + yen(it.discount) + '）</span>' : '') + '</td>' +
+            '<td class="num-cell" style="font-weight:700;">' + yen(it.amount) + '</td>' +
+            '<td style="color:var(--sub);font-size:.8rem;">' + esc(it.payment||'') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table>';
+    }
+  }
+  html += '<div class="hist-more">' +
+    (histState.hasMore
+      ? '<button id="histMoreBtn">もっと見る（さらに過去' + histState.limit + '件）</button>'
+      : '<span style="color:var(--sub);font-size:.82rem;">これ以上の記録はありません（表示中 ' + entries.length + ' 件）</span>') +
+    '</div>';
+  body.innerHTML = html;
+  var more = document.getElementById('histMoreBtn');
+  if(more){
+    more.addEventListener('click', function(){
+      more.disabled = true; more.textContent = '読み込み中...';
+      loadHistory(true);
+    });
+  }
 }
 
 // Filter
