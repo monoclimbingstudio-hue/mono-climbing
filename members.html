@@ -180,6 +180,11 @@ tbody tr:last-child td { border-bottom: none; }
 .adj-minus { display:inline-block; background:#fdecea; color:#c62828; border-radius:4px; padding:2px 8px; font-weight:700; }
 .adj-plus  { display:inline-block; background:#e8f5e9; color:#2e7d32; border-radius:4px; padding:2px 8px; font-weight:700; }
 .adj-note  { display:block; color:var(--sub); font-size:0.76rem; margin-top:2px; }
+/* 検索結果の「もっと表示」ボタン */
+.more-btn { padding:8px 14px; border:1.5px solid var(--dark); border-radius:8px; background:var(--dark); color:#fff; font-size:0.83rem; font-weight:700; cursor:pointer; transition:opacity .15s; }
+.more-btn:hover { opacity:.85; }
+.more-btn.ghost { background:#fff; color:var(--mid); border-color:var(--border); }
+.more-btn.ghost:hover { border-color:var(--dark); color:var(--dark); opacity:1; }
 
 .dot-loader { display: flex; gap: 4px; }
 .dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
@@ -304,6 +309,10 @@ tbody tr:last-child td { border-bottom: none; }
         <input type="text" id="searchName" placeholder="名前で検索" style="flex:1;">
         <button class="search-btn" id="searchBtn">検索</button>
       </div>
+      <div style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="more-btn ghost" id="refreshMembersBtn" style="padding:6px 12px;font-size:0.78rem;">🔄 会員リストを最新にする</button>
+        <span id="refreshMembersMsg" style="font-size:0.78rem;color:var(--sub);"></span>
+      </div>
       <div id="searchResult" class="result-box"></div>
     </div>
   </div>
@@ -364,28 +373,34 @@ var membersLoaded = false;
 
 // ⚡ 速度改善: 会員リストのキャッシュ（入店登録ページと同じ sessionStorage キーを共有）。
 //    ページを行き来しても再取得せず、名前検索が待たされない。会員の追加/変更/削除時は破棄する。
-var MEM_CACHE_TTL = 4 * 60 * 60 * 1000; // 4時間
-function memCacheKey(store){ return 'members_' + store; }
+// ⚡ localStorage に保存するのでタブを閉じても保持され、次に開いたとき即座に検索できる。
+//    会員の追加/変更/削除時と、TTL経過時、手動更新時にだけ取り直す。
+var MEM_CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間
+function memCacheKey(store){ return 'mono_members_' + store; }
+function _memStore(){ try { return window.localStorage; } catch(e) { return window.sessionStorage; } }
 // ⚠ 空リスト([])は「キャッシュなし」として扱い、必ず取り直す。
 //   （GASエラー時に空リストが保存されると「会員が見つかりません」が続く不具合になるため）
 function _isUsableList(v){ return Array.isArray(v) && v.length > 0; }
 function getMemCache(store){
   try {
-    var s = sessionStorage.getItem(memCacheKey(store));
+    var s = _memStore().getItem(memCacheKey(store));
     if (!s) return null;
     var d = JSON.parse(s);
-    if (Date.now() - d.ts > MEM_CACHE_TTL) { sessionStorage.removeItem(memCacheKey(store)); return null; }
-    if (!_isUsableList(d.data)) { sessionStorage.removeItem(memCacheKey(store)); return null; } // 壊れた空キャッシュは破棄
+    if (Date.now() - d.ts > MEM_CACHE_TTL) { clearMemCache(store); return null; }
+    if (!_isUsableList(d.data)) { clearMemCache(store); return null; } // 壊れた空キャッシュは破棄
     return d.data;
   } catch(e) { return null; }
 }
 function setMemCache(store, list){
-  try { sessionStorage.setItem(memCacheKey(store), JSON.stringify({ts: Date.now(), data: list})); } catch(e){}
+  if (!_isUsableList(list)) return;   // 空リストは絶対に保存しない
+  try { _memStore().setItem(memCacheKey(store), JSON.stringify({ts: Date.now(), data: list})); }
+  catch(e) { try { _memStore().removeItem(memCacheKey(store)); } catch(_e){} } // 容量超過などは保存を諦める
 }
 function clearMemCache(store){
   try {
-    if (store) sessionStorage.removeItem(memCacheKey(store));
-    else ['hakata','omura','sasebo'].forEach(function(s){ sessionStorage.removeItem(memCacheKey(s)); });
+    var st = _memStore();
+    if (store) { st.removeItem(memCacheKey(store)); sessionStorage.removeItem('members_' + store); }
+    else ['hakata','omura','sasebo'].forEach(function(s){ st.removeItem(memCacheKey(s)); sessionStorage.removeItem('members_' + s); });
   } catch(e){}
 }
 // 会員リストを取得（キャッシュ優先）
@@ -516,6 +531,37 @@ document.querySelectorAll('.store-tab').forEach(function(btn){
 })();
 
 // ── SEARCH (by code or name) ──────────────────────────────────────────
+// ① 名前検索の結果が多い場合は最初15件だけ表示し、「他◯件を表示」クリックで続きを出す
+var searchMatches = [];
+var searchShown = 15;
+var SEARCH_STEP = 50;
+function renderSearchMatches(){
+  var result = document.getElementById('searchResult');
+  var shown = searchMatches.slice(0, searchShown);
+  var rest = searchMatches.length - shown.length;
+  result.className = 'result-box found';
+  result.innerHTML =
+    '<div style="font-size:.82rem;color:var(--sub);margin-bottom:6px;font-weight:600;">' +
+      searchMatches.length + ' 件ヒット（' + shown.length + ' 件を表示中）' +
+    '</div>' +
+    shown.map(function(m){
+      return '<div style="padding:4px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<span>✓ <strong>' + esc(m.name) + '</strong>（' + esc(m.code) + '）</span>' +
+        '<button class="row-hist-btn hist-open" data-code="' + esc(String(m.code)) + '" data-name="' + esc(m.name) + '">履歴</button>' +
+        '</div>';
+    }).join('') +
+    (rest > 0
+      ? '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">' +
+          '<button class="more-btn" id="searchMoreBtn">他 ' + rest + ' 件を表示（次の' + Math.min(rest, SEARCH_STEP) + '件）</button>' +
+          (rest > SEARCH_STEP ? '<button class="more-btn ghost" id="searchAllBtn">すべて表示（' + searchMatches.length + '件）</button>' : '') +
+        '</div>'
+      : (searchMatches.length > 15 ? '<div style="margin-top:6px;color:var(--sub);font-size:.8rem;">すべて表示しました</div>' : ''));
+  bindHistButtons(result);
+  var more = document.getElementById('searchMoreBtn');
+  if(more) more.addEventListener('click', function(){ searchShown += SEARCH_STEP; renderSearchMatches(); });
+  var all = document.getElementById('searchAllBtn');
+  if(all) all.addEventListener('click', function(){ searchShown = searchMatches.length; renderSearchMatches(); });
+}
 document.getElementById('searchBtn').addEventListener('click', function(){
   if (!requireStore()) return;
   var code = document.getElementById('searchCode').value.trim();
@@ -553,14 +599,9 @@ document.getElementById('searchBtn').addEventListener('click', function(){
         result.className = 'result-box notfound';
         result.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
       } else {
-        result.className = 'result-box found';
-        result.innerHTML = matches.slice(0, 15).map(function(m){
-          return '<div style="padding:4px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-            '<span>✓ <strong>' + esc(m.name) + '</strong>（' + esc(m.code) + '）</span>' +
-            '<button class="row-hist-btn hist-open" data-code="' + esc(String(m.code)) + '" data-name="' + esc(m.name) + '">履歴</button>' +
-            '</div>';
-        }).join('') + (matches.length > 15 ? '<div style="color:var(--sub);font-size:.82rem;">他 ' + (matches.length - 15) + ' 件</div>' : '');
-        bindHistButtons(result);
+        searchMatches = matches;
+        searchShown = 15;
+        renderSearchMatches();
       }
     };
     if (allMembers && allMembers.length > 0) {
@@ -582,6 +623,24 @@ document.getElementById('searchBtn').addEventListener('click', function(){
     }
   }
 });
+// ⚡ 他の端末で会員を追加した直後など、手動でキャッシュを捨てて取り直す
+document.getElementById('refreshMembersBtn').addEventListener('click', function(){
+  var store = getStore();
+  if(!store){ requireStore(); return; }
+  var btn = this, msg = document.getElementById('refreshMembersMsg');
+  btn.disabled = true; msg.textContent = '最新の会員リストを取得中...';
+  clearMemCache(store);
+  allMembers = [];
+  _prefetching[store] = false;
+  fetchMemberList(store).then(function(list){
+    btn.disabled = false;
+    allMembers = list;
+    msg.textContent = list.length ? ('✓ ' + getStoreLabel() + ' ' + list.length + ' 名を読み込みました') : '取得できませんでした。もう一度お試しください';
+    if(membersLoaded) loadMembers();
+    setTimeout(function(){ msg.textContent = ''; }, 6000);
+  });
+});
+
 document.getElementById('searchCode').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('searchBtn').click();
 });
@@ -885,8 +944,38 @@ document.querySelectorAll('.hist-tab').forEach(function(t){
   });
 });
 
+// ⚡ 履歴の1ページ目は短時間キャッシュ（同じ会員をもう一度開くと即表示）
+var HIST_CACHE_TTL = 10 * 60 * 1000; // 10分
+function histCacheKey(store, code){ return 'mono_hist_' + store + '_' + code; }
+function readHistCache(store, code){
+  try {
+    var s = sessionStorage.getItem(histCacheKey(store, code));
+    if(!s) return null;
+    var d = JSON.parse(s);
+    if(Date.now() - d.ts > HIST_CACHE_TTL) { sessionStorage.removeItem(histCacheKey(store, code)); return null; }
+    return d.data;
+  } catch(e){ return null; }
+}
+function writeHistCache(store, code, data){
+  try { sessionStorage.setItem(histCacheKey(store, code), JSON.stringify({ts: Date.now(), data: data})); } catch(e){}
+}
+
 function loadHistory(append){
   if(histState.loading) return;
+  // 1ページ目はキャッシュがあれば即表示（裏では取り直さない：10分以内なら十分新しい）
+  if(!append){
+    var cached = readHistCache(histState.store, histState.code);
+    if(cached && cached.entries){
+      histState.summary = cached;
+      histState.hasMore = !!cached.hasMore;
+      histState.entries = cached.entries;
+      histState.offset = cached.entries.length;
+      if(cached.name){ histState.name = cached.name; document.getElementById('histName').textContent = cached.name; }
+      renderSummary(cached);
+      renderHistory();
+      return;
+    }
+  }
   histState.loading = true;
   callAPI('getMemberHistory', { store: histState.store, code: histState.code, limit: histState.limit, offset: histState.offset })
   .then(function(res){
@@ -902,6 +991,7 @@ function loadHistory(append){
     histState.entries = append ? histState.entries.concat(d.entries||[]) : (d.entries||[]);
     histState.offset = histState.entries.length;
     if(d.name && !histState.name){ histState.name = d.name; document.getElementById('histName').textContent = d.name; }
+    if(!append) writeHistCache(histState.store, histState.code, d); // 1ページ目だけキャッシュ
     renderSummary(d);
     renderHistory();
   });
