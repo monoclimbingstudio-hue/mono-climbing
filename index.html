@@ -688,9 +688,20 @@ var _memberListCache = {};
 function _isUsableList(v){ return Array.isArray(v) && v.length > 0; }
 // ⚡ 会員リストは localStorage に保存（会員管理ページと共通）。タブを閉じても保持されるので
 //    次に開いたときの会員検索が待ち時間ゼロになる。TTL 6時間 / 会員の増減時は破棄される。
-var MEMBER_CACHE_TTL = 6 * 60 * 60 * 1000;
+// 有効期限1時間。5分以上古ければ裏で最新化。保存は [番号, 氏名] の配列に圧縮して容量を約60%削減。
+var MEMBER_CACHE_TTL = 60 * 60 * 1000;
+var MEMBER_REVALIDATE_AFTER = 5 * 60 * 1000;
+var _MEM_STORE_LABEL = { hakata:'博多', omura:'大村', sasebo:'佐世保' };
 function _memKey(store){ return 'mono_members_' + store; }
 function _memStore(){ try { return window.localStorage; } catch(e) { return window.sessionStorage; } }
+function _memPack(list){ return list.map(function(m){ return [String(m.code), String(m.name == null ? '' : m.name)]; }); }
+function _memUnpack(rows, store){
+  var label = _MEM_STORE_LABEL[store] || '';
+  return rows.map(function(r){ return Array.isArray(r) ? { code: r[0], name: r[1], store: label } : r; });
+}
+function _memAge(store){
+  try { var s = _memStore().getItem(_memKey(store)); return s ? (Date.now() - JSON.parse(s).ts) : null; } catch(e){ return null; }
+}
 function _memRead(store){
   try {
     var s = _memStore().getItem(_memKey(store));
@@ -698,22 +709,19 @@ function _memRead(store){
     var d = JSON.parse(s);
     if (Date.now() - d.ts > MEMBER_CACHE_TTL) { _memClear(store); return null; }
     if (!_isUsableList(d.data)) { _memClear(store); return null; }
-    return d.data;
+    return _memUnpack(d.data, store);
   } catch(e) { return null; }
 }
 function _memWrite(store, list){
   if (!_isUsableList(list)) return;
-  try { _memStore().setItem(_memKey(store), JSON.stringify({ts: Date.now(), data: list})); }
+  try { _memStore().setItem(_memKey(store), JSON.stringify({ts: Date.now(), data: _memPack(list)})); }
   catch(e) { try { _memStore().removeItem(_memKey(store)); } catch(_e){} }
 }
 function _memClear(store){
   try { _memStore().removeItem(_memKey(store)); sessionStorage.removeItem('members_' + store); } catch(e){}
 }
-function _getCachedMemberList(store) {
+function _fetchMemberListFresh(store) {
   var key = 'members_' + store;
-  if (_isUsableList(_memberListCache[key])) return Promise.resolve(_memberListCache[key]);
-  var cached = _memRead(store);
-  if (_isUsableList(cached)) { _memberListCache[key] = cached; return Promise.resolve(cached); }
   return callAPI('getMemberList', {store: store}).then(function(res){
     var list = (res.data && Array.isArray(res.data)) ? res.data : [];
     if (_isUsableList(list)) {   // 取得できた時だけキャッシュ
@@ -725,6 +733,25 @@ function _getCachedMemberList(store) {
     }
     return list;
   });
+}
+// キャッシュが5分以上古ければ裏で最新化（画面は待たせない）
+var _memRevalidating = {};
+function _revalidateMembers(store){
+  var age = _memAge(store);
+  if (age === null || age < MEMBER_REVALIDATE_AFTER) return;
+  if (_memRevalidating[store]) return;
+  _memRevalidating[store] = true;
+  setTimeout(function(){
+    _fetchMemberListFresh(store).then(function(){ _memRevalidating[store] = false; },
+                                      function(){ _memRevalidating[store] = false; });
+  }, 400);
+}
+function _getCachedMemberList(store) {
+  var key = 'members_' + store;
+  if (_isUsableList(_memberListCache[key])) { _revalidateMembers(store); return Promise.resolve(_memberListCache[key]); }
+  var cached = _memRead(store);
+  if (_isUsableList(cached)) { _memberListCache[key] = cached; _revalidateMembers(store); return Promise.resolve(cached); }
+  return _fetchMemberListFresh(store);
 }
 
 // Store selection（デフォルト選択なし → 選択必須）
@@ -1407,6 +1434,7 @@ function unlockMemberCode() {
 }
 
 // Member search (by code or name) - ⑥ 店舗変更レースコンディション対策
+var _nameSearchRetried = false; // 0件時の自動再取得が無限ループしないようにするフラグ
 document.getElementById('searchBtn').addEventListener('click', function(){
   // ⑤ ロック中は新検索の前に解除
   if (_memberLocked) unlockMemberCode();
@@ -1455,6 +1483,19 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       var q = nameQuery.toLowerCase();
       // ③ 会員名が数値等の非文字列でも落ちないよう String() でコアース（博多店の名前検索エラー対策）
       var matches = list.filter(function(m){ return String(m.name == null ? '' : m.name).toLowerCase().indexOf(q) !== -1; });
+      if (matches.length === 0 && !_nameSearchRetried) {
+        // 新しく登録された会員がキャッシュに無いだけの可能性 → 最新を取り直して1回だけ再検索
+        _nameSearchRetried = true;
+        badge.className = 'member-badge notfound';
+        badge.textContent = '見つからないため、最新の会員リストで再検索しています...';
+        _memClear(searchStore);
+        delete _memberListCache['members_' + searchStore];
+        _fetchMemberListFresh(searchStore).then(function(){
+          document.getElementById('searchBtn').click();
+        });
+        return;
+      }
+      _nameSearchRetried = false;
       if (matches.length === 0) {
         badge.className = 'member-badge notfound';
         badge.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';

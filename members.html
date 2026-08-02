@@ -374,10 +374,29 @@ var membersLoaded = false;
 // ⚡ 速度改善: 会員リストのキャッシュ（入店登録ページと同じ sessionStorage キーを共有）。
 //    ページを行き来しても再取得せず、名前検索が待たされない。会員の追加/変更/削除時は破棄する。
 // ⚡ localStorage に保存するのでタブを閉じても保持され、次に開いたとき即座に検索できる。
-//    会員の追加/変更/削除時と、TTL経過時、手動更新時にだけ取り直す。
-var MEM_CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間
+//    【会員が増えても取り残されない仕組み】
+//      1) 有効期限は1時間（超えたら必ず取り直す）
+//      2) キャッシュで即表示したあと、5分以上経っていれば裏で最新を取得して差し替える
+//      3) 名前検索が0件だった時は「古いだけ」の可能性があるので自動で取り直して再検索
+//      4) このアプリで会員を追加/変更/削除したら即破棄
+//      5) 「🔄 会員リストを最新にする」ボタンでいつでも手動更新
+//    【容量対策】保存時は [会員番号, 氏名] の配列に圧縮（約0.75MB→0.30MB。localStorage上限5MBの6%）
+var MEM_CACHE_TTL = 60 * 60 * 1000;       // 1時間で失効
+var MEM_REVALIDATE_AFTER = 5 * 60 * 1000; // 5分以上古ければ裏で最新化
 function memCacheKey(store){ return 'mono_members_' + store; }
 function _memStore(){ try { return window.localStorage; } catch(e) { return window.sessionStorage; } }
+function _memPack(list){ return list.map(function(m){ return [String(m.code), String(m.name == null ? '' : m.name)]; }); }
+function _memUnpack(rows, store){
+  var label = STORE_LABEL[store] || '';
+  return rows.map(function(r){ return Array.isArray(r) ? { code: r[0], name: r[1], store: label } : r; });
+}
+function getMemCacheAge(store){
+  try {
+    var s = _memStore().getItem(memCacheKey(store));
+    if(!s) return null;
+    return Date.now() - JSON.parse(s).ts;
+  } catch(e){ return null; }
+}
 // ⚠ 空リスト([])は「キャッシュなし」として扱い、必ず取り直す。
 //   （GASエラー時に空リストが保存されると「会員が見つかりません」が続く不具合になるため）
 function _isUsableList(v){ return Array.isArray(v) && v.length > 0; }
@@ -388,12 +407,12 @@ function getMemCache(store){
     var d = JSON.parse(s);
     if (Date.now() - d.ts > MEM_CACHE_TTL) { clearMemCache(store); return null; }
     if (!_isUsableList(d.data)) { clearMemCache(store); return null; } // 壊れた空キャッシュは破棄
-    return d.data;
+    return _memUnpack(d.data, store);
   } catch(e) { return null; }
 }
 function setMemCache(store, list){
   if (!_isUsableList(list)) return;   // 空リストは絶対に保存しない
-  try { _memStore().setItem(memCacheKey(store), JSON.stringify({ts: Date.now(), data: list})); }
+  try { _memStore().setItem(memCacheKey(store), JSON.stringify({ts: Date.now(), data: _memPack(list)})); }
   catch(e) { try { _memStore().removeItem(memCacheKey(store)); } catch(_e){} } // 容量超過などは保存を諦める
 }
 function clearMemCache(store){
@@ -404,15 +423,33 @@ function clearMemCache(store){
   } catch(e){}
 }
 // 会員リストを取得（キャッシュ優先）
-function fetchMemberList(store){
-  var cached = getMemCache(store);
-  if (_isUsableList(cached)) return Promise.resolve(cached);
+// サーバーから必ず取り直す
+function fetchMemberListFresh(store){
   return callAPI('getMemberList', {store: store}).then(function(res){
     var list = (res.data && Array.isArray(res.data)) ? res.data : [];
     if (_isUsableList(list)) setMemCache(store, list);
     else clearMemCache(store);   // 取得失敗時は空をキャッシュせず破棄
     return list;
   });
+}
+// キャッシュが少し古ければ、裏で最新を取ってきて差し替える（画面は待たせない）
+var _revalidating = {};
+function revalidateMembers(store){
+  var age = getMemCacheAge(store);
+  if (age === null || age < MEM_REVALIDATE_AFTER) return;
+  if (_revalidating[store]) return;
+  _revalidating[store] = true;
+  setTimeout(function(){
+    fetchMemberListFresh(store).then(function(list){
+      _revalidating[store] = false;
+      if (_isUsableList(list) && getStore() === store) allMembers = list; // 次の検索から最新
+    }, function(){ _revalidating[store] = false; });
+  }, 400);
+}
+function fetchMemberList(store){
+  var cached = getMemCache(store);
+  if (_isUsableList(cached)) { revalidateMembers(store); return Promise.resolve(cached); }
+  return fetchMemberListFresh(store);
 }
 // バックグラウンド先読み（画面はブロックしない・失敗は無視）
 var _prefetching = {};
@@ -591,11 +628,22 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       result.textContent = 'エラー: ' + e.message;
     });
   } else {
-    var searchFn = function(list) {
+    var searchFn = function(list, isRetry) {
       var q = nameQuery.toLowerCase();
       // ③ 会員名が数値等の非文字列でも落ちないよう String() でコアース（博多店の名前検索エラー対策）
       var matches = list.filter(function(m){ return String(m.name == null ? '' : m.name).toLowerCase().indexOf(q) !== -1; });
       if (matches.length === 0) {
+        // 「新しく登録された会員がキャッシュに無いだけ」の可能性があるので、最新を取り直して1回だけ再検索
+        if (!isRetry) {
+          result.className = 'result-box notfound';
+          result.textContent = '見つからないため、最新の会員リストで再検索しています...';
+          clearMemCache(getStore());
+          fetchMemberListFresh(getStore()).then(function(fresh){
+            allMembers = _isUsableList(fresh) ? fresh : allMembers;
+            searchFn(allMembers, true);
+          });
+          return;
+        }
         result.className = 'result-box notfound';
         result.textContent = '「' + nameQuery + '」に該当する会員が見つかりません';
       } else {
