@@ -462,9 +462,14 @@ function prefetchMembers(store){
 }
 var STORE_LABEL = {hakata: '博多店', omura: '大村店', sasebo: '佐世保店'};
 
-// GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあるため、
-// 読み取り系のみ自動リトライする（会員の追加/変更/削除は二重実行防止のため対象外）。
+// GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあるため、自動リトライする。
 var SAFE_RETRY = { getMemberList:1, getMember:1, getMemberHistory:1 };
+// 書き込み系も自動リトライ。二重登録は GAS 側の reqId 重複実行ガード（_dedupe）が防ぐ:
+// 同じ reqId は2回届いても1回しか実行されず、2回目は1回目の結果がそのまま返る。
+var WRITE_RETRY = { addMember:1, updateMember:1, deleteMember:1 };
+function _newReqId(){
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6);
+}
 function _isTransientErr(res){
   if(!res) return true;
   if(res.ok === false){
@@ -475,7 +480,11 @@ function _isTransientErr(res){
   return false;
 }
 function callAPI(action, params) {
-  var maxTry = SAFE_RETRY[action] ? 3 : 1;
+  var maxTry = (SAFE_RETRY[action] || WRITE_RETRY[action]) ? 3 : 1;
+  if (WRITE_RETRY[action]) {
+    params = Object.assign({}, params);
+    if (!params.reqId) params.reqId = _newReqId();  // リトライしても同じIDを送る
+  }
   function attempt(n){
     return fetch('/api/gas', {
       method: 'POST', headers: {'Content-Type':'application/json'},

@@ -304,8 +304,12 @@ try { cart = JSON.parse(sessionStorage.getItem(CART_KEY) || '[]') || []; } catch
 // GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあり、その場合
 // フロントに GAS_HTML_RESPONSE 等が返る（＝「応答がJSONではありません」エラー）。
 // 手動でやり直すと成功する現象なので、一時的エラーのみ自動でリトライする。
-// ★書込み系(recordShopSale)は SAFE_RETRY に入れない。読取系のみ再試行対象にする。
 var SAFE_RETRY = { getInventory:1 };
+// 書き込み系も自動リトライ。二重計上は GAS 側の reqId 重複実行ガード（_dedupe）が防ぐ。
+var WRITE_RETRY = { recordShopSale:1 };
+function _newReqId(){
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + '-' + Math.random().toString(36).slice(2, 6);
+}
 function _isTransientErr(res){
   if(!res) return true; // 応答なし
   if(res.ok === false){
@@ -317,7 +321,11 @@ function _isTransientErr(res){
   return false;
 }
 function callAPI(action, params) {
-  var maxTry = SAFE_RETRY[action] ? 3 : 1;
+  var maxTry = (SAFE_RETRY[action] || WRITE_RETRY[action]) ? 3 : 1;
+  if (WRITE_RETRY[action]) {
+    params = Object.assign({}, params);
+    if (!params.reqId) params.reqId = _newReqId();  // リトライしても同じIDを送る
+  }
   function attempt(n){
     return fetch('/api/gas', {
       method:'POST', headers:{'Content-Type':'application/json'},
