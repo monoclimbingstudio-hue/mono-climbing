@@ -249,6 +249,7 @@ nav a:hover { color: #fff; }
   <div class="logo">🧗 MONO</div>
   <a href="index.html" class="active">入店登録</a>
   <a href="members.html">会員管理</a>
+  <a href="pass.html">パス管理</a>
   <a href="sales.html">売上管理</a>
   <a href="shop.html">物販管理</a>
   <a href="keihi.html">経費入力</a>
@@ -323,6 +324,23 @@ nav a:hover { color: #fff; }
         </div>
         <div id="planWrap"></div>
         <div id="planSummary" class="plan-summary"></div>
+      </div>
+
+      <!-- 回数券利用時: 誰の回数券を使うか（共有利用対応） -->
+      <div id="ticketOwnerPanel" style="display:none;margin-top:12px;padding:12px 14px;border:1.5px solid #1a73e8;border-radius:10px;background:#f5f9ff;">
+        <div style="font-size:.88rem;font-weight:700;color:#1a5276;margin-bottom:8px;">🎫 誰の回数券を使いますか？</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" class="ticket-who-btn sel" data-who="self" style="flex:1;padding:10px;border:2px solid #1a73e8;border-radius:8px;background:#1a73e8;color:#fff;font-weight:700;cursor:pointer;">本人の回数券</button>
+          <button type="button" class="ticket-who-btn" data-who="other" style="flex:1;padding:10px;border:2px solid var(--border);border-radius:8px;background:#fff;color:var(--mid);font-weight:700;cursor:pointer;">他の人の回数券（共有）</button>
+        </div>
+        <div id="ticketOwnerSearch" style="display:none;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="ticketOwnerCode" placeholder="所有者の会員番号" inputmode="numeric" style="max-width:150px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:.92rem;outline:none;">
+            <button type="button" id="ticketOwnerCheckBtn" style="padding:10px 16px;border:none;border-radius:8px;background:var(--dark);color:#fff;font-weight:700;cursor:pointer;">残回数を確認</button>
+          </div>
+          <div id="ticketOwnerInfo" style="margin-top:8px;font-size:.86rem;font-weight:600;"></div>
+        </div>
+        <div id="ticketSelfInfo" style="font-size:.82rem;color:var(--sub);"></div>
       </div>
 
     </div>
@@ -567,7 +585,7 @@ var LABEL_MAP = {
 // GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあり、その場合
 // フロントに GAS_HTML_RESPONSE 等が返る（＝「応答がJSONではありません」エラー）。
 // 手動でやり直すと成功する現象なので、一時的エラーのみ自動でリトライする。
-var SAFE_RETRY = { getMemberList:1, getPriceList:1, getRentalList:1, getMember:1 };
+var SAFE_RETRY = { getMemberList:1, getPriceList:1, getRentalList:1, getMember:1, getTicketsByOwner:1 };
 // 書き込み系も自動リトライする。二重登録は GAS 側の reqId 重複実行ガード（_dedupe）が防ぐ:
 // 同じ reqId のリクエストは2回届いても1回しか実行されず、2回目は1回目の結果がそのまま返る。
 var WRITE_RETRY = { registerEntry:1, recordShopSale:1 };
@@ -1053,9 +1071,86 @@ function buildPlanDropdown(attrName) {
       summaryEl.textContent = '✓  ' + esc(p.label) + '　¥' + Number(p.amount).toLocaleString();
       summaryEl.style.display = 'block';
     }
+    updateTicketOwnerPanel();
     updateTotal();
   });
 }
+
+// ── 回数券の共有利用（誰の回数券を使うか） ──────────────────
+var ticketWho = 'self';        // 'self' | 'other'
+var ticketOwnerConfirmed = null; // {code, name, remaining} 確認済みの所有者
+function isTicketUsePlan(){
+  if (!planSel) return false;
+  var s = String(planSel.plan2 || '') + String(planSel.plan1 || '') + String(planSel.label || '');
+  return s.indexOf('回数券利用') >= 0;
+}
+function updateTicketOwnerPanel(){
+  var panel = document.getElementById('ticketOwnerPanel');
+  if (!panel) return;
+  if (isTicketUsePlan()) {
+    panel.style.display = 'block';
+    if (ticketWho === 'self') showSelfTicketInfo();
+  } else {
+    panel.style.display = 'none';
+    ticketWho = 'self'; ticketOwnerConfirmed = null;
+    setTicketWhoUI();
+    document.getElementById('ticketOwnerInfo').innerHTML = '';
+    document.getElementById('ticketOwnerCode').value = '';
+  }
+}
+function setTicketWhoUI(){
+  document.querySelectorAll('.ticket-who-btn').forEach(function(b){
+    var on = b.dataset.who === ticketWho;
+    b.classList.toggle('sel', on);
+    b.style.background = on ? '#1a73e8' : '#fff';
+    b.style.color = on ? '#fff' : 'var(--mid)';
+    b.style.borderColor = on ? '#1a73e8' : 'var(--border)';
+  });
+  document.getElementById('ticketOwnerSearch').style.display = (ticketWho === 'other') ? 'block' : 'none';
+  document.getElementById('ticketSelfInfo').style.display = (ticketWho === 'self') ? 'block' : 'none';
+}
+document.querySelectorAll('.ticket-who-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    ticketWho = b.dataset.who;
+    if (ticketWho === 'self') ticketOwnerConfirmed = null;
+    setTicketWhoUI();
+    if (ticketWho === 'self') showSelfTicketInfo();
+  });
+});
+function showSelfTicketInfo(){
+  var el = document.getElementById('ticketSelfInfo');
+  var code = document.getElementById('memberCode').value.trim();
+  if (!code) { el.textContent = '※会員番号を入力すると、本人の残回数を確認できます'; return; }
+  el.textContent = '残回数を確認中...';
+  callAPI('getTicketsByOwner', {code: code}).then(function(res){
+    if (res.ok && res.data) {
+      var t = res.data;
+      el.textContent = t.totalRemaining > 0
+        ? '本人の回数券: 残り ' + t.totalRemaining + ' 回'
+        : '⚠ この会員に残回数のある回数券が見つかりません（登録は可能です）';
+    } else { el.textContent = ''; }
+  });
+}
+document.getElementById('ticketOwnerCheckBtn').addEventListener('click', function(){
+  var code = document.getElementById('ticketOwnerCode').value.trim();
+  var info = document.getElementById('ticketOwnerInfo');
+  if (!code) { info.innerHTML = '<span style="color:#c62828;">所有者の会員番号を入力してください</span>'; return; }
+  info.textContent = '確認中...';
+  ticketOwnerConfirmed = null;
+  callAPI('getTicketsByOwner', {code: code}).then(function(res){
+    if (res.ok && res.data) {
+      var t = res.data;
+      if (t.totalRemaining > 0) {
+        ticketOwnerConfirmed = {code: code, name: t.ownerName || '', remaining: t.totalRemaining};
+        info.innerHTML = '<span style="color:#2e7d32;">✓ ' + esc(t.ownerName || '会員' + code) + ' さんの回数券: 残り ' + t.totalRemaining + ' 回 → この方の回数券から1回消化します</span>';
+      } else {
+        info.innerHTML = '<span style="color:#c62828;">✗ ' + esc(t.ownerName || '会員' + code) + ' さんに残回数のある回数券がありません</span>';
+      }
+    } else {
+      info.innerHTML = '<span style="color:#c62828;">確認できませんでした。もう一度お試しください</span>';
+    }
+  });
+});
 
 // ── 登録料 ────────────────────────────────────────
 document.getElementById('regFeeCheck').addEventListener('change', function(){
@@ -1652,8 +1747,16 @@ document.getElementById('registerBtn').addEventListener('click', function(){
     notes: entryNoteVal,
     // 売上元名は payment 文字列に encode 済み
     paymentOther: otherPayName,
-    shopItems: shopItemsPayload  // ④⑩ 物販内訳（数量付き）
+    shopItems: shopItemsPayload,  // ④⑩ 物販内訳（数量付き）
+    // 🎫 回数券の共有利用: 他人の回数券なら所有者番号を送る（GASがその人の残回数を減らす）
+    ticketOwnerCode: (isTicketUsePlan() && ticketWho === 'other' && ticketOwnerConfirmed) ? ticketOwnerConfirmed.code : ''
   };
+
+  // 共有利用を選んだのに所有者が未確認ならブロック
+  if (isTicketUsePlan() && ticketWho === 'other' && !ticketOwnerConfirmed) {
+    alert('「他の人の回数券」を選択しています。\n所有者の会員番号を入力して「残回数を確認」を押してください。');
+    return;
+  }
 
   var btn = document.getElementById('registerBtn');
   var msg = document.getElementById('msg');
