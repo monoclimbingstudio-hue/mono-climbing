@@ -182,6 +182,7 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="logo">🧗 MONO</div>
   <a href="index.html">入店登録</a>
   <a href="members.html">会員管理</a>
+  <a href="pass.html">パス管理</a>
   <a href="sales.html">売上管理</a>
   <a href="shop.html" class="active">物販管理</a>
   <a href="keihi.html">経費入力</a>
@@ -271,6 +272,45 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <!-- 📊 物販分析 -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-badge">ANALYSIS</span>
+      <div class="section-title">物販分析（購入者検索・サイズ分布）</div>
+    </div>
+    <div class="card">
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <div class="filter-field">
+          <label class="field-label">対象店舗</label>
+          <select id="anStore" class="filter-input">
+            <option value="all">全店舗</option>
+            <option value="hakata">博多店</option>
+            <option value="omura">大村店</option>
+            <option value="sasebo">佐世保店</option>
+          </select>
+        </div>
+        <div class="filter-field" style="flex:1;min-width:180px;">
+          <label class="field-label">商品キーワード（例: シューズ / チョーク / 商品名の一部）</label>
+          <input type="text" id="anKeyword" class="filter-input" placeholder="空欄＝すべての物販" style="width:100%;">
+        </div>
+        <div class="filter-field">
+          <label class="field-label">開始日</label>
+          <input type="date" id="anFrom" class="filter-input">
+        </div>
+        <div class="filter-field">
+          <label class="field-label">終了日</label>
+          <input type="date" id="anTo" class="filter-input">
+        </div>
+        <button class="load-btn" id="anBtn">分析する</button>
+      </div>
+      <div id="anSummary" class="summary-grid" style="display:none;"></div>
+      <div id="anSizeDist" style="display:none;margin-bottom:14px;"></div>
+      <div class="table-wrap" id="anResult">
+        <div class="empty-state">条件を指定して「分析する」を押してください（購入者・日付・商品・金額の一覧と、サイズ分布が表示されます）</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 個数選択モーダル -->
@@ -304,7 +344,7 @@ try { cart = JSON.parse(sessionStorage.getItem(CART_KEY) || '[]') || []; } catch
 // GAS が負荷/コールド時に一時的にHTMLエラーページを返すことがあり、その場合
 // フロントに GAS_HTML_RESPONSE 等が返る（＝「応答がJSONではありません」エラー）。
 // 手動でやり直すと成功する現象なので、一時的エラーのみ自動でリトライする。
-var SAFE_RETRY = { getInventory:1 };
+var SAFE_RETRY = { getInventory:1, getMerchAnalysis:1 };
 // 書き込み系も自動リトライ。二重計上は GAS 側の reqId 重複実行ガード（_dedupe）が防ぐ。
 var WRITE_RETRY = { recordShopSale:1 };
 function _newReqId(){
@@ -694,6 +734,73 @@ function renderSummary() {
   document.getElementById('sOutOfStock').textContent = outOfStock;
 }
 
+// ── 📊 物販分析 ──────────────────────────────────────────────
+function anYen(n){ return '¥' + (Number(n)||0).toLocaleString(); }
+(function(){
+  // 既定期間: 直近3ヶ月
+  var now = new Date();
+  var from = new Date(now.getFullYear(), now.getMonth()-3, now.getDate());
+  function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  document.getElementById('anFrom').value = ymd(from);
+  document.getElementById('anTo').value = ymd(now);
+})();
+document.getElementById('anBtn').addEventListener('click', function(){
+  var btn = this;
+  var store = document.getElementById('anStore').value;
+  var keyword = document.getElementById('anKeyword').value.trim();
+  var fromV = document.getElementById('anFrom').value;
+  var toV = document.getElementById('anTo').value;
+  var out = document.getElementById('anResult');
+  var sumEl = document.getElementById('anSummary');
+  var distEl = document.getElementById('anSizeDist');
+  btn.disabled = true; btn.textContent = '分析中...';
+  out.innerHTML = '<div class="empty-state">3店舗のデータを集計しています...（期間が長いと少し時間がかかります）</div>';
+  sumEl.style.display = 'none'; distEl.style.display = 'none';
+  callAPI('getMerchAnalysis', { store: store, keyword: keyword, from: fromV, to: toV }).then(function(res){
+    btn.disabled = false; btn.textContent = '分析する';
+    if(!res.ok || !res.data){
+      out.innerHTML = '<div class="empty-state" style="color:#c62828;">分析に失敗しました。期間を短くして再度お試しください</div>';
+      return;
+    }
+    var d = res.data;
+    // サマリー
+    sumEl.style.display = 'grid';
+    sumEl.innerHTML =
+      '<div class="summary-card highlight"><div class="s-label">売上合計</div><div class="s-value">' + anYen(d.totalAmount) + '</div></div>' +
+      '<div class="summary-card"><div class="s-label">購入件数</div><div class="s-value">' + d.count + '<span class="s-unit"> 件</span></div></div>' +
+      '<div class="summary-card"><div class="s-label">購入者数（ユニーク）</div><div class="s-value">' + d.uniqueBuyers + '<span class="s-unit"> 人</span></div></div>' +
+      '<div class="summary-card"><div class="s-label">値引き合計</div><div class="s-value">' + anYen(d.totalDiscount) + '</div></div>';
+    // サイズ分布
+    var dist = d.sizeDist || {};
+    var sizes = Object.keys(dist).sort(function(a,b){ return parseFloat(a)-parseFloat(b); });
+    if(sizes.length){
+      var maxN = Math.max.apply(null, sizes.map(function(s){ return dist[s]; }));
+      distEl.style.display = 'block';
+      distEl.innerHTML = '<div style="font-size:.85rem;font-weight:700;margin-bottom:8px;">👟 サイズ分布（商品メモから検出: ' + sizes.reduce(function(a,s){return a+dist[s];},0) + ' 件）</div>' +
+        sizes.map(function(s){
+          var n = dist[s];
+          var w = Math.max(4, Math.round(n / maxN * 100));
+          return '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">' +
+            '<div style="width:56px;text-align:right;font-size:.8rem;font-weight:700;">' + s + 'cm</div>' +
+            '<div style="flex:1;background:#f0f0f0;border-radius:4px;height:20px;position:relative;"><div style="width:' + w + '%;background:#1a73e8;height:100%;border-radius:4px;"></div></div>' +
+            '<div style="width:40px;font-size:.8rem;font-weight:700;">' + n + '件</div></div>';
+        }).join('');
+    }
+    // 購入一覧
+    var rows = d.entries || [];
+    if(!rows.length){ out.innerHTML = '<div class="empty-state">該当する購入がありません</div>'; return; }
+    out.innerHTML = '<div style="font-size:.8rem;color:var(--sub);margin-bottom:6px;">' + rows.length + ' 件を表示' + (d.truncated ? '（多いため直近' + rows.length + '件に絞っています。期間やキーワードで絞り込んでください）' : '') + '</div>' +
+      '<table><thead><tr><th>日付</th><th>店舗</th><th>会員番号</th><th>氏名</th><th>購入内容</th><th class="num-cell">金額</th><th class="num-cell">値引</th><th>支払</th></tr></thead><tbody>' +
+      rows.map(function(e){
+        return '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.store) + '</td><td>' + esc(e.code) + '</td>' +
+          '<td style="font-weight:700;">' + esc(e.name) + '</td>' +
+          '<td style="white-space:normal;max-width:340px;">' + esc(e.note) + '</td>' +
+          '<td class="num-cell" style="font-weight:700;">' + anYen(e.amount) + '</td>' +
+          '<td class="num-cell" style="color:#c62828;">' + (e.discount ? '−' + anYen(e.discount) : '—') + '</td>' +
+          '<td style="color:var(--sub);font-size:.8rem;">' + esc(e.payment||'') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  });
+});
 
 </script>
 </body>
