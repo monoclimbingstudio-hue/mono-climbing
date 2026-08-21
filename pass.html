@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パス管理 - Mono Climbing Studio</title>
+<style>
+:root {
+  --accent: #e84c2c; --dark: #1a1a1a; --mid: #444; --light-bg: #f7f7f7;
+  --card-bg: #ffffff; --border: #e0e0e0; --text: #222; --sub: #777;
+  --success: #2e7d32; --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); }
+nav { background: var(--dark); display: flex; align-items: center; padding: 0 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+nav .logo { color: #fff; font-size: 0.8rem; font-weight: 700; letter-spacing: .05em; padding: 12px 12px 12px 0; margin-right: 8px; border-right: 1px solid #444; white-space: nowrap; }
+nav a { color: #aaa; text-decoration: none; padding: 14px 14px; font-size: 0.85rem; border-bottom: 3px solid transparent; transition: all .15s; white-space: nowrap; }
+nav a.active { color: #fff; border-bottom-color: var(--accent); }
+nav a:hover { color: #fff; }
+.page { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+.section { margin-bottom: 16px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.section-badge { padding: 3px 10px; border-radius: 100px; background: var(--dark); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.section-title { font-size: 0.95rem; font-weight: 700; }
+.card { background: var(--card-bg); border-radius: var(--radius); padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+
+/* サマリーカード（写真のMONO PASS MANAGER風: 3カード＋店舗別内訳） */
+.sum-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media(max-width:820px){ .sum-grid { grid-template-columns: 1fr; } }
+.sum-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.sum-head { display: flex; align-items: center; justify-content: space-between; }
+.sum-card .s-label { font-size: 0.86rem; color: var(--mid); font-weight: 700; }
+.sum-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.ic-ok { background: #d9f2e3; } .ic-soon { background: #fdeecd; } .ic-today { background: #fddfd7; }
+.sum-card .s-value { font-size: 2.2rem; font-weight: 800; margin: 6px 0 10px; }
+.sum-card .s-value small { font-size: 0.85rem; font-weight: 700; color: var(--sub); margin-left: 2px; }
+.store-mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.store-mini { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.store-mini .sm-label { font-size: 0.7rem; color: var(--sub); font-weight: 600; }
+.store-mini .sm-value { font-size: 1.15rem; font-weight: 800; }
+/* 期限リスト2枠 */
+.list2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:820px){ .list2-grid { grid-template-columns: 1fr; } }
+.list-panel { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.list-panel-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.list-panel-title { font-weight: 800; font-size: 0.95rem; }
+.list-panel-count { font-size: 0.78rem; color: var(--sub); font-weight: 600; }
+.lp-empty { text-align: center; color: var(--sub); font-size: 0.85rem; padding: 26px 0; }
+.lp-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid #f0f0f0; font-size: 0.87rem; flex-wrap: wrap; }
+.lp-row:last-child { border-bottom: none; }
+.lp-name { font-weight: 700; }
+.lp-meta { color: var(--sub); font-size: 0.78rem; }
+
+/* 検索 */
+.search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.inp { padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; }
+.inp:focus { border-color: var(--dark); }
+.btn { padding: 11px 22px; background: var(--dark); color: #fff; font-size: 0.9rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; }
+.btn:hover { opacity: .85; }
+.hit-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+.hit-name { font-weight: 800; font-size: 1rem; }
+.hit-code { color: var(--sub); font-size: .82rem; font-weight: 600; margin-left: 6px; }
+.stat-tag { display: inline-block; border-radius: 100px; padding: 3px 12px; font-size: .78rem; font-weight: 700; margin-left: 8px; }
+.st-ok { background: #e8f5e9; color: #2e7d32; }
+.st-soon { background: #fff3e0; color: #e65100; }
+.st-ng { background: #fdecea; color: #c62828; }
+.st-none { background: #eee; color: #777; }
+.hit-detail { margin-top: 6px; font-size: .84rem; color: var(--mid); }
+
+/* タブとテーブル */
+.tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.tab { padding: 9px 16px; border: 1.5px solid var(--border); border-radius: 100px; background: #fff; font-size: .85rem; font-weight: 700; color: var(--mid); cursor: pointer; }
+.tab.sel { background: var(--dark); color: #fff; border-color: var(--dark); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 640px; }
+thead th { background: #f5f5f5; padding: 9px 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 700; color: var(--mid); font-size: 0.76rem; white-space: nowrap; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+tbody tr:hover td { background: #fafafa; }
+.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.empty-state { text-align: center; padding: 30px 0; color: var(--sub); font-size: 0.88rem; }
+.store-chip { display:inline-block; background:#eef2f7; color:#1a5276; border-radius:4px; padding:2px 8px; font-size:.76rem; font-weight:700; }
+.days-left { font-weight: 800; }
+.dl-soon { color: #e65100; }
+.dl-ng { color: #c62828; }
+.dot-loader { display: flex; gap: 4px; }
+.dot-loader span { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); animation: bounce .9s infinite; }
+.dot-loader span:nth-child(2) { animation-delay: .15s; }
+.dot-loader span:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+.reload-note { font-size:.78rem; color:var(--sub); margin-left:auto; }
+</style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,26,26,.95);display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:340px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.4);">
+    <div style="font-size:2rem;margin-bottom:8px;">🧗</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#1a1a1a;margin-bottom:4px;">Mono Climbing Studio</div>
+    <div style="font-size:0.82rem;color:#777;margin-bottom:24px;">管理システム</div>
+    <input type="password" id="loginPass" placeholder="パスワードを入力" style="width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:1rem;outline:none;margin-bottom:12px;text-align:center;" autofocus>
+    <button id="loginBtn" style="width:100%;padding:13px;background:#1a1a1a;color:#fff;font-size:0.95rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;">ログイン</button>
+    <div id="loginErr" style="color:#c62828;font-size:0.82rem;margin-top:10px;min-height:1.2em;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PASS = 'mono';
+  if (sessionStorage.getItem('mono_auth') === '1') { document.getElementById('loginOverlay').style.display = 'none'; return; }
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  function doLogin(){
+    if (document.getElementById('loginPass').value === PASS) {
+      sessionStorage.setItem('mono_auth', '1');
+      document.getElementById('loginOverlay').style.display = 'none';
+    } else {
+      document.getElementById('loginErr').textContent = 'パスワードが正しくありません';
+      document.getElementById('loginPass').value = '';
+    }
+  }
+})();
+</script>
+
+<nav>
+  <div class="logo">🧗 MONO</div>
+  <a href="index.html">入店登録</a>
+  <a href="members.html">会員管理</a>
+  <a href="pass.html" class="active">パス管理</a>
+  <a href="sales.html">売上管理</a>
+  <a href="shop.html">物販管理</a>
+  <a href="keihi.html">経費入力</a>
+</nav>
+
+<div class="page">
+
+  <!-- 会員のパス状況を確認（全店舗横断） -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-badge">検</div>
+      <div class="section-title">会員のパス・回数券を確認（全店舗横断）</div>
+    </div>
+    <div class="card">
+      <div class="search-row">
+        <input type="text" id="qInput" class="inp" placeholder="会員番号 または 名前" style="flex:1;min-width:200px;">
+        <button class="btn" id="qBtn">確認する</button>
+      </div>
+      <div style="font-size:.78rem;color:var(--sub);margin-top:6px;">別店舗の月パス会員が来店したときの確認にも使えます（3店舗すべてから検索します）</div>
+      <div id="qResult"></div>
+    </div>
+  </div>
+
+  <!-- ダッシュボード（月パス利用状況のサマリー） -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-badge">計</div>
+      <div class="section-title">ダッシュボード — 月パス利用状況のサマリー</div>
+      <span class="reload-note" id="loadedAt"></span>
+    </div>
+    <div class="sum-grid" id="sumGrid">
+      <div class="sum-card"><div class="s-label">読み込み中...</div><div class="s-value">—</div></div>
+    </div>
+  </div>
+
+  <!-- 期限リスト2枠（7日以内 / 本日） -->
+  <div class="section">
+    <div class="list2-grid">
+      <div class="list-panel">
+        <div class="list-panel-head"><span class="list-panel-title">7日以内に期限切れ</span><span class="list-panel-count" id="soonCount"></span></div>
+        <div id="soonList"><div class="lp-empty">読み込み中...</div></div>
+      </div>
+      <div class="list-panel">
+        <div class="list-panel-head"><span class="list-panel-title">本日期限切れ</span><span class="list-panel-count" id="todayCount"></span></div>
+        <div id="todayList"><div class="lp-empty">読み込み中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一覧 -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-badge">覧</div>
+      <div class="section-title">一覧</div>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab sel" data-view="soon">⚠ 期限間近（7日以内）</button>
+        <button class="tab" data-view="active">有効な月パス</button>
+        <button class="tab" data-view="expired">期限切れ（14日以内）</button>
+        <button class="tab" data-view="tickets">回数券（残あり）</button>
+      </div>
+      <div class="table-wrap" id="listWrap">
+        <div class="empty-state">読み込み中...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var SAFE_RETRY = { getPassDashboard:1, searchPassStatus:1 };
+function _isTransientErr(res){
+  if(!res) return true;
+  if(res.ok === false){
+    var e = String(res.error || '');
+    if(e==='GAS_HTML_RESPONSE'||e==='GAS_BAD_JSON'||e==='応答JSONパース失敗'||e==='network') return true;
+    if(/timeout|timed out|fetch|network|50[234]/i.test(e)) return true;
+  }
+  return false;
+}
+function callAPI(action, params) {
+  var maxTry = SAFE_RETRY[action] ? 3 : 1;
+  function attempt(n){
+    return fetch('/api/gas', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(Object.assign({action:action}, params||{}))
+    }).then(function(r){ return r.text().then(function(t){ try { return JSON.parse(t); } catch(e){ return { ok:false, error:'応答JSONパース失敗' }; } }); })
+    .catch(function(err){ return { ok:false, error:'network' }; })
+    .then(function(res){
+      if(n < maxTry && _isTransientErr(res)) return new Promise(function(rs){ setTimeout(rs, 700*n); }).then(function(){ return attempt(n+1); });
+      return res;
+    });
+  }
+  return attempt(1);
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+var dash = null;
+var curView = 'soon';
+
+function daysTag(days){
+  if (days == null) return '';
+  if (days < 0) return '<span class="days-left dl-ng">' + (-days) + '日前に期限切れ</span>';
+  if (days === 0) return '<span class="days-left dl-soon">本日まで</span>';
+  if (days <= 7) return '<span class="days-left dl-soon">あと' + days + '日</span>';
+  return '<span class="days-left">あと' + days + '日</span>';
+}
+
+function loadDashboard(){
+  callAPI('getPassDashboard', {}).then(function(res){
+    if(!res.ok || !res.data){
+      document.getElementById('sumGrid').innerHTML = '<div class="sum-card"><div class="s-label" style="color:#c62828;">読み込みエラー。ページを再読み込みしてください</div><div class="s-value">—</div></div>';
+      return;
+    }
+    dash = res.data;
+    renderSummary();
+    renderList();
+    document.getElementById('loadedAt').textContent = '更新: ' + new Date().toLocaleTimeString();
+  });
+}
+
+var STORES = ['博多店','大村店','佐世保店'];
+function byStoreCount(rows){
+  var c = {博多店:0, 大村店:0, 佐世保店:0};
+  (rows||[]).forEach(function(p){ if(c[p.store] != null) c[p.store]++; });
+  return c;
+}
+function miniGrid(counts){
+  return '<div class="store-mini-grid">' + STORES.map(function(s){
+    return '<div class="store-mini"><div class="sm-label">' + s + '</div><div class="sm-value">' + (counts[s]||0) + '</div></div>';
+  }).join('') + '</div>';
+}
+function renderSummary(){
+  var d = dash;
+  var active = d.activePasses || [];
+  // 「本日期限切れ」= 有効期限が今日（daysLeft===0）。「7日以内」= 残り1〜7日
+  var today = active.filter(function(p){ return p.daysLeft === 0; });
+  var soon = active.filter(function(p){ return p.daysLeft >= 1 && p.daysLeft <= 7; });
+  document.getElementById('sumGrid').innerHTML =
+    '<div class="sum-card"><div class="sum-head"><span class="s-label">現在有効な月パス</span><span class="sum-icon ic-ok">✓</span></div>' +
+      '<div class="s-value">' + active.length + '<small>名</small></div>' + miniGrid(byStoreCount(active)) + '</div>' +
+    '<div class="sum-card"><div class="sum-head"><span class="s-label">7日以内に期限切れ</span><span class="sum-icon ic-soon">📅</span></div>' +
+      '<div class="s-value">' + soon.length + '<small>名</small></div>' + miniGrid(byStoreCount(soon)) + '</div>' +
+    '<div class="sum-card"><div class="sum-head"><span class="s-label">本日期限切れ</span><span class="sum-icon ic-today">⏰</span></div>' +
+      '<div class="s-value">' + today.length + '<small>名</small></div>' + miniGrid(byStoreCount(today)) + '</div>';
+  renderTwoLists(soon, today);
+}
+function lpRows(rows, emptyMsg){
+  if(!rows.length) return '<div class="lp-empty">' + emptyMsg + '</div>';
+  return rows.map(function(p){
+    return '<div class="lp-row"><span class="store-chip">' + esc(p.store) + '</span>' +
+      '<span class="lp-name">' + esc(p.name) + '</span><span class="lp-meta">' + esc(p.code) + '・' + esc(p.kind) + '</span>' +
+      '<span style="margin-left:auto;">' + daysTag(p.daysLeft) + '</span>' +
+      '<span class="lp-meta">〜' + esc(p.expiry) + '</span></div>';
+  }).join('');
+}
+function renderTwoLists(soon, today){
+  document.getElementById('soonCount').textContent = soon.length + ' 名';
+  document.getElementById('todayCount').textContent = today.length + ' 名';
+  document.getElementById('soonList').innerHTML = lpRows(soon, '該当する利用者はいません。');
+  document.getElementById('todayList').innerHTML = lpRows(today, '該当する利用者はいません。');
+}
+
+function passTable(rows, showDays){
+  if(!rows || !rows.length) return '<div class="empty-state">該当なし</div>';
+  return '<table><thead><tr><th>会員番号</th><th>氏名</th><th>店舗</th><th>種別</th><th>決済</th><th>開始日</th><th>有効期限</th><th>残り</th></tr></thead><tbody>' +
+    rows.map(function(p){
+      return '<tr><td>' + esc(p.code) + '</td><td style="font-weight:700;">' + esc(p.name) + '</td>' +
+        '<td><span class="store-chip">' + esc(p.store) + '</span></td><td>' + esc(p.kind) + '</td><td>' + esc(p.method||'') + '</td>' +
+        '<td>' + esc(p.start) + '</td><td>' + esc(p.expiry) + '</td><td>' + daysTag(p.daysLeft) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+function ticketTable(rows){
+  if(!rows || !rows.length) return '<div class="empty-state">残回数のある回数券はありません</div>';
+  return '<table><thead><tr><th>購入者番号</th><th>購入者名</th><th>店舗</th><th>購入日</th><th class="num-cell">残回数</th><th>最終利用日</th><th>利用履歴</th></tr></thead><tbody>' +
+    rows.map(function(t){
+      return '<tr><td>' + esc(t.code) + '</td><td style="font-weight:700;">' + esc(t.name) + '</td>' +
+        '<td><span class="store-chip">' + esc(t.store) + '</span></td><td>' + esc(t.buyDate) + '</td>' +
+        '<td class="num-cell" style="font-weight:800;">' + t.remaining + ' / ' + t.total + '</td>' +
+        '<td>' + esc(t.lastUse||'—') + '</td><td style="white-space:normal;font-size:.78rem;color:var(--sub);max-width:340px;">' + esc(t.history||'') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+
+function renderList(){
+  var w = document.getElementById('listWrap');
+  if(!dash){ w.innerHTML = '<div class="empty-state">読み込み中...</div>'; return; }
+  if(curView === 'soon') w.innerHTML = passTable(dash.expiringSoon);
+  else if(curView === 'active') w.innerHTML = passTable(dash.activePasses);
+  else if(curView === 'expired') w.innerHTML = passTable(dash.recentExpired);
+  else w.innerHTML = ticketTable(dash.activeTickets);
+}
+
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    curView = t.dataset.view;
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('sel', x===t); });
+    renderList();
+  });
+});
+
+// 検索
+function doSearch(){
+  var q = document.getElementById('qInput').value.trim();
+  var out = document.getElementById('qResult');
+  if(!q){ out.innerHTML = ''; return; }
+  out.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:12px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>3店舗から検索中...</div>';
+  callAPI('searchPassStatus', {query: q}).then(function(res){
+    if(!res.ok || !res.data){ out.innerHTML = '<div class="empty-state" style="color:#c62828;">検索できませんでした。もう一度お試しください</div>'; return; }
+    var hits = res.data.results || [];
+    if(!hits.length){ out.innerHTML = '<div class="empty-state">「' + esc(q) + '」に該当する月パス・回数券の記録がありません</div>'; return; }
+    out.innerHTML = hits.slice(0, 20).map(function(h){
+      var passHtml = '';
+      if (h.pass) {
+        var st = h.pass.daysLeft >= 0 ? (h.pass.daysLeft <= 7 ? '<span class="stat-tag st-soon">有効（あと' + h.pass.daysLeft + '日）</span>' : '<span class="stat-tag st-ok">月パス有効</span>')
+                                      : '<span class="stat-tag st-ng">期限切れ</span>';
+        passHtml = st + '<div class="hit-detail">' + esc(h.pass.kind) + '（' + esc(h.pass.store) + '購入・' + esc(h.pass.method||'') + '）　' + esc(h.pass.start) + ' 〜 <strong>' + esc(h.pass.expiry) + '</strong></div>';
+      } else {
+        passHtml = '<span class="stat-tag st-none">月パスの記録なし</span>';
+      }
+      var tHtml = '';
+      if (h.ticketRemaining > 0) tHtml = '<div class="hit-detail">🎫 回数券: 残り <strong>' + h.ticketRemaining + '</strong> 回</div>';
+      return '<div class="hit-card"><span class="hit-name">' + esc(h.name) + '</span><span class="hit-code">会員番号 ' + esc(h.code) + '</span>' + passHtml + tHtml + '</div>';
+    }).join('') + (hits.length > 20 ? '<div style="color:var(--sub);font-size:.8rem;margin-top:6px;">他 ' + (hits.length-20) + ' 件</div>' : '');
+  });
+}
+document.getElementById('qBtn').addEventListener('click', doSearch);
+document.getElementById('qInput').addEventListener('keydown', function(e){ if(e.key==='Enter') doSearch(); });
+
+loadDashboard();
+</script>
+</body>
+</html>
