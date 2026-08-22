@@ -156,6 +156,13 @@ tbody tr:hover td { background: #fafafa; }
       <div class="section-title">ダッシュボード — 月パス利用状況のサマリー</div>
       <span class="reload-note" id="loadedAt"></span>
     </div>
+    <!-- ① 店舗フィルタ: サマリー・リスト・一覧すべてに効く -->
+    <div class="tabs" style="margin-bottom:10px;">
+      <button class="tab store-f sel" data-storef="all">全店舗</button>
+      <button class="tab store-f" data-storef="博多店">博多店</button>
+      <button class="tab store-f" data-storef="大村店">大村店</button>
+      <button class="tab store-f" data-storef="佐世保店">佐世保店</button>
+    </div>
     <div class="sum-grid" id="sumGrid">
       <div class="sum-card"><div class="s-label">読み込み中...</div><div class="s-value">—</div></div>
     </div>
@@ -226,6 +233,34 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 
 var dash = null;
 var curView = 'soon';
+var curStore = 'all';   // ① 店舗フィルタ（'all' | '博多店' | '大村店' | '佐世保店'）
+function storeFilter(rows){
+  if (curStore === 'all') return rows || [];
+  return (rows || []).filter(function(r){ return r.store === curStore; });
+}
+document.querySelectorAll('.store-f').forEach(function(b){
+  b.addEventListener('click', function(){
+    curStore = b.dataset.storef;
+    document.querySelectorAll('.store-f').forEach(function(x){ x.classList.toggle('sel', x===b); });
+    if (dash) { renderSummary(); renderList(); }
+  });
+});
+
+// ③ 高速化: ダッシュボードを sessionStorage にキャッシュ（10分）。
+//    開いた瞬間はキャッシュを即表示し、裏で最新を取得して差し替える（体感ゼロ秒）。
+var DASH_CACHE_KEY = 'mono_pass_dash_v1';
+function readDashCache(){
+  try {
+    var s = sessionStorage.getItem(DASH_CACHE_KEY);
+    if (!s) return null;
+    var d = JSON.parse(s);
+    if (Date.now() - d.ts > 10 * 60 * 1000) { sessionStorage.removeItem(DASH_CACHE_KEY); return null; }
+    return d;
+  } catch(e){ return null; }
+}
+function writeDashCache(data){
+  try { sessionStorage.setItem(DASH_CACHE_KEY, JSON.stringify({ts: Date.now(), data: data})); } catch(e){}
+}
 
 function daysTag(days){
   if (days == null) return '';
@@ -236,12 +271,22 @@ function daysTag(days){
 }
 
 function loadDashboard(){
+  // キャッシュがあれば即表示（③ 体感ゼロ秒）
+  var cached = readDashCache();
+  if (cached) {
+    dash = cached.data;
+    renderSummary();
+    renderList();
+    document.getElementById('loadedAt').textContent = '表示中（' + Math.round((Date.now()-cached.ts)/60000) + '分前のデータ）・最新を取得中...';
+  }
   callAPI('getPassDashboard', {}).then(function(res){
     if(!res.ok || !res.data){
-      document.getElementById('sumGrid').innerHTML = '<div class="sum-card"><div class="s-label" style="color:#c62828;">読み込みエラー。ページを再読み込みしてください</div><div class="s-value">—</div></div>';
+      if (!cached) document.getElementById('sumGrid').innerHTML = '<div class="sum-card"><div class="s-label" style="color:#c62828;">読み込みエラー。ページを再読み込みしてください</div><div class="s-value">—</div></div>';
+      else document.getElementById('loadedAt').textContent = '最新の取得に失敗（' + Math.round((Date.now()-cached.ts)/60000) + '分前のデータを表示中）';
       return;
     }
     dash = res.data;
+    writeDashCache(dash);
     renderSummary();
     renderList();
     document.getElementById('loadedAt').textContent = '更新: ' + new Date().toLocaleTimeString();
@@ -261,7 +306,7 @@ function miniGrid(counts){
 }
 function renderSummary(){
   var d = dash;
-  var active = d.activePasses || [];
+  var active = storeFilter(d.activePasses);   // ① 店舗フィルタ適用
   // 「本日期限切れ」= 有効期限が今日（daysLeft===0）。「7日以内」= 残り1〜7日
   var today = active.filter(function(p){ return p.daysLeft === 0; });
   var soon = active.filter(function(p){ return p.daysLeft >= 1 && p.daysLeft <= 7; });
@@ -313,10 +358,10 @@ function ticketTable(rows){
 function renderList(){
   var w = document.getElementById('listWrap');
   if(!dash){ w.innerHTML = '<div class="empty-state">読み込み中...</div>'; return; }
-  if(curView === 'soon') w.innerHTML = passTable(dash.expiringSoon);
-  else if(curView === 'active') w.innerHTML = passTable(dash.activePasses);
-  else if(curView === 'expired') w.innerHTML = passTable(dash.recentExpired);
-  else w.innerHTML = ticketTable(dash.activeTickets);
+  if(curView === 'soon') w.innerHTML = passTable(storeFilter(dash.expiringSoon));
+  else if(curView === 'active') w.innerHTML = passTable(storeFilter(dash.activePasses));
+  else if(curView === 'expired') w.innerHTML = passTable(storeFilter(dash.recentExpired));
+  else w.innerHTML = ticketTable(storeFilter(dash.activeTickets));
 }
 
 document.querySelectorAll('.tab').forEach(function(t){
