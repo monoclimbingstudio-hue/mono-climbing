@@ -443,73 +443,140 @@ document.getElementById('storeSelect').addEventListener('change', function(){
   }
 });
 
-document.getElementById('loadBtn').addEventListener('click', loadInventory);
+document.getElementById('loadBtn').addEventListener('click', function(){ loadInventory(false); });
+// 🔄 サーバー側キャッシュ(5分)も無視して在庫表から取り直す（スプレッドシートを直接編集した直後など）
+(function(){
+  var lb = document.getElementById('loadBtn');
+  if (!lb || document.getElementById('forceLoadBtn')) return;
+  var fb = document.createElement('button');
+  fb.id = 'forceLoadBtn';
+  fb.type = 'button';
+  fb.className = lb.className;
+  fb.textContent = '🔄 最新の在庫を取り直す';
+  fb.title = 'キャッシュを使わず在庫表から読み直します（数秒かかります）';
+  fb.style.cssText = 'margin-left:8px;opacity:.85;';
+  lb.parentNode && lb.parentNode.insertBefore(fb, lb.nextSibling);
+  fb.addEventListener('click', function(){ clearInvCache(); loadInventory(true); });
+})();
 
-function loadInventory() {
+// ⚡ 在庫キャッシュ（sessionStorage・店舗別・TTL 10分）
+// 「在庫を表示」を押した瞬間にキャッシュがあれば即表示し、裏で最新を取得して差し替える（stale-while-revalidate）。
+// 入店登録(index.html)や物販販売で在庫が動いたときは clearInvCache() でキャッシュを捨てる。
+var INV_CACHE_TTL = 10 * 60 * 1000;
+var _invLoadSeq = 0;
+function _invKey(store){ return 'mono_inv_v1_' + store; }
+function getInvCache(store){
+  try {
+    var raw = sessionStorage.getItem(_invKey(store));
+    if (!raw) return null;
+    var d = JSON.parse(raw);
+    if (!d || !d.data || !Object.keys(d.data).length || (Date.now() - d.ts) > INV_CACHE_TTL) { sessionStorage.removeItem(_invKey(store)); return null; }
+    return d;
+  } catch(e) { return null; }
+}
+function setInvCache(store, inv){
+  try {
+    if (inv && typeof inv === 'object' && Object.keys(inv).length) sessionStorage.setItem(_invKey(store), JSON.stringify({ts: Date.now(), data: inv}));
+  } catch(e) {}
+}
+function clearInvCache(){
+  try { ['hakata','omura','sasebo'].forEach(function(s){ sessionStorage.removeItem(_invKey(s)); }); } catch(e) {}
+}
+// 最新の在庫をGASから取得（成功したらキャッシュ更新）。返り値: {inv} or {error}
+function fetchInventoryFresh(store, force){
+  return callAPI('getInventory', force ? {store: store, force: true} : {store: store}).then(function(res){
+    if (!res || !res.ok || !res.data) {
+      return { error: (res && res.data && res.data.error) ? res.data.error : ((res && res.error) || 'データ取得エラー') };
+    }
+    var inv = (res.data && res.data.inventory) ? res.data.inventory : res.data;
+    if (!inv || typeof inv !== 'object' || inv.error) return { error: (inv && inv.error) || 'データ取得エラー' };
+    setInvCache(store, inv);
+    return { inv: inv };
+  }).catch(function(e){ return { error: (e && e.message) || String(e) }; });
+}
+function _setInvRefreshing(on){
+  var el = document.getElementById('invRefreshing');
+  if (!el) {
+    var btn = document.getElementById('loadBtn');
+    if (!btn) return;
+    el = document.createElement('span');
+    el.id = 'invRefreshing';
+    el.style.cssText = 'margin-left:10px;font-size:.78rem;color:var(--sub);';
+    btn.parentNode && btn.parentNode.insertBefore(el, btn.nextSibling);
+  }
+  el.textContent = on ? '⟳ 最新の在庫を確認中...' : '';
+}
+
+function loadInventory(force) {
+  force = (force === true);
   currentStore = document.getElementById('storeSelect').value;
   var wrap = document.getElementById('inventoryWrap');
-  wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>在庫データを読み込み中...</div>';
-  document.getElementById('catSection').style.display = 'none';
-  document.getElementById('summarySection').style.display = 'none';
+  var storeNames = (currentStore === 'all') ? ['hakata','omura','sasebo'] : [currentStore];
+  var storeLabels = {hakata:'博多',omura:'大村',sasebo:'佐世保'};
+  var seq = ++_invLoadSeq;
 
   // Change body class for store
   document.body.className = document.body.className.replace(/store-\S+/g, '').trim();
   document.body.classList.add('store-' + currentStore);
 
-
-  if (currentStore === 'all') {
-    Promise.all([
-      callAPI('getInventory', {store:'hakata'}),
-      callAPI('getInventory', {store:'omura'}),
-      callAPI('getInventory', {store:'sasebo'})
-    ]).then(function(results){
-      var storeNames = ['hakata','omura','sasebo'];
-      var storeLabels = {hakata:'博多',omura:'大村',sasebo:'佐世保'};
-      var merged = {};
-      results.forEach(function(res, si){
-        if (!res.ok || !res.data) return;
-        var inv = (res.data && res.data.inventory) ? res.data.inventory : res.data;
-        Object.keys(inv).forEach(function(cat){
-          if (!merged[cat]) merged[cat] = [];
-          inv[cat].forEach(function(item){
-            merged[cat].push(Object.assign({}, item, {storeName: storeNames[si], storeLabel: storeLabels[storeNames[si]]}));
-          });
+  // 取得した在庫（店舗ごとの配列）を allInventory にまとめて描画
+  function applyInventories(invs, isRevalidate) {
+    var merged = {};
+    invs.forEach(function(inv, si){
+      if (!inv) return;
+      Object.keys(inv).forEach(function(cat){
+        if (!merged[cat]) merged[cat] = [];
+        (inv[cat] || []).forEach(function(item){
+          merged[cat].push(currentStore === 'all'
+            ? Object.assign({}, item, {storeName: storeNames[si], storeLabel: storeLabels[storeNames[si]]})
+            : item);
         });
       });
-      allInventory = merged;
-      var categories = Object.keys(allInventory);
-      if (categories.length === 0) { wrap.innerHTML = '<div class="empty-state">在庫データがありません</div>'; return; }
-      renderCategoryTabs(categories);
-      currentCategory = categories[0];
-      renderInventory(currentCategory);
-      renderSummary();
-      document.getElementById('catSection').style.display = 'block';
-      document.getElementById('summarySection').style.display = 'block';
-    }).catch(function(e){
-      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
     });
-    return;
-  }
-  callAPI('getInventory', {store: currentStore}).then(function(res){
-    if (!res.ok || !res.data) {
-      var errMsg = (res.data && res.data.error) ? res.data.error : (res.error || 'データ取得エラー');
-      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
-      return;
-    }
-    allInventory = (res.data && res.data.inventory) ? res.data.inventory : res.data;
+    allInventory = merged;
     var categories = Object.keys(allInventory);
     if (categories.length === 0) {
       wrap.innerHTML = '<div class="empty-state">在庫データがありません</div>';
+      document.getElementById('catSection').style.display = 'none';
+      document.getElementById('summarySection').style.display = 'none';
       return;
     }
+    // 裏更新のときは選択中のカテゴリを維持する
+    var keep = isRevalidate && currentCategory && categories.indexOf(currentCategory) !== -1;
     renderCategoryTabs(categories);
-    currentCategory = categories[0];
+    currentCategory = keep ? currentCategory : categories[0];
+    if (keep) {
+      document.querySelectorAll('#catTabs .cat-tab').forEach(function(t){
+        t.classList.toggle('active', t.getAttribute('data-cat') === currentCategory);
+      });
+    }
     renderInventory(currentCategory);
     renderSummary();
     document.getElementById('catSection').style.display = 'block';
     document.getElementById('summarySection').style.display = 'block';
-  }).catch(function(e){
-    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+  }
+
+  var cached = force ? storeNames.map(function(){ return null; }) : storeNames.map(getInvCache);
+  var allCached = cached.length > 0 && cached.every(function(c){ return !!c; });
+  if (allCached) {
+    // ⚡ キャッシュを即表示（0秒）
+    applyInventories(cached.map(function(c){ return c.data; }), false);
+    _setInvRefreshing(true);
+  } else {
+    wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;color:var(--sub);font-size:.88rem;padding:20px 0;"><div class="dot-loader"><span></span><span></span><span></span></div>在庫データを読み込み中...</div>';
+    document.getElementById('catSection').style.display = 'none';
+    document.getElementById('summarySection').style.display = 'none';
+  }
+
+  Promise.all(storeNames.map(function(st){ return fetchInventoryFresh(st, force); })).then(function(results){
+    if (seq !== _invLoadSeq) return; // 別の読込が始まっていたら破棄
+    _setInvRefreshing(false);
+    var errs = results.filter(function(r){ return r.error; });
+    if (errs.length) {
+      if (!allCached) wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errs[0].error) + '</div>';
+      return; // キャッシュ表示中なら表示はそのまま
+    }
+    applyInventories(results.map(function(r){ return r.inv; }), allCached);
   });
 }
 

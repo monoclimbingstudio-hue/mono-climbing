@@ -620,20 +620,38 @@ document.getElementById('searchBtn').addEventListener('click', function(){
   result.style.display = 'block';
 
   if (code) {
-    callAPI('getMember', {code: code, store: getStore()}).then(function(res){
+    // ⚡ 会員番号検索: 手元の会員リストキャッシュにあれば即表示（0秒）し、裏でサーバー(getMember)に確認して最新に合わせる
+    var searchStore = getStore();
+    var showFound = function(name, confirming){
+      result.className = 'result-box found';
+      result.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<span>✓&nbsp; <strong>' + esc(name) + '</strong>　（会員番号: ' + esc(code) + '）' + (confirming ? '<span style="font-size:.78rem;color:var(--sub);margin-left:6px;">確認中…</span>' : '') + '</span>' +
+        '<button class="row-hist-btn hist-open" data-code="' + esc(code) + '" data-name="' + esc(name) + '">履歴を見る</button>' +
+        '</div>';
+      bindHistButtons(result);
+    };
+    var showNotFound = function(){
+      result.className = 'result-box notfound';
+      result.textContent = getStoreLabel() + ' に会員番号 ' + code + ' は未登録です';
+    };
+    var localHit = null;
+    try {
+      var lst = _isUsableList(allMembers) ? allMembers : getMemCache(searchStore);
+      if (_isUsableList(lst)) for (var li = 0; li < lst.length; li++) { if (String(lst[li].code) === code) { localHit = lst[li]; break; } }
+    } catch(e) { localHit = null; }
+    if (localHit && localHit.name) showFound(localHit.name, true);
+    callAPI('getMember', {code: code, store: searchStore}).then(function(res){
+      if (getStore() !== searchStore) return; // 検索中に店舗が変わっていたら破棄
       var m = res.data;
       if (m && m.name) {
-        result.className = 'result-box found';
-        result.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-          '<span>✓&nbsp; <strong>' + esc(m.name) + '</strong>　（会員番号: ' + esc(code) + '）</span>' +
-          '<button class="row-hist-btn hist-open" data-code="' + esc(code) + '" data-name="' + esc(m.name) + '">履歴を見る</button>' +
-          '</div>';
-        bindHistButtons(result);
+        showFound(m.name, false);
+      } else if (res && res.ok === false && localHit && localHit.name) {
+        showFound(localHit.name, false); // サーバー一時エラー時はキャッシュ結果を採用
       } else {
-        result.className = 'result-box notfound';
-        result.textContent = getStoreLabel() + ' に会員番号 ' + code + ' は未登録です';
+        showNotFound();
       }
     }).catch(function(e){
+      if (localHit && localHit.name) { showFound(localHit.name, false); return; }
       result.className = 'result-box notfound';
       result.textContent = 'エラー: ' + e.message;
     });

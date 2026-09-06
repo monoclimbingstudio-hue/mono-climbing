@@ -1558,6 +1558,30 @@ document.getElementById('searchBtn').addEventListener('click', function(){
   };
 
   if (code) {
+    // ⚡ 会員番号検索: まず手元の会員リストキャッシュを引いて即表示（0秒）、裏でサーバー(getMember)に確認して最新に合わせる。
+    var _showFound = function(name){
+      badge.className = 'member-badge found';
+      badge.textContent = '✓  ' + name + '　（会員番号: ' + code + '）';
+      document.getElementById('guestName').value = '';
+      // ⑤ 会員番号で検索→確定でもロック
+      lockMemberCode();
+    };
+    var _showNotFound = function(){
+      badge.className = 'member-badge notfound';
+      badge.textContent = '会員番号 ' + code + ' は未登録です';
+    };
+    var localHit = null;
+    try {
+      var lst = _isUsableList(_memberListCache['members_' + searchStore]) ? _memberListCache['members_' + searchStore] : _memRead(searchStore);
+      if (_isUsableList(lst)) {
+        for (var li = 0; li < lst.length; li++) { if (String(lst[li].code) === code) { localHit = lst[li]; break; } }
+        if (!_memberListCache['members_' + searchStore]) _memberListCache['members_' + searchStore] = lst;
+      }
+    } catch(e) { localHit = null; }
+    if (localHit && localHit.name) {
+      _showFound(localHit.name);
+      badge.textContent += '　（確認中…）';
+    }
     callAPI('getMember', {code: code, store: searchStore}).then(function(res){
       if (!storeStillMatches()) {
         badge.className = 'member-badge notfound';
@@ -1566,16 +1590,18 @@ document.getElementById('searchBtn').addEventListener('click', function(){
       }
       var m = res.data;
       if (m && m.name) {
-        badge.className = 'member-badge found';
-        badge.textContent = '✓  ' + m.name + '　（会員番号: ' + code + '）';
-        document.getElementById('guestName').value = '';
-        // ⑤ 会員番号で検索→確定でもロック
-        lockMemberCode();
+        _showFound(m.name);
+      } else if (res && res.ok === false && localHit && localHit.name) {
+        // サーバーが一時エラーのときはキャッシュの結果をそのまま採用
+        _showFound(localHit.name);
       } else {
-        badge.className = 'member-badge notfound';
-        badge.textContent = '会員番号 ' + code + ' は未登録です';
+        if (localHit) { unlockMemberCode(); document.getElementById('memberCode').value = code; }
+        _showNotFound();
       }
-    }).catch(function(){ badge.textContent = 'エラーが発生しました'; });
+    }).catch(function(){
+      if (localHit && localHit.name) { _showFound(localHit.name); }
+      else badge.textContent = 'エラーが発生しました';
+    });
   } else {
     _getCachedMemberList(searchStore).then(function(list){
       if (!storeStillMatches()) {
@@ -1787,10 +1813,19 @@ document.getElementById('registerBtn').addEventListener('click', function(){
               }).catch(function(){});
             });
           }
+          // ⚡ 売上一覧が変わったので売上管理ページのキャッシュを破棄
+          try {
+            var _sk = []; for (var _i = 0; _i < sessionStorage.length; _i++) { var _k = sessionStorage.key(_i); if (_k && _k.indexOf('mono_sales_v1_') === 0) _sk.push(_k); }
+            _sk.forEach(function(k){ sessionStorage.removeItem(k); });
+          } catch(e){}
+          // ⚡ 物販が動いたので物販管理ページの在庫キャッシュを破棄（次回表示で最新取得）
+          if (shopItemsPayload && shopItemsPayload.length) {
+            try { ['hakata','omura','sasebo'].forEach(function(s){ sessionStorage.removeItem('mono_inv_v1_' + s); }); } catch(e){}
+          }
           pendingShopItems = [];
           // 登録完了後は保存状態もクリア
           try { sessionStorage.removeItem(ENTRY_STATE_KEY); } catch(e){}
-      setTimeout(function(){ location.reload(); }, 2200);
+      setTimeout(function(){ location.reload(); }, 1200);
     } else {
       msg.className = 'err';
       msg.style.display = '';

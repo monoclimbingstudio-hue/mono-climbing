@@ -378,24 +378,78 @@ function loadSales() {
   document.getElementById('transferMsg').style.display = 'none';
   document.getElementById('transferMsg').className = 'transfer-msg';
 
-  callAPI('getTodaySales', {date:dateVal, store:store}).then(function(res){
-    // Robust check: ensure we have an array
-    var data = res.data;
-    if(!Array.isArray(data)) {
-      var errMsg = (data && data.error) ? data.error : (res.error || 'データ形式エラー');
-      wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
-      return;
-    }
+  var seq = ++_salesLoadSeq;
+  function applyEntries(data){
     currentEntries = data;
     renderSalesTable(currentEntries);
     if(currentEntries.length > 0) {
       renderSummary(currentEntries);
       document.getElementById('summarySection').style.display = 'block';
       document.getElementById('transferSection').style.display = 'block';
+    } else {
+      document.getElementById('summarySection').style.display = 'none';
+      document.getElementById('transferSection').style.display = 'none';
     }
+  }
+
+  // ⚡ 直近に表示した同じ店舗・日付のデータがあれば即表示し、裏で最新を取得して差し替える
+  var cached = getSalesCache(store, dateVal);
+  if (cached) { applyEntries(cached); _setSalesRefreshing(true); }
+
+  callAPI('getTodaySales', {date:dateVal, store:store}).then(function(res){
+    if (seq !== _salesLoadSeq) return; // 別の読込が始まっていたら破棄
+    _setSalesRefreshing(false);
+    // Robust check: ensure we have an array
+    var data = res.data;
+    if(!Array.isArray(data)) {
+      var errMsg = (data && data.error) ? data.error : (res.error || 'データ形式エラー');
+      if (!cached) wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(errMsg) + '</div>';
+      return;
+    }
+    setSalesCache(store, dateVal, data);
+    applyEntries(data);
   }).catch(function(e){
-    wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
+    if (seq !== _salesLoadSeq) return;
+    _setSalesRefreshing(false);
+    if (!cached) wrap.innerHTML = '<div class="empty-state" style="color:#c62828">エラー: ' + esc(e.message) + '</div>';
   });
+}
+
+// ⚡ 売上一覧キャッシュ（sessionStorage・店舗+日付・TTL 10分）。表示は即時、裏で最新化する。
+// 削除・転記・入店登録(index.html)で内容が変わったら clearSalesCache() で破棄する。
+var SALES_CACHE_TTL = 10 * 60 * 1000;
+var _salesLoadSeq = 0;
+function _salesKey(store, date){ return 'mono_sales_v1_' + store + '_' + date; }
+function getSalesCache(store, date){
+  try {
+    var raw = sessionStorage.getItem(_salesKey(store, date));
+    if (!raw) return null;
+    var d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.data) || (Date.now() - d.ts) > SALES_CACHE_TTL) { sessionStorage.removeItem(_salesKey(store, date)); return null; }
+    return d.data;
+  } catch(e) { return null; }
+}
+function setSalesCache(store, date, data){
+  try { sessionStorage.setItem(_salesKey(store, date), JSON.stringify({ts: Date.now(), data: data})); } catch(e) {}
+}
+function clearSalesCache(){
+  try {
+    var keys = [];
+    for (var i = 0; i < sessionStorage.length; i++) { var k = sessionStorage.key(i); if (k && k.indexOf('mono_sales_v1_') === 0) keys.push(k); }
+    keys.forEach(function(k){ sessionStorage.removeItem(k); });
+  } catch(e) {}
+}
+function _setSalesRefreshing(on){
+  var el = document.getElementById('salesRefreshing');
+  if (!el) {
+    var btn = document.getElementById('loadBtn');
+    if (!btn) return;
+    el = document.createElement('span');
+    el.id = 'salesRefreshing';
+    el.style.cssText = 'margin-left:10px;font-size:.78rem;color:var(--sub);';
+    btn.parentNode && btn.parentNode.insertBefore(el, btn.nextSibling);
+  }
+  el.textContent = on ? '⟳ 最新データを確認中...' : '';
 }
 
 function renderSalesTable(entries) {
@@ -492,6 +546,7 @@ function renderSalesTable(entries) {
           if (res.ok && res.data && res.data.success) {
             var pos = currentEntries.indexOf(entry); // 参照で位置特定
             if (pos >= 0) currentEntries.splice(pos, 1);
+            clearSalesCache(); // 内容が変わったのでキャッシュ破棄
             renderSalesTable(currentEntries); // 再描画で data-idx を再構築
             renderSummary(currentEntries);
           } else {
