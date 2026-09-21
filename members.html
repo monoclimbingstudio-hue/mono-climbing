@@ -476,10 +476,15 @@ function _isTransientErr(res){
   if(res.ok === false){
     var e = String(res.error || '');
     if(e==='GAS_HTML_RESPONSE'||e==='GAS_BAD_JSON'||e==='応答JSONパース失敗'||e==='network') return true;
-    if(/timeout|timed out|fetch|network|50[234]/i.test(e)) return true;
+    if(res.transient === true) return true; // GAS側が一時エラーと判定
+    if(_GAS_TRANSIENT_RE.test(e)) return true;
   }
+  // 関数内で catch して {error:...} を data に入れて返すケース（getTodaySales 等）
+  if(res.ok === true && res.data && typeof res.data === 'object' && !Array.isArray(res.data) && res.data.error && _GAS_TRANSIENT_RE.test(String(res.data.error))) return true;
   return false;
 }
+// スプレッドシートを開く時などに Google 側で起きる一時エラー。少し待って再送すると成功する。
+var _GAS_TRANSIENT_RE = /timeout|timed out|fetch|network|50[234]|unable to open|Service .*(failed|error|unavailable)|internal error|内部エラー|タイムアウト|Too many|同時実行|Service invoked too many|ロック|Lock timeout|Backend Error|Empty response|Rate Limit|一時的/i;
 function callAPI(action, params) {
   var maxTry = (SAFE_RETRY[action] || WRITE_RETRY[action]) ? 3 : 1;
   if (WRITE_RETRY[action]) {
@@ -501,7 +506,7 @@ function callAPI(action, params) {
       return { ok:false, error:'network', data:{ error:'通信エラー: ' + String((err&&err.message)||err) } };
     }).then(function(res){
       if(n < maxTry && _isTransientErr(res)){
-        return new Promise(function(rs){ setTimeout(rs, 700*n); }).then(function(){ return attempt(n+1); });
+        return new Promise(function(rs){ setTimeout(rs, 900*n); }).then(function(){ return attempt(n+1); });
       }
       return res;
     });
